@@ -14,21 +14,12 @@
  * limitations under the License.
  */
 
-package models.registration.responses
+package logging
 
-import play.api.libs.functional.syntax.*
-import play.api.libs.json.*
+import org.slf4j.{Logger, LoggerFactory}
 
-final case class ResponseWithId(
-                                 responseCommon: ResponseCommon,
-                                 responseDetail: ResponseDetailWithId
-                               )
+trait Logging {
 
-object ResponseWithId {
-
-  implicit lazy val reads: Reads[ResponseWithId] =
-    (
-      (__ \ "registerWithIDResponse" \ "responseCommon").read[ResponseCommon] and
-      (__ \ "registerWithIDResponse" \ "responseDetail").read[ResponseDetailWithId]
-    )(ResponseWithId(_, _))
+  protected val logger: Logger =
+    LoggerFactory.getLogger("application." + getClass.getCanonicalName)
 }

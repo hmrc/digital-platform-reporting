@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package models.registration.responses
+package controllers
 
-import play.api.libs.functional.syntax.*
-import play.api.libs.json.*
+import play.api.mvc.{Action, ControllerComponents}
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-final case class ResponseWithId(
-                                 responseCommon: ResponseCommon,
-                                 responseDetail: ResponseDetailWithId
-                               )
+import javax.inject.Inject
+import models.registration.requests.RequestDetail
 
-object ResponseWithId {
-
-  implicit lazy val reads: Reads[ResponseWithId] =
-    (
-      (__ \ "registerWithIDResponse" \ "responseCommon").read[ResponseCommon] and
-      (__ \ "registerWithIDResponse" \ "responseDetail").read[ResponseDetailWithId]
-    )(ResponseWithId(_, _))
+class RegistrationController @Inject()(cc: ControllerComponents)
+    extends BackendController(cc) {
+  
+  def register(): Action[RequestDetail] = Action(parse.json[RequestDetail]) {
+    implicit request =>
+      ???
+  }
 }

@@ -14,21 +14,12 @@
  * limitations under the License.
  */
 
-package models.registration.responses
+package services
 
-import play.api.libs.functional.syntax.*
-import play.api.libs.json.*
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 
-final case class ResponseWithId(
-                                 responseCommon: ResponseCommon,
-                                 responseDetail: ResponseDetailWithId
-                               )
-
-object ResponseWithId {
-
-  implicit lazy val reads: Reads[ResponseWithId] =
-    (
-      (__ \ "registerWithIDResponse" \ "responseCommon").read[ResponseCommon] and
-      (__ \ "registerWithIDResponse" \ "responseDetail").read[ResponseDetailWithId]
-    )(ResponseWithId(_, _))
+@Singleton
+class UuidService @Inject() () {
+  def generate(): String = UUID.randomUUID().toString
 }

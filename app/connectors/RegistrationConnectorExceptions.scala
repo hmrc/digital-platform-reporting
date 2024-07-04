@@ -14,21 +14,11 @@
  * limitations under the License.
  */
 
-package models.registration.responses
+package connectors
 
-import play.api.libs.functional.syntax.*
-import play.api.libs.json.*
+object RegistrationConnectorExceptions {
 
-final case class ResponseWithId(
-                                 responseCommon: ResponseCommon,
-                                 responseDetail: ResponseDetailWithId
-                               )
-
-object ResponseWithId {
-
-  implicit lazy val reads: Reads[ResponseWithId] =
-    (
-      (__ \ "registerWithIDResponse" \ "responseCommon").read[ResponseCommon] and
-      (__ \ "registerWithIDResponse" \ "responseDetail").read[ResponseDetailWithId]
-    )(ResponseWithId(_, _))
+  case object NotFound extends Exception
+  case object UnableToParseResponse extends Exception
+  final case class UnexpectedResponse(status: Int) extends Exception
 }
