@@ -72,6 +72,8 @@ class RegistrationConnectorSpec
       )
       .configure("microservice.services.register-with-id.port" -> wireMockPort)
       .configure("microservice.services.register-with-id.bearerToken" -> "token")
+      .configure("microservice.services.register-without-id.port" -> wireMockPort)
+      .configure("microservice.services.register-without-id.bearerToken" -> "token")
       .build()
 
   private val correlationId = UUID.randomUUID()
@@ -179,6 +181,114 @@ class RegistrationConnectorSpec
         )
 
         val result = connector.registerWithId(requestWithId).futureValue
+
+        result.left.value mustEqual UnexpectedResponse(500)
+      }
+    }
+  }
+
+  ".registerWithoutId" - {
+
+    "must post a request" - {
+
+      "and return the response when the server returns OK" in {
+
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
+        val address = Address("line1", None, None, None, Some("postcode"), "GB")
+        val requestDetail = OrganisationWithoutId("name", address)
+        val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
+
+        val responseCommon = ResponseCommon("OK")
+        val responseDetailWithoutId = ResponseDetailWithoutId("safeId")
+        val expectedResponse = ResponseWithoutId(responseCommon, responseDetailWithoutId)
+
+        val responsePayload = Json.obj(
+          "registerWithIDResponse" -> Json.obj(
+            "responseCommon" -> Json.obj(
+              "status" -> "OK"
+            ),
+            "responseDetail" -> Json.obj(
+              "SAFEID" -> "safeId",
+              "ARN" -> "arn",
+              "address" -> Json.obj(
+                "line1" -> "line1",
+                "postalCode" -> "postcode",
+                "countryCode" -> "GB"
+              ),
+              "organisation" -> Json.obj(
+                "organisationName" -> "name"
+              )
+            )
+          )
+        )
+
+        wireMockServer.stubFor(
+          post(urlEqualTo("/dac6/DPRS0101/v1"))
+            .withHeader("Authorization", equalTo("Bearer token"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withRequestBody(equalTo(Json.toJson(requestWithoutId).toString))
+            .willReturn(ok(responsePayload.toString))
+        )
+
+        val result = connector.registerWithoutId(requestWithoutId).futureValue
+
+        result.value mustEqual expectedResponse
+      }
+
+      "and return not found when the server returns NOT_FOUND" in {
+
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
+        val address = Address("line1", None, None, None, Some("postcode"), "GB")
+        val requestDetail = OrganisationWithoutId("name", address)
+        val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
+
+        wireMockServer.stubFor(
+          post(urlEqualTo("/dac6/DPRS0101/v1"))
+            .withHeader("Authorization", equalTo("Bearer token"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withRequestBody(equalTo(Json.toJson(requestWithoutId).toString))
+            .willReturn(notFound())
+        )
+
+        val result = connector.registerWithoutId(requestWithoutId).futureValue
+
+        result.left.value mustEqual NotFound
+      }
+
+      "and return an error when the server returns an error response" in {
+
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
+        val address = Address("line1", None, None, None, Some("postcode"), "GB")
+        val requestDetail = OrganisationWithoutId("name", address)
+        val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
+
+        wireMockServer.stubFor(
+          post(urlEqualTo("/dac6/DPRS0101/v1"))
+            .withHeader("Authorization", equalTo("Bearer token"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withRequestBody(equalTo(Json.toJson(requestWithoutId).toString))
+            .willReturn(serverError())
+        )
+
+        val result = connector.registerWithoutId(requestWithoutId).futureValue
 
         result.left.value mustEqual UnexpectedResponse(500)
       }

@@ -16,7 +16,8 @@
 
 package models.registration.responses
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
 
 final case class ResponseWithoutId(
                                     responseCommon: ResponseCommon,
@@ -24,6 +25,10 @@ final case class ResponseWithoutId(
                                   )
 
 object ResponseWithoutId {
-
-  implicit lazy val format: OFormat[ResponseWithoutId] = Json.format
+  
+  implicit lazy val reads: Reads[ResponseWithoutId] =
+    (
+      (__ \ "registerWithIDResponse" \ "responseCommon").read[ResponseCommon] and
+      (__ \ "registerWithIDResponse" \ "responseDetail").read[ResponseDetailWithoutId]
+    )(ResponseWithoutId(_, _))
 }
