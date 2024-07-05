@@ -58,7 +58,7 @@ class RequestWithoutIdSpec extends AnyFreeSpec with Matchers {
               "dateOfBirth" -> "2000-01-02"
             ),
             "address" -> Json.obj(
-              "line1" -> "line 1",
+              "addressLine1" -> "line 1",
               "postalCode" -> "postcode",
               "countryCode" -> "GB"
             )
@@ -95,7 +95,7 @@ class RequestWithoutIdSpec extends AnyFreeSpec with Matchers {
               "organisationName" -> "name"
             ),
             "address" -> Json.obj(
-              "line1" -> "line 1",
+              "addressLine1" -> "line 1",
               "postalCode" -> "postcode",
               "countryCode" -> "GB"
             )

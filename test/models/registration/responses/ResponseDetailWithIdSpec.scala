@@ -30,7 +30,7 @@ class ResponseDetailWithIdSpec extends AnyFreeSpec with Matchers {
       val json = Json.obj(
         "SAFEID" -> "123",
         "address" -> Json.obj(
-          "line1" -> "line 1",
+          "addressLine1" -> "line 1",
           "postalCode" -> "postcode",
           "countryCode" -> "GB"
         )
@@ -48,7 +48,7 @@ class ResponseDetailWithIdSpec extends AnyFreeSpec with Matchers {
           "organisationName" -> "name"
         ),
         "address" -> Json.obj(
-          "line1" -> "line 1",
+          "addressLine1" -> "line 1",
           "postalCode" -> "postcode",
           "countryCode" -> "GB"
         )

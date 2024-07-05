@@ -16,34 +16,29 @@
 
 package connectors
 
-import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.client.WireMock.*
 import connectors.RegistrationConnectorExceptions.*
 import models.registration.Address
 import models.registration.requests.*
 import models.registration.responses.*
 import org.mockito.Mockito
 import org.mockito.Mockito.when
+import org.scalatest.{BeforeAndAfterEach, EitherValues}
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.EitherValues
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.concurrent.IntegrationPatience
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.inject.bind
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import services.UuidService
-import uk.gov.hmrc.http.test.WireMockSupport
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HeaderNames
+import uk.gov.hmrc.http.test.WireMockSupport
 
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneId}
 import java.util.UUID
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.BeforeAndAfterEach
 
 class RegistrationConnectorSpec
   extends AnyFreeSpec
@@ -98,7 +93,7 @@ class RegistrationConnectorSpec
         val requestWithId = RequestWithId(requestCommon, requestDetail)
 
         val responseCommon = ResponseCommon("OK")
-        val address = Address("line1", None, None, None, Some("postcode"), "GB")
+        val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
         val responseDetailWithId = ResponseDetailWithId("safeId", address, None)
         val expectedResponse = ResponseWithId(responseCommon, responseDetailWithId)
 
@@ -111,7 +106,7 @@ class RegistrationConnectorSpec
               "SAFEID" -> "safeId",
               "ARN" -> "arn",
               "address" -> Json.obj(
-                "line1" -> "line1",
+                "addressLine1" -> "addressLine1",
                 "postalCode" -> "postcode",
                 "countryCode" -> "GB"
               )
@@ -120,7 +115,7 @@ class RegistrationConnectorSpec
         )
 
         wireMockServer.stubFor(
-          post(urlEqualTo("/dac6/DPRS0102/v1"))
+          post(urlMatching(".*/dac6/DPRS0102/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -145,7 +140,7 @@ class RegistrationConnectorSpec
         val requestWithId = RequestWithId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
-          post(urlEqualTo("/dac6/DPRS0102/v1"))
+          post(urlMatching(".*/dac6/DPRS0102/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -170,7 +165,7 @@ class RegistrationConnectorSpec
         val requestWithId = RequestWithId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
-          post(urlEqualTo("/dac6/DPRS0102/v1"))
+          post(urlMatching(".*/dac6/DPRS0102/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -183,6 +178,31 @@ class RegistrationConnectorSpec
         val result = connector.registerWithId(requestWithId).futureValue
 
         result.left.value mustEqual UnexpectedResponse(500)
+      }
+
+      "and return an error when the server returns a payload that cannot be parsed" in {
+
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
+        val requestDetail = OrganisationWithUtr("utr", None)
+        val requestWithId = RequestWithId(requestCommon, requestDetail)
+
+        wireMockServer.stubFor(
+          post(urlMatching(".*/dac6/DPRS0102/v1"))
+            .withHeader("Authorization", equalTo("Bearer token"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withRequestBody(equalTo(Json.toJson(requestWithId).toString))
+            .willReturn(ok(Json.obj().toString))
+        )
+
+        val result = connector.registerWithId(requestWithId).futureValue
+
+        result.left.value mustEqual UnableToParseResponse
       }
     }
   }
@@ -197,7 +217,7 @@ class RegistrationConnectorSpec
           .thenReturn(correlationId.toString, conversationId.toString)
 
         val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
-        val address = Address("line1", None, None, None, Some("postcode"), "GB")
+        val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
         val requestDetail = OrganisationWithoutId("name", address)
         val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
 
@@ -214,7 +234,7 @@ class RegistrationConnectorSpec
               "SAFEID" -> "safeId",
               "ARN" -> "arn",
               "address" -> Json.obj(
-                "line1" -> "line1",
+                "addressLine1" -> "addressLine1",
                 "postalCode" -> "postcode",
                 "countryCode" -> "GB"
               ),
@@ -226,7 +246,7 @@ class RegistrationConnectorSpec
         )
 
         wireMockServer.stubFor(
-          post(urlEqualTo("/dac6/DPRS0101/v1"))
+          post(urlMatching(".*/dac6/DPRS0101/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -247,12 +267,12 @@ class RegistrationConnectorSpec
           .thenReturn(correlationId.toString, conversationId.toString)
 
         val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
-        val address = Address("line1", None, None, None, Some("postcode"), "GB")
+        val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
         val requestDetail = OrganisationWithoutId("name", address)
         val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
-          post(urlEqualTo("/dac6/DPRS0101/v1"))
+          post(urlMatching(".*/dac6/DPRS0101/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -273,12 +293,12 @@ class RegistrationConnectorSpec
           .thenReturn(correlationId.toString, conversationId.toString)
 
         val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
-        val address = Address("line1", None, None, None, Some("postcode"), "GB")
+        val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
         val requestDetail = OrganisationWithoutId("name", address)
         val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
-          post(urlEqualTo("/dac6/DPRS0101/v1"))
+          post(urlMatching(".*/dac6/DPRS0101/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -291,6 +311,32 @@ class RegistrationConnectorSpec
         val result = connector.registerWithoutId(requestWithoutId).futureValue
 
         result.left.value mustEqual UnexpectedResponse(500)
+      }
+
+      "and return an error when the server returns a payload that cannot be parsed" in {
+
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
+        val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
+        val requestDetail = OrganisationWithoutId("name", address)
+        val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
+
+        wireMockServer.stubFor(
+          post(urlMatching(".*/dac6/DPRS0101/v1"))
+            .withHeader("Authorization", equalTo("Bearer token"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withRequestBody(equalTo(Json.toJson(requestWithoutId).toString))
+            .willReturn(ok(Json.obj().toString))
+        )
+
+        val result = connector.registerWithoutId(requestWithoutId).futureValue
+
+        result.left.value mustEqual UnableToParseResponse
       }
     }
   }

@@ -55,7 +55,7 @@ class RegistrationConnector @Inject()(
       .setHeader(HeaderNames.ACCEPT -> "application/json")
       .withBody(Json.toJson(request))
       .execute[Either[Exception, ResponseWithId]]
-    
+
   def registerWithoutId(request: RequestWithoutId)(implicit hc: HeaderCarrier): Future[Either[Exception, ResponseWithoutId]] =
     httpClient.post(url"$baseRegisterWithoutIdUrl/dac6/DPRS0101/v1")
       .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer $registerWithoutIdBearerToken")

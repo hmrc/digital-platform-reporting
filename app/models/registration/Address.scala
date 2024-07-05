@@ -19,10 +19,10 @@ package models.registration
 import play.api.libs.json.{OFormat, Json}
 
 final case class Address(
-                          line1: String,
-                          line2: Option[String],
-                          line3: Option[String],
-                          line4: Option[String],
+                          addressLine1: String,
+                          addressLine2: Option[String],
+                          addressLine3: Option[String],
+                          addressLine4: Option[String],
                           postalCode: Option[String],
                           countryCode: String
                         )

@@ -33,7 +33,7 @@ class RequestDetailWithoutIdSpec extends AnyFreeSpec with Matchers {
         "lastName" -> "last",
         "dateOfBirth" -> "2000-01-02",
         "address" -> Json.obj(
-          "line1" -> "line 1",
+          "addressLine1" -> "line 1",
           "postalCode" -> "postcode",
           "countryCode" -> "GB"
         )
@@ -49,7 +49,7 @@ class RequestDetailWithoutIdSpec extends AnyFreeSpec with Matchers {
       val json = Json.obj(
         "name" -> "name",
         "address" -> Json.obj(
-          "line1" -> "line 1",
+          "addressLine1" -> "line 1",
           "postalCode" -> "postcode",
           "countryCode" -> "GB"
         )

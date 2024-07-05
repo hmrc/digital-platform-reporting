@@ -38,8 +38,8 @@ class IndividualWithoutIdSpec extends AnyFreeSpec with Matchers {
           "dateOfBirth" -> "2000-01-02"
         ),
         "address" -> Json.obj(
-          "line1" -> "line 1",
-          "line2" -> "line 2",
+          "addressLine1" -> "line 1",
+          "addressLine2" -> "line 2",
           "postalCode" -> "postcode",
           "countryCode" -> "GB"
         ),

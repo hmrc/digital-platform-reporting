@@ -16,17 +16,57 @@
 
 package controllers
 
+import connectors.{RegistrationConnector, RegistrationConnectorExceptions}
+import models.registration.requests.*
+import models.registration.responses.*
+import play.api.libs.json.Json
 import play.api.mvc.{Action, ControllerComponents}
+import services.UuidService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import java.time.Clock
 import javax.inject.Inject
-import models.registration.requests.RequestDetail
+import scala.concurrent.ExecutionContext
 
-class RegistrationController @Inject()(cc: ControllerComponents)
+class RegistrationController @Inject()(
+                                        cc: ControllerComponents,
+                                        connector: RegistrationConnector,
+                                        uuidService: UuidService,
+                                        clock: Clock
+                                      )(implicit ec: ExecutionContext)
     extends BackendController(cc) {
   
-  def register(): Action[RequestDetail] = Action(parse.json[RequestDetail]) {
+  def register(): Action[RequestDetail] = Action(parse.json[RequestDetail]).async {
     implicit request =>
-      ???
+      
+      val requestCommon = RequestCommon(clock.instant(), uuidService.generate())
+      
+      request.body match {
+        case r: RequestDetailWithId =>
+          val request = RequestWithId(requestCommon, r)
+          connector.registerWithId(request).map {
+            case Right(result) =>
+              Ok(Json.toJson(result.responseDetail))
+              
+            case Left(RegistrationConnectorExceptions.NotFound) =>
+              NotFound
+
+            case Left(e) =>
+              InternalServerError
+          }
+
+        case r: RequestDetailWithoutId =>
+          val request = RequestWithoutId(requestCommon, r)
+          connector.registerWithoutId(request).map {
+            case Right(result) =>
+              Ok(Json.toJson(result.responseDetail))
+
+            case Left(RegistrationConnectorExceptions.NotFound) =>
+              NotFound
+
+            case Left(_) =>
+              InternalServerError
+          }
+      }
   }
 }
