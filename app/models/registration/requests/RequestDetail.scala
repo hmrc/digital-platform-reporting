@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.digitalplatformreporting.config
+package models.registration.requests
 
-import com.google.inject.AbstractModule
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.Reads
 
-import java.time.Clock
+trait RequestDetail
 
-class Module extends AbstractModule {
+object RequestDetail {
 
-  override def configure(): Unit = {
-
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemUTC())
-  }
+  implicit lazy val reads: Reads[RequestDetail] = 
+    RequestDetailWithId.reads.widen or RequestDetailWithoutId.reads.widen
 }

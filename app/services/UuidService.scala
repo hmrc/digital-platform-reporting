@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.digitalplatformreporting.config
+package services
 
-import com.google.inject.AbstractModule
+import java.util.UUID
+import javax.inject.{Inject, Singleton}
 
-import java.time.Clock
-
-class Module extends AbstractModule {
-
-  override def configure(): Unit = {
-
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemUTC())
-  }
+@Singleton
+class UuidService @Inject() () {
+  def generate(): String = UUID.randomUUID().toString
 }

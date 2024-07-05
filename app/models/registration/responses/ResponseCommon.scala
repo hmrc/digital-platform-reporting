@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.digitalplatformreporting.config
+package models.registration.responses
 
-import com.google.inject.AbstractModule
+import play.api.libs.json.{Json, OFormat}
 
-import java.time.Clock
+final case class ResponseCommon(status: String)
 
-class Module extends AbstractModule {
+object ResponseCommon {
 
-  override def configure(): Unit = {
-
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemUTC())
-  }
+  implicit lazy val format: OFormat[ResponseCommon] = Json.format
 }

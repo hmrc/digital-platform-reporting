@@ -14,17 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.digitalplatformreporting.config
+package logging
 
-import com.google.inject.AbstractModule
+import org.slf4j.{Logger, LoggerFactory}
 
-import java.time.Clock
+trait Logging {
 
-class Module extends AbstractModule {
-
-  override def configure(): Unit = {
-
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemUTC())
-  }
+  protected val logger: Logger =
+    LoggerFactory.getLogger("application." + getClass.getCanonicalName)
 }

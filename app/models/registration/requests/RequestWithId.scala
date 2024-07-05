@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.digitalplatformreporting.config
+package models.registration.requests
 
-import com.google.inject.AbstractModule
+import play.api.libs.json.{JsObject, Json, OWrites}
 
-import java.time.Clock
+final case class RequestWithId(requestCommon: RequestCommon, requestDetail: RequestDetailWithId)
 
-class Module extends AbstractModule {
-
-  override def configure(): Unit = {
-
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemUTC())
+object RequestWithId {
+  
+  implicit lazy val writes: OWrites[RequestWithId] = new OWrites[RequestWithId] {
+    override def writes(o: RequestWithId): JsObject =
+      Json.obj(
+        "registerWithIDRequest" -> Json.obj(
+          "requestCommon" -> o.requestCommon,
+          "requestDetail" -> o.requestDetail
+        )
+      )
   }
 }

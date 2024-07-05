@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.digitalplatformreporting.config
+package models.registration.responses
 
-import com.google.inject.AbstractModule
+import play.api.libs.json.*
 
-import java.time.Clock
+final case class ResponseDetailWithoutId(safeId: String)
 
-class Module extends AbstractModule {
+object ResponseDetailWithoutId {
 
-  override def configure(): Unit = {
+  implicit lazy val reads: Reads[ResponseDetailWithoutId] =
+    (__ \ "SAFEID").read[String].map(ResponseDetailWithoutId(_))
 
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemUTC())
-  }
+  implicit lazy val writes: OWrites[ResponseDetailWithoutId] = Json.writes
 }

@@ -14,17 +14,23 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.digitalplatformreporting.config
+package models.registration.responses
 
-import com.google.inject.AbstractModule
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.must.Matchers
+import play.api.libs.json.Json
 
-import java.time.Clock
+class ResponseDetailWithoutIdSpec extends AnyFreeSpec with Matchers {
+  
+  "response detail without id" - {
 
-class Module extends AbstractModule {
+    "must deserialise" in {
 
-  override def configure(): Unit = {
+      val json = Json.obj(
+        "SAFEID" -> "123"
+      )
 
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemUTC())
+      json.as[ResponseDetailWithoutId] mustEqual ResponseDetailWithoutId("123")
+    }
   }
 }

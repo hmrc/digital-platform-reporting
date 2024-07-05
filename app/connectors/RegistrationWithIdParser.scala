@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-package controllers
+package connectors
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import play.api.http.Status
-import play.api.test.Helpers._
-import play.api.test.{FakeRequest, Helpers}
+import logging.Logging
+import models.registration.responses.*
+import play.api.http.Status.{NOT_FOUND, OK}
+import play.api.libs.json.*
+import uk.gov.hmrc.http.{HttpReads, HttpResponse}
 
-class MicroserviceHelloWorldControllerSpec extends AnyWordSpec with Matchers {
+object RegistrationWithIdParser {
 
-  private val fakeRequest = FakeRequest("GET", "/")
-  private val controller = new MicroserviceHelloWorldController(Helpers.stubControllerComponents())
+  implicit object RegistrationWithIdReads extends HttpReads[ResponseWithId] with Logging {
 
-  "GET /" should {
-    "return 200" in {
-      val result = controller.hello()(fakeRequest)
-      status(result) shouldBe Status.OK
-    }
+    override def read(method: String, url: String, response: HttpResponse): ResponseWithId =
+      response.status match {
+        case OK =>
+          response.json.as[MatchResponseWithId]
+          
+        case NOT_FOUND =>
+          NoMatchResponse
+      }
   }
 }

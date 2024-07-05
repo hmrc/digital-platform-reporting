@@ -14,17 +14,25 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.digitalplatformreporting.config
+package connectors
 
-import com.google.inject.AbstractModule
+import logging.Logging
+import models.registration.responses.*
+import play.api.http.Status.{NOT_FOUND, OK}
+import play.api.libs.json.*
+import uk.gov.hmrc.http.{HttpReads, HttpResponse}
 
-import java.time.Clock
+object RegistrationWithoutIdParser {
 
-class Module extends AbstractModule {
+  implicit object RegistrationWithoutIdReads extends HttpReads[ResponseWithoutId] with Logging {
 
-  override def configure(): Unit = {
+    override def read(method: String, url: String, response: HttpResponse): ResponseWithoutId =
+      response.status match {
+        case OK =>
+          response.json.as[MatchResponseWithoutId]
 
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemUTC())
+        case NOT_FOUND =>
+          NoMatchResponse
+      }
   }
 }

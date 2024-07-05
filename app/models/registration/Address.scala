@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.digitalplatformreporting.config
+package models.registration
 
-import com.google.inject.AbstractModule
+import play.api.libs.json.{OFormat, Json}
 
-import java.time.Clock
+final case class Address(
+                          addressLine1: String,
+                          addressLine2: Option[String],
+                          addressLine3: Option[String],
+                          addressLine4: Option[String],
+                          postalCode: Option[String],
+                          countryCode: String
+                        )
 
-class Module extends AbstractModule {
+object Address {
 
-  override def configure(): Unit = {
-
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemUTC())
-  }
+  implicit lazy val format: OFormat[Address] = Json.format
 }
