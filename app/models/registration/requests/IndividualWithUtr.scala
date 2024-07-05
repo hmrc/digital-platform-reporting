@@ -29,21 +29,18 @@ object IndividualWithUtr {
   implicit lazy val reads: Reads[IndividualWithUtr] =
     (__ \ "type")
       .read[String]
-      .flatMap[String] { t =>
+      .flatMap { t =>
         if (t == "individual") {
-          Reads(_ => JsSuccess(t))
+          (
+            (__ \ "utr").read[String] and
+            (__ \ "details").readNullable[IndividualWithUtrDetails]
+          )(IndividualWithUtr(_, _))
         } else {
-          Reads(_ => JsError("type must equal `individual`"))
+          Reads.failed("type must equal `individual`")
         }
       }
-      .andKeep(
-        (
-          (__ \ "utr").read[String] and
-          (__ \ "details").readNullable[IndividualWithUtrDetails]
-        )(IndividualWithUtr(_, _))
-      )
   
-  implicit lazy val writes: OWrites[IndividualWithUtr] = new OWrites[IndividualWithUtr]:
+  implicit lazy val writes: OWrites[IndividualWithUtr] = new OWrites[IndividualWithUtr] {
     override def writes(o: IndividualWithUtr): JsObject = {
 
       val detailsJson = o.details.map { details =>
@@ -57,6 +54,7 @@ object IndividualWithUtr {
         "isAnAgent" -> false
       ) ++ detailsJson
     }
+  }
 }
 
 final case class IndividualWithUtrDetails(firstName: String, lastName: String)

@@ -22,7 +22,7 @@ final case class RequestWithoutId(requestCommon: RequestCommon, requestDetail: R
 
 object RequestWithoutId {
   
-  implicit lazy val writes: OWrites[RequestWithoutId] = new OWrites[RequestWithoutId]:
+  implicit lazy val writes: OWrites[RequestWithoutId] = new OWrites[RequestWithoutId] {
     override def writes(o: RequestWithoutId): JsObject =
       Json.obj(
         "registerWithoutIDRequest" -> Json.obj(
@@ -30,4 +30,5 @@ object RequestWithoutId {
           "requestDetail" -> o.requestDetail
         )
       )
+  }
 }

@@ -16,4 +16,19 @@
 
 package models.registration.responses
 
-trait ResponseWithoutId
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
+
+final case class MatchResponseWithoutId(
+                                    responseCommon: ResponseCommon,
+                                    responseDetail: ResponseDetailWithoutId
+                                  ) extends ResponseWithoutId
+
+object MatchResponseWithoutId {
+  
+  implicit lazy val reads: Reads[MatchResponseWithoutId] =
+    (
+      (__ \ "registerWithoutIDResponse" \ "responseCommon").read[ResponseCommon] and
+      (__ \ "registerWithoutIDResponse" \ "responseDetail").read[ResponseDetailWithoutId]
+    )(MatchResponseWithoutId(_, _))
+}

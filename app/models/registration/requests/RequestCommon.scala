@@ -27,7 +27,7 @@ final case class RequestCommon(
 
 object RequestCommon {
 
-  implicit lazy val writes: OWrites[RequestCommon] = new OWrites[RequestCommon]:
+  implicit lazy val writes: OWrites[RequestCommon] = new OWrites[RequestCommon] {
     override def writes(o: RequestCommon): JsObject =
       Json.obj(
         "regime" -> "DPRS",
@@ -40,5 +40,5 @@ object RequestCommon {
           )
         )
       )
+  }
 }
-

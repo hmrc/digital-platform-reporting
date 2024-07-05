@@ -22,7 +22,7 @@ final case class RequestWithId(requestCommon: RequestCommon, requestDetail: Requ
 
 object RequestWithId {
   
-  implicit lazy val writes: OWrites[RequestWithId] = new OWrites[RequestWithId]:
+  implicit lazy val writes: OWrites[RequestWithId] = new OWrites[RequestWithId] {
     override def writes(o: RequestWithId): JsObject =
       Json.obj(
         "registerWithIDRequest" -> Json.obj(
@@ -30,4 +30,5 @@ object RequestWithId {
           "requestDetail" -> o.requestDetail
         )
       )
+  }
 }

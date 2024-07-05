@@ -17,7 +17,6 @@
 package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
-import connectors.RegistrationConnectorExceptions.*
 import models.registration.Address
 import models.registration.requests.*
 import models.registration.responses.*
@@ -95,7 +94,7 @@ class RegistrationConnectorSpec
         val responseCommon = ResponseCommon("OK")
         val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
         val responseDetailWithId = ResponseDetailWithId("safeId", address, None)
-        val expectedResponse = ResponseWithId(responseCommon, responseDetailWithId)
+        val expectedResponse = MatchResponseWithId(responseCommon, responseDetailWithId)
 
         val responsePayload = Json.obj(
           "registerWithIDResponse" -> Json.obj(
@@ -127,7 +126,7 @@ class RegistrationConnectorSpec
 
         val result = connector.registerWithId(requestWithId).futureValue
 
-        result.value mustEqual expectedResponse
+        result mustEqual expectedResponse
       }
 
       "and return not found when the server returns NOT_FOUND" in {
@@ -152,10 +151,10 @@ class RegistrationConnectorSpec
 
         val result = connector.registerWithId(requestWithId).futureValue
 
-        result.left.value mustEqual NotFound
+        result mustEqual NoMatchResponse
       }
 
-      "and return an error when the server returns an error response" in {
+      "and return a failed future when the server returns an error response" in {
 
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
@@ -175,12 +174,10 @@ class RegistrationConnectorSpec
             .willReturn(serverError())
         )
 
-        val result = connector.registerWithId(requestWithId).futureValue
-
-        result.left.value mustEqual UnexpectedResponse(500)
+        connector.registerWithId(requestWithId).failed.futureValue
       }
 
-      "and return an error when the server returns a payload that cannot be parsed" in {
+      "and return a failed when the server returns a payload that cannot be parsed" in {
 
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
@@ -200,9 +197,7 @@ class RegistrationConnectorSpec
             .willReturn(ok(Json.obj().toString))
         )
 
-        val result = connector.registerWithId(requestWithId).futureValue
-
-        result.left.value mustEqual UnableToParseResponse
+        connector.registerWithId(requestWithId).failed.futureValue
       }
     }
   }
@@ -223,7 +218,7 @@ class RegistrationConnectorSpec
 
         val responseCommon = ResponseCommon("OK")
         val responseDetailWithoutId = ResponseDetailWithoutId("safeId")
-        val expectedResponse = ResponseWithoutId(responseCommon, responseDetailWithoutId)
+        val expectedResponse = MatchResponseWithoutId(responseCommon, responseDetailWithoutId)
 
         val responsePayload = Json.obj(
           "registerWithIDResponse" -> Json.obj(
@@ -258,7 +253,7 @@ class RegistrationConnectorSpec
 
         val result = connector.registerWithoutId(requestWithoutId).futureValue
 
-        result.value mustEqual expectedResponse
+        result mustEqual expectedResponse
       }
 
       "and return not found when the server returns NOT_FOUND" in {
@@ -284,10 +279,10 @@ class RegistrationConnectorSpec
 
         val result = connector.registerWithoutId(requestWithoutId).futureValue
 
-        result.left.value mustEqual NotFound
+        result mustEqual NoMatchResponse
       }
 
-      "and return an error when the server returns an error response" in {
+      "and return a failed future when the server returns an error response" in {
 
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
@@ -308,12 +303,10 @@ class RegistrationConnectorSpec
             .willReturn(serverError())
         )
 
-        val result = connector.registerWithoutId(requestWithoutId).futureValue
-
-        result.left.value mustEqual UnexpectedResponse(500)
+        connector.registerWithoutId(requestWithoutId).failed.futureValue
       }
 
-      "and return an error when the server returns a payload that cannot be parsed" in {
+      "and return a failed future when the server returns a payload that cannot be parsed" in {
 
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
@@ -334,9 +327,7 @@ class RegistrationConnectorSpec
             .willReturn(ok(Json.obj().toString))
         )
 
-        val result = connector.registerWithoutId(requestWithoutId).futureValue
-
-        result.left.value mustEqual UnableToParseResponse
+        connector.registerWithoutId(requestWithoutId).failed.futureValue
       }
     }
   }

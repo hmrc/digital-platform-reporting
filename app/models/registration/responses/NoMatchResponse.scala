@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 
-package connectors
+package models.registration.responses
 
-object RegistrationConnectorExceptions {
-
-  case object NotFound extends Exception
-  case object UnableToParseResponse extends Exception
-  final case class UnexpectedResponse(status: Int) extends Exception
-}
+case object NoMatchResponse extends ResponseWithId with ResponseWithoutId

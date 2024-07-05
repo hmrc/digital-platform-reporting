@@ -29,19 +29,16 @@ object OrganisationWithUtr {
   implicit lazy val reads: Reads[OrganisationWithUtr] =
       (__ \ "type")
         .read[String]
-        .flatMap[String] { t =>
+        .flatMap { t =>
           if (t == "organisation") {
-            Reads(_ => JsSuccess(t))
+            (
+              (__ \ "utr").read[String] and
+              (__ \ "details").readNullable[OrganisationDetails]
+            )(OrganisationWithUtr(_, _))
           } else {
-            Reads(_ => JsError("type must equal `organisation`"))
+            Reads.failed("type must equal `organisation`")
           }
         }
-        .andKeep(
-          (
-            (__ \ "utr").read[String] and
-            (__ \ "details").readNullable[OrganisationDetails]
-          )(OrganisationWithUtr(_, _))
-        )
   
   implicit lazy val writes: OWrites[OrganisationWithUtr] = new OWrites[OrganisationWithUtr]:
     override def writes(o: OrganisationWithUtr): JsObject = {

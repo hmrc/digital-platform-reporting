@@ -16,34 +16,23 @@
 
 package connectors
 
-import connectors.RegistrationConnectorExceptions.*
 import logging.Logging
-import models.registration.responses.ResponseWithoutId
+import models.registration.responses.*
 import play.api.http.Status.{NOT_FOUND, OK}
 import play.api.libs.json.*
 import uk.gov.hmrc.http.{HttpReads, HttpResponse}
 
 object RegistrationWithoutIdParser {
 
-  implicit object RegistrationWithoutIdReads extends HttpReads[Either[Exception, ResponseWithoutId]] with Logging {
+  implicit object RegistrationWithoutIdReads extends HttpReads[ResponseWithoutId] with Logging {
 
-    override def read(method: String, url: String, response: HttpResponse): Either[Exception, ResponseWithoutId] =
+    override def read(method: String, url: String, response: HttpResponse): ResponseWithoutId =
       response.status match {
         case OK =>
-          response.json.validate[ResponseWithoutId] match {
-            case JsSuccess(model, _) =>
-              Right(model)
-            case JsError(errors) =>
-              logger.warn(s"Unable to parse response: $errors")
-              Left(UnableToParseResponse)
-          }
+          response.json.as[MatchResponseWithoutId]
 
         case NOT_FOUND =>
-          Left(NotFound)
-
-        case status =>
-          logger.warn(s"Error response: $status")
-          Left(UnexpectedResponse(status))
+          NoMatchResponse
       }
   }
 }

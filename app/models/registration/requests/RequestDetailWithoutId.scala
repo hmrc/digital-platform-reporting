@@ -26,10 +26,11 @@ object RequestDetailWithoutId {
   implicit lazy val reads: Reads[RequestDetailWithoutId] =
     IndividualWithoutId.reads.widen or OrganisationWithoutId.reads.widen
   
-  implicit lazy val writes: OWrites[RequestDetailWithoutId] = new OWrites[RequestDetailWithoutId]:
+  implicit lazy val writes: OWrites[RequestDetailWithoutId] = new OWrites[RequestDetailWithoutId] {
     override def writes(o: RequestDetailWithoutId): JsObject =
       o match {
-        case x: IndividualWithoutId   => Json.toJsObject(x)(IndividualWithoutId.writes)
+        case x: IndividualWithoutId => Json.toJsObject(x)(IndividualWithoutId.writes)
         case x: OrganisationWithoutId => Json.toJsObject(x)(OrganisationWithoutId.writes)
       }
+  }
 }

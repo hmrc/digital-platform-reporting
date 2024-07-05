@@ -16,7 +16,7 @@
 
 package controllers
 
-import connectors.{RegistrationConnector, RegistrationConnectorExceptions}
+import connectors.RegistrationConnector
 import models.registration.requests.*
 import models.registration.responses.*
 import play.api.libs.json.Json
@@ -45,27 +45,21 @@ class RegistrationController @Inject()(
         case r: RequestDetailWithId =>
           val request = RequestWithId(requestCommon, r)
           connector.registerWithId(request).map {
-            case Right(result) =>
-              Ok(Json.toJson(result.responseDetail))
+            case response: MatchResponseWithId =>
+              Ok(Json.toJson(response.responseDetail))
               
-            case Left(RegistrationConnectorExceptions.NotFound) =>
+            case NoMatchResponse =>
               NotFound
-
-            case Left(e) =>
-              InternalServerError
           }
 
         case r: RequestDetailWithoutId =>
           val request = RequestWithoutId(requestCommon, r)
           connector.registerWithoutId(request).map {
-            case Right(result) =>
-              Ok(Json.toJson(result.responseDetail))
-
-            case Left(RegistrationConnectorExceptions.NotFound) =>
+            case response: MatchResponseWithoutId =>
+              Ok(Json.toJson(response.responseDetail))
+              
+            case NoMatchResponse =>
               NotFound
-
-            case Left(_) =>
-              InternalServerError
           }
       }
   }

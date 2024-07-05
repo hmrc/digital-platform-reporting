@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-package connectors
+package models.registration.responses
 
-import logging.Logging
-import models.registration.responses.*
-import play.api.http.Status.{NOT_FOUND, OK}
+import play.api.libs.functional.syntax.*
 import play.api.libs.json.*
-import uk.gov.hmrc.http.{HttpReads, HttpResponse}
 
-object RegistrationWithIdParser {
+final case class MatchResponseWithId(
+                                      responseCommon: ResponseCommon,
+                                      responseDetail: ResponseDetailWithId
+                                    ) extends ResponseWithId
 
-  implicit object RegistrationWithIdReads extends HttpReads[ResponseWithId] with Logging {
+object MatchResponseWithId {
 
-    override def read(method: String, url: String, response: HttpResponse): ResponseWithId =
-      response.status match {
-        case OK =>
-          response.json.as[MatchResponseWithId]
-          
-        case NOT_FOUND =>
-          NoMatchResponse
-      }
-  }
+  implicit lazy val reads: Reads[MatchResponseWithId] =
+    (
+      (__ \ "registerWithIDResponse" \ "responseCommon").read[ResponseCommon] and
+      (__ \ "registerWithIDResponse" \ "responseDetail").read[ResponseDetailWithId]
+    )(MatchResponseWithId(_, _))
 }

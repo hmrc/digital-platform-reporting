@@ -46,7 +46,7 @@ class RegistrationConnector @Inject()(
   private val baseRegisterWithoutIdUrl = configuration.get[Service]("microservice.services.register-without-id").baseUrl
   private val registerWithoutIdBearerToken = configuration.get[String]("microservice.services.register-without-id.bearerToken")
 
-  def registerWithId(request: RequestWithId)(implicit hc: HeaderCarrier): Future[Either[Exception, ResponseWithId]] =
+  def registerWithId(request: RequestWithId)(implicit hc: HeaderCarrier): Future[ResponseWithId] =
     httpClient.post(url"$baseRegisterWithIdUrl/dac6/DPRS0102/v1")
       .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer $registerWithIdBearerToken")
       .setHeader("X-Correlation-ID" -> uuidService.generate())
@@ -54,9 +54,9 @@ class RegistrationConnector @Inject()(
       .setHeader(HeaderNames.CONTENT_TYPE -> "application/json")
       .setHeader(HeaderNames.ACCEPT -> "application/json")
       .withBody(Json.toJson(request))
-      .execute[Either[Exception, ResponseWithId]]
+      .execute[ResponseWithId]
 
-  def registerWithoutId(request: RequestWithoutId)(implicit hc: HeaderCarrier): Future[Either[Exception, ResponseWithoutId]] =
+  def registerWithoutId(request: RequestWithoutId)(implicit hc: HeaderCarrier): Future[ResponseWithoutId] =
     httpClient.post(url"$baseRegisterWithoutIdUrl/dac6/DPRS0101/v1")
       .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer $registerWithoutIdBearerToken")
       .setHeader("X-Correlation-ID" -> uuidService.generate())
@@ -64,5 +64,5 @@ class RegistrationConnector @Inject()(
       .setHeader(HeaderNames.CONTENT_TYPE -> "application/json")
       .setHeader(HeaderNames.ACCEPT -> "application/json")
       .withBody(Json.toJson(request))
-      .execute[Either[Exception, ResponseWithoutId]]
+      .execute[ResponseWithoutId]
 }

@@ -31,7 +31,7 @@ object IndividualWithNino {
   
   implicit lazy val reads: Reads[IndividualWithNino] = Json.reads
   
-  implicit lazy val writes: OWrites[IndividualWithNino] = new OWrites[IndividualWithNino]:
+  implicit lazy val writes: OWrites[IndividualWithNino] = new OWrites[IndividualWithNino] {
     override def writes(o: IndividualWithNino): JsObject =
       Json.obj(
         "IDType" -> "NINO",
@@ -44,4 +44,5 @@ object IndividualWithNino {
           "dateOfBirth" -> o.dateOfBirth
         )
       )
+  }
 }

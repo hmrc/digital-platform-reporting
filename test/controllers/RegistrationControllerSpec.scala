@@ -16,7 +16,7 @@
 
 package controllers
 
-import connectors.{RegistrationConnector, RegistrationConnectorExceptions}
+import connectors.RegistrationConnector
 import models.registration.Address
 import models.registration.requests.*
 import models.registration.responses.*
@@ -82,12 +82,12 @@ class RegistrationControllerSpec
         )
 
         val responseDetail = ResponseDetailWithId("safeId", Address("addressLine1", None, None, None, Some("postcode"), "GB"), None)
-        val fullResponse = ResponseWithId(
+        val fullResponse = MatchResponseWithId(
           ResponseCommon("OK"),
           responseDetail
         )
 
-        when(mockConnector.registerWithId(any())(any())).thenReturn(Future.successful(Right(fullResponse)))
+        when(mockConnector.registerWithId(any())(any())).thenReturn(Future.successful(fullResponse))
         when(mockUuidService.generate()).thenReturn(acknowledgementReference)
 
         val payload = Json.obj(
@@ -115,12 +115,12 @@ class RegistrationControllerSpec
         )
 
         val responseDetail = ResponseDetailWithoutId("safeId")
-        val fullResponse = ResponseWithoutId(
+        val fullResponse = MatchResponseWithoutId(
           ResponseCommon("OK"),
           responseDetail
         )
 
-        when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.successful(Right(fullResponse)))
+        when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.successful(fullResponse))
         when(mockUuidService.generate()).thenReturn(acknowledgementReference)
 
         val payload = Json.obj(
@@ -148,7 +148,7 @@ class RegistrationControllerSpec
 
       "when a `with Id` request was not matched" in {
 
-        when(mockConnector.registerWithId(any())(any())).thenReturn(Future.successful(Left(RegistrationConnectorExceptions.NotFound)))
+        when(mockConnector.registerWithId(any())(any())).thenReturn(Future.successful(NoMatchResponse))
         when(mockUuidService.generate()).thenReturn(acknowledgementReference)
 
         val payload = Json.obj(
@@ -167,7 +167,7 @@ class RegistrationControllerSpec
 
       "when a `without Id` request was not matched" in {
 
-        when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.successful(Left(RegistrationConnectorExceptions.NotFound)))
+        when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.successful(NoMatchResponse))
         when(mockUuidService.generate()).thenReturn(acknowledgementReference)
 
         val payload = Json.obj(
@@ -189,11 +189,11 @@ class RegistrationControllerSpec
       }
     }
 
-    "must return InternalServerError" - {
+    "must fail" - {
 
       "when a `with Id` request to the backend fails" in {
 
-        when(mockConnector.registerWithId(any())(any())).thenReturn(Future.successful(Left(RegistrationConnectorExceptions.UnexpectedResponse(500))))
+        when(mockConnector.registerWithId(any())(any())).thenReturn(Future.failed(new Exception("foo")))
         when(mockUuidService.generate()).thenReturn(acknowledgementReference)
 
         val payload = Json.obj(
@@ -205,14 +205,12 @@ class RegistrationControllerSpec
           FakeRequest(routes.RegistrationController.register())
             .withJsonBody(payload)
 
-        val result = route(app, request).value
-
-        status(result) mustEqual INTERNAL_SERVER_ERROR
+        route(app, request).value.failed
       }
 
       "when a `without Id` request to the backend fails" in {
 
-        when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.successful(Left(RegistrationConnectorExceptions.UnexpectedResponse(500))))
+        when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.failed(new Exception("foo")))
         when(mockUuidService.generate()).thenReturn(acknowledgementReference)
 
         val payload = Json.obj(
@@ -228,9 +226,7 @@ class RegistrationControllerSpec
           FakeRequest(routes.RegistrationController.register())
             .withJsonBody(payload)
 
-        val result = route(app, request).value
-
-        status(result) mustEqual INTERNAL_SERVER_ERROR
+        route(app, request).value.failed
       }
     }
   }
