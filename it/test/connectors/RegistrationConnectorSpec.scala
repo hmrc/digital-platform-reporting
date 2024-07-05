@@ -221,7 +221,7 @@ class RegistrationConnectorSpec
         val expectedResponse = MatchResponseWithoutId(responseCommon, responseDetailWithoutId)
 
         val responsePayload = Json.obj(
-          "registerWithIDResponse" -> Json.obj(
+          "registerWithoutIDResponse" -> Json.obj(
             "responseCommon" -> Json.obj(
               "status" -> "OK"
             ),
