@@ -67,7 +67,8 @@ class RegistrationControllerSpec
       )
       .build()
     
-  private val acknowledgementReference = UUID.randomUUID().toString
+  private val acknowledgementReferenceUuid = UUID.randomUUID().toString
+  private val acknowledgementReference = acknowledgementReferenceUuid.replace("-", "")
     
   ".register" - {
     
@@ -88,7 +89,7 @@ class RegistrationControllerSpec
         )
 
         when(mockConnector.registerWithId(any())(any())).thenReturn(Future.successful(fullResponse))
-        when(mockUuidService.generate()).thenReturn(acknowledgementReference)
+        when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
 
         val payload = Json.obj(
           "type" -> "organisation",
@@ -121,7 +122,7 @@ class RegistrationControllerSpec
         )
 
         when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.successful(fullResponse))
-        when(mockUuidService.generate()).thenReturn(acknowledgementReference)
+        when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
 
         val payload = Json.obj(
           "name" -> "name",
@@ -149,7 +150,7 @@ class RegistrationControllerSpec
       "when a `with Id` request was not matched" in {
 
         when(mockConnector.registerWithId(any())(any())).thenReturn(Future.successful(NoMatchResponse))
-        when(mockUuidService.generate()).thenReturn(acknowledgementReference)
+        when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
 
         val payload = Json.obj(
           "type" -> "organisation",
@@ -168,7 +169,7 @@ class RegistrationControllerSpec
       "when a `without Id` request was not matched" in {
 
         when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.successful(NoMatchResponse))
-        when(mockUuidService.generate()).thenReturn(acknowledgementReference)
+        when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
 
         val payload = Json.obj(
           "name" -> "name",
@@ -194,7 +195,7 @@ class RegistrationControllerSpec
       "when a `with Id` request to the backend fails" in {
 
         when(mockConnector.registerWithId(any())(any())).thenReturn(Future.failed(new Exception("foo")))
-        when(mockUuidService.generate()).thenReturn(acknowledgementReference)
+        when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
 
         val payload = Json.obj(
           "type" -> "organisation",
@@ -211,7 +212,7 @@ class RegistrationControllerSpec
       "when a `without Id` request to the backend fails" in {
 
         when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.failed(new Exception("foo")))
-        when(mockUuidService.generate()).thenReturn(acknowledgementReference)
+        when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
 
         val payload = Json.obj(
           "name" -> "name",
