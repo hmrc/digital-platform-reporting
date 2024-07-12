@@ -39,7 +39,7 @@ class RegistrationController @Inject()(
   def register(): Action[RequestDetail] = Action(parse.json[RequestDetail]).async {
     implicit request =>
       
-      val requestCommon = RequestCommon(clock.instant(), uuidService.generate())
+      val requestCommon = RequestCommon(clock.instant(), uuidService.generate().replace("-", ""))
       
       request.body match {
         case r: RequestDetailWithId =>
