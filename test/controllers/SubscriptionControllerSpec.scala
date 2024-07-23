@@ -17,6 +17,7 @@
 package controllers
 
 import connectors.SubscriptionConnector
+import models.subscription.*
 import models.subscription.requests.*
 import models.subscription.responses.*
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
@@ -61,15 +62,17 @@ class SubscriptionControllerSpec
 
       "when a subscription call was successful" in {
 
-        val individual = IndividualContact("first", "last", "email", None)
+        val individual = IndividualContact(Individual("first", "last"), "email", None)
         val subscriptionRequest = SubscriptionRequest("safe", true, None, individual, None)
         val subscriptionResponse = SubscriptionResponse("dprs id")
         val payload = Json.obj(
           "safeId" -> "safe",
           "gbUser"  -> true,
           "primaryContact" -> Json.obj(
-            "firstName" -> "first",
-            "lastName" -> "last",
+            "individual" -> Json.obj(
+              "firstName" -> "first",
+              "lastName" -> "last"
+            ),
             "email" -> "email"
           )
         )
@@ -98,8 +101,10 @@ class SubscriptionControllerSpec
           "safeId" -> "safe",
           "gbUser"  -> false,
           "primaryContact" -> Json.obj(
-            "firstName" -> "first",
-            "lastName" -> "last",
+            "individual" -> Json.obj(
+              "firstName" -> "first",
+              "lastName" -> "last"
+            ),
             "email" -> "email"
           )
         )

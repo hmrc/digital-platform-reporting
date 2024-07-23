@@ -20,7 +20,7 @@ import config.Service
 
 import javax.inject.Inject
 import models.subscription.requests.SubscriptionRequest
-import models.subscription.responses.SubscriptionResponse
+import models.subscription.responses.{SubscriptionInfo, SubscriptionResponse}
 import play.api.Configuration
 import play.api.http.HeaderNames
 import play.api.libs.json.*
@@ -57,4 +57,13 @@ class SubscriptionConnector @Inject()(
       .setHeader(HeaderNames.DATE -> dateFormat.format(clock.instant()))
       .withBody(Json.toJson(request))
       .execute[SubscriptionResponse]
+    
+  def get(dprsId: String)(implicit hc: HeaderCarrier): Future[SubscriptionInfo] =
+    httpClient.get(url"$baseSubscribeUrl/dac6/dprs0202/v1/$dprsId")
+      .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer $subscribeBearerToken")
+      .setHeader("X-Correlation-ID" -> uuidService.generate())
+      .setHeader("X-Conversation-ID" -> uuidService.generate())
+      .setHeader(HeaderNames.ACCEPT -> "application/json")
+      .setHeader(HeaderNames.DATE -> dateFormat.format(clock.instant()))
+      .execute[SubscriptionInfo]
 }

@@ -17,8 +17,9 @@
 package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
-import models.subscription.requests.{OrganisationContact, SubscriptionRequest}
-import models.subscription.responses.SubscriptionResponse
+import models.subscription.*
+import models.subscription.requests.SubscriptionRequest
+import models.subscription.responses.{SubscriptionInfo, SubscriptionResponse}
 import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
@@ -82,7 +83,7 @@ class SubscriptionConnectorSpec
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
-        val request = SubscriptionRequest("safe id", true, None, OrganisationContact("name", "email", None), None)
+        val request = SubscriptionRequest("safe id", true, None, OrganisationContact(Organisation("name"), "email", None), None)
         val responsePayload = Json.obj(
           "success" -> Json.obj(
             "processingDate" -> "2000-01-02T03:04:56Z",
@@ -113,7 +114,7 @@ class SubscriptionConnectorSpec
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
-        val request = SubscriptionRequest("safe id", true, None, OrganisationContact("name", "email", None), None)
+        val request = SubscriptionRequest("safe id", true, None, OrganisationContact(Organisation("name"), "email", None), None)
 
         wireMockServer.stubFor(
           post(urlMatching(".*/dac6/dprs0201/v1"))
@@ -127,8 +128,50 @@ class SubscriptionConnectorSpec
             .willReturn(serverError())
         )
 
-        val result = connector.subscribe(request).failed.futureValue
+        connector.subscribe(request).failed.futureValue
       }
+    }
+  }
+  
+  ".get" - {
+    
+    "must return subscription info when the server returns OK" in {
+
+      when(mockUuidService.generate())
+        .thenReturn(correlationId.toString, conversationId.toString)
+      
+      val responsePayload = Json.obj(
+        "success" -> Json.obj(
+          "processingDate" -> "2000-01-02T03:04:56Z",
+          "customer" -> Json.obj(
+            "id" -> "DPRS123",
+            "gbUser" -> true,
+            "primaryContact" -> Json.obj(
+              "individual" -> Json.obj(
+                "firstName" -> "first",
+                "lastName" -> "last"
+              ),
+              "email" -> "email"
+            )
+          )
+        )
+      )
+      val expectedIndividual = IndividualContact(Individual("first", "last"), "email", None)
+      val expectedResponse = SubscriptionInfo("DPRS123", true, None, expectedIndividual, None)
+
+      wireMockServer.stubFor(
+        get(urlMatching(".*/dac6/dprs0202/v1/DPRS123"))
+          .withHeader("Authorization", equalTo("Bearer token"))
+          .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+          .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+          .withHeader("Accept", equalTo("application/json"))
+          .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+          .willReturn(ok(responsePayload.toString))
+      )
+
+      val result = connector.get("DPRS123").futureValue
+
+      result mustEqual expectedResponse
     }
   }
 }

@@ -16,6 +16,7 @@
 
 package models.subscription.requests
 
+import models.subscription.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
@@ -24,8 +25,8 @@ class SubscriptionRequestSpec extends AnyFreeSpec with Matchers {
 
   "subscription request" - {
     
-    val organisationContact = OrganisationContact("name", "email", Some("phone"))
-    val individualContact = IndividualContact("first", "last", "email", None)
+    val organisationContact = OrganisationContact(Organisation("name"), "email", Some("phone"))
+    val individualContact = IndividualContact(Individual("first", "last"), "email", None)
 
     "must serialise with optional fields missing" in {
 

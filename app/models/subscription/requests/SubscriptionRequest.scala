@@ -16,6 +16,7 @@
 
 package models.subscription.requests
 
+import models.subscription.Contact
 import play.api.libs.functional.syntax.*
 import play.api.libs.json.*
 
