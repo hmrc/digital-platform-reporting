@@ -2,4 +2,5 @@
 
 POST        /register               controllers.RegistrationController.register()
 
+GET         /subscribe              controllers.SubscriptionController.get()
 POST        /subscribe              controllers.SubscriptionController.subscribe()

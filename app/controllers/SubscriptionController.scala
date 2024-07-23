@@ -17,16 +17,18 @@
 package controllers
 
 import connectors.SubscriptionConnector
+import controllers.actions.AuthAction
 import models.subscription.requests.SubscriptionRequest
 import play.api.libs.json.Json
-import play.api.mvc.{Action, ControllerComponents}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext
 
 class SubscriptionController @Inject()(cc: ControllerComponents,
-                                       connector: SubscriptionConnector)
+                                       connector: SubscriptionConnector,
+                                       authenticate: AuthAction)
                                       (implicit ec: ExecutionContext)
   extends BackendController(cc) {
 
@@ -34,6 +36,13 @@ class SubscriptionController @Inject()(cc: ControllerComponents,
     implicit request =>
       connector
         .subscribe(request.body)
+        .map(response => Ok(Json.toJson(response)))
+  }
+  
+  def get(): Action[AnyContent] = authenticate(parse.default).async {
+    implicit request =>
+      connector
+        .get(request.dprsId)
         .map(response => Ok(Json.toJson(response)))
   }
 }
