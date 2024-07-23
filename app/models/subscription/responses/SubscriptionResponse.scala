@@ -24,4 +24,6 @@ object SubscriptionResponse {
   
   implicit lazy val reads: Reads[SubscriptionResponse] =
     (__ \ "success" \ "dprsReference").read[String].map(SubscriptionResponse.apply)
+    
+  implicit lazy val writes: OWrites[SubscriptionResponse] = Json.writes
 }
