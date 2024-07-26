@@ -50,6 +50,9 @@ class RegistrationController @Inject()(
               
             case NoMatchResponse =>
               NotFound
+
+            case AlreadySubscribedResponse =>
+              Conflict
           }
 
         case r: RequestDetailWithoutId =>
@@ -60,6 +63,9 @@ class RegistrationController @Inject()(
               
             case NoMatchResponse =>
               NotFound
+
+            case AlreadySubscribedResponse =>
+              Conflict
           }
       }
   }

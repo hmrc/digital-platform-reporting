@@ -154,6 +154,31 @@ class RegistrationConnectorSpec
         result mustEqual NoMatchResponse
       }
 
+      "and return already subscribed when the server returns CONFLICT" in {
+
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
+        val requestDetail = OrganisationWithUtr("utr", None)
+        val requestWithId = RequestWithId(requestCommon, requestDetail)
+
+        wireMockServer.stubFor(
+          post(urlMatching(".*/dac6/DPRS0102/v1"))
+            .withHeader("Authorization", equalTo("Bearer token"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withRequestBody(equalTo(Json.toJson(requestWithId).toString))
+            .willReturn(aResponse().withStatus(409))
+        )
+
+        val result = connector.registerWithId(requestWithId).futureValue
+
+        result mustEqual AlreadySubscribedResponse
+      }
+
       "and return a failed future when the server returns an error response" in {
 
         when(mockUuidService.generate())
@@ -280,6 +305,32 @@ class RegistrationConnectorSpec
         val result = connector.registerWithoutId(requestWithoutId).futureValue
 
         result mustEqual NoMatchResponse
+      }
+
+      "and return already subscribed when the server returns CONFLICT" in {
+
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
+        val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
+        val requestDetail = OrganisationWithoutId("name", address)
+        val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
+
+        wireMockServer.stubFor(
+          post(urlMatching(".*/dac6/DPRS0101/v1"))
+            .withHeader("Authorization", equalTo("Bearer token"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withRequestBody(equalTo(Json.toJson(requestWithoutId).toString))
+            .willReturn(aResponse().withStatus(409))
+        )
+
+        val result = connector.registerWithoutId(requestWithoutId).futureValue
+
+        result mustEqual AlreadySubscribedResponse
       }
 
       "and return a failed future when the server returns an error response" in {

@@ -190,6 +190,51 @@ class RegistrationControllerSpec
       }
     }
 
+    "must return Conflict" - {
+
+      "when a `with Id` request was  already subscribed" in {
+
+        when(mockConnector.registerWithId(any())(any())).thenReturn(Future.successful(AlreadySubscribedResponse))
+        when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
+
+        val payload = Json.obj(
+          "type" -> "organisation",
+          "utr" -> "123"
+        )
+
+        val request =
+          FakeRequest(routes.RegistrationController.register())
+            .withJsonBody(payload)
+
+        val result = route(app, request).value
+
+        status(result) mustEqual CONFLICT
+      }
+
+      "when a `without Id` request was already subscribed" in {
+
+        when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.successful(AlreadySubscribedResponse))
+        when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
+
+        val payload = Json.obj(
+          "name" -> "name",
+          "address"  -> Json.obj(
+            "addressLine1" -> "line 1",
+            "postalCode" -> "postcode",
+            "countryCode" -> "GB"
+          )
+        )
+
+        val request =
+          FakeRequest(routes.RegistrationController.register())
+            .withJsonBody(payload)
+
+        val result = route(app, request).value
+
+        status(result) mustEqual CONFLICT
+      }
+    }
+
     "must fail" - {
 
       "when a `with Id` request to the backend fails" in {
