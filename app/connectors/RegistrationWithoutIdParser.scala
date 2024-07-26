@@ -18,7 +18,7 @@ package connectors
 
 import logging.Logging
 import models.registration.responses.*
-import play.api.http.Status.{NOT_FOUND, OK}
+import play.api.http.Status.{CONFLICT, NOT_FOUND, OK}
 import play.api.libs.json.*
 import uk.gov.hmrc.http.{HttpReads, HttpResponse}
 
@@ -28,11 +28,9 @@ object RegistrationWithoutIdParser {
 
     override def read(method: String, url: String, response: HttpResponse): ResponseWithoutId =
       response.status match {
-        case OK =>
-          response.json.as[MatchResponseWithoutId]
-
-        case NOT_FOUND =>
-          NoMatchResponse
+        case OK => response.json.as[MatchResponseWithoutId]
+        case NOT_FOUND => NoMatchResponse
+        case CONFLICT => AlreadySubscribedResponse
       }
   }
 }
