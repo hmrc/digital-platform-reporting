@@ -20,9 +20,9 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
 
-class SubscriptionResponseSpec extends AnyFreeSpec with Matchers {
+class SubscribedResponseSpec extends AnyFreeSpec with Matchers {
 
-  "subscription response" - {
+  "subscribed response" - {
     
     "must deserialise" in {
       
@@ -33,7 +33,7 @@ class SubscriptionResponseSpec extends AnyFreeSpec with Matchers {
         )
       )
       
-      json.as[SubscriptionResponse] mustEqual SubscriptionResponse("ABC123")
+      json.as[SubscribedResponse] mustEqual SubscribedResponse("ABC123")
     }
   }
 }

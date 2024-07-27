@@ -20,13 +20,15 @@ import config.Service
 
 import javax.inject.Inject
 import models.subscription.requests.SubscriptionRequest
-import models.subscription.responses.{SubscriptionInfo, SubscriptionResponse}
+import models.subscription.responses.*
 import play.api.Configuration
 import play.api.http.HeaderNames
+import play.api.http.Status.{CONFLICT, CREATED}
 import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
@@ -56,7 +58,13 @@ class SubscriptionConnector @Inject()(
       .setHeader(HeaderNames.ACCEPT -> "application/json")
       .setHeader(HeaderNames.DATE -> dateFormat.format(clock.instant()))
       .withBody(Json.toJson(request))
-      .execute[SubscriptionResponse]
+      .execute[HttpResponse]
+      .map { response =>
+        response.status match {
+          case CREATED => response.json.as[SubscribedResponse]
+          case CONFLICT => AlreadySubscribedResponse
+        }
+      }
     
   def get(dprsId: String)(implicit hc: HeaderCarrier): Future[SubscriptionInfo] =
     httpClient.get(url"$baseSubscribeUrl/dac6/dprs0202/v1/$dprsId")

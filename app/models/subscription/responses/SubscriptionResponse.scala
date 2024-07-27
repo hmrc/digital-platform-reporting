@@ -18,12 +18,16 @@ package models.subscription.responses
 
 import play.api.libs.json.*
 
-final case class SubscriptionResponse(dprsId: String)
+sealed trait SubscriptionResponse
 
-object SubscriptionResponse {
+final case class SubscribedResponse(dprsId: String) extends SubscriptionResponse
+
+object SubscribedResponse {
   
-  implicit lazy val reads: Reads[SubscriptionResponse] =
-    (__ \ "success" \ "dprsReference").read[String].map(SubscriptionResponse.apply)
+  implicit lazy val reads: Reads[SubscribedResponse] =
+    (__ \ "success" \ "dprsReference").read[String].map(SubscribedResponse.apply)
     
-  implicit lazy val writes: OWrites[SubscriptionResponse] = Json.writes
+  implicit lazy val writes: OWrites[SubscribedResponse] = Json.writes
 }
+
+case object AlreadySubscribedResponse extends SubscriptionResponse

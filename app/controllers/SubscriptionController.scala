@@ -19,6 +19,7 @@ package controllers
 import connectors.SubscriptionConnector
 import controllers.actions.AuthAction
 import models.subscription.requests.SubscriptionRequest
+import models.subscription.responses.{AlreadySubscribedResponse, SubscribedResponse}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -36,7 +37,10 @@ class SubscriptionController @Inject()(cc: ControllerComponents,
     implicit request =>
       connector
         .subscribe(request.body)
-        .map(response => Ok(Json.toJson(response)))
+        .map {
+          case x: SubscribedResponse => Ok(Json.toJson(x))
+          case AlreadySubscribedResponse => Conflict
+        }
   }
   
   def get(): Action[AnyContent] = authenticate(parse.default).async {

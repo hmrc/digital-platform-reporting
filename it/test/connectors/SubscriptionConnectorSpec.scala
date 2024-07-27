@@ -19,7 +19,7 @@ package connectors
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import models.subscription.*
 import models.subscription.requests.SubscriptionRequest
-import models.subscription.responses.{SubscriptionInfo, SubscriptionResponse}
+import models.subscription.responses.*
 import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
@@ -78,7 +78,7 @@ class SubscriptionConnectorSpec
     
     "must post a request" - {
 
-      "and return the response when the server returns OK" in {
+      "and return the response when the server returns CREATED" in {
 
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
@@ -90,7 +90,7 @@ class SubscriptionConnectorSpec
             "dprsReference" -> "123"
           )
         )
-        val expectedResponse = SubscriptionResponse("123")
+        val expectedResponse = SubscribedResponse("123")
 
         wireMockServer.stubFor(
           post(urlMatching(".*/dac6/dprs0201/v1"))
@@ -101,12 +101,40 @@ class SubscriptionConnectorSpec
             .withHeader("Accept", equalTo("application/json"))
             .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
             .withRequestBody(equalTo(Json.toJson(request).toString))
-            .willReturn(ok(responsePayload.toString))
+            .willReturn(
+              aResponse()
+                .withStatus(201)
+                .withBody(responsePayload.toString)
+            )
         )
 
         val result = connector.subscribe(request).futureValue
 
         result mustEqual expectedResponse
+      }
+
+      "and return already subscribed when the server returns CONFLICT" in {
+
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val request = SubscriptionRequest("safe id", true, None, OrganisationContact(Organisation("name"), "email", None), None)
+
+        wireMockServer.stubFor(
+          post(urlMatching(".*/dac6/dprs0201/v1"))
+            .withHeader("Authorization", equalTo("Bearer token"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+            .withRequestBody(equalTo(Json.toJson(request).toString))
+            .willReturn(aResponse().withStatus(409))
+        )
+
+        val result = connector.subscribe(request).futureValue
+
+        result mustEqual AlreadySubscribedResponse
       }
 
       "and return a failed future when the server returns an error" in {
