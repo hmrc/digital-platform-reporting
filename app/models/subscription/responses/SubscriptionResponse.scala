@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
-package config
+package models.subscription.responses
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+import play.api.libs.json.*
 
-@Singleton
-class AppConfig @Inject()(config: Configuration) {
+sealed trait SubscriptionResponse
 
-  val appName: String = config.get[String]("appName")
+final case class SubscribedResponse(dprsId: String) extends SubscriptionResponse
+
+object SubscribedResponse {
+  
+  implicit lazy val reads: Reads[SubscribedResponse] =
+    (__ \ "success" \ "dprsReference").read[String].map(SubscribedResponse.apply)
+    
+  implicit lazy val writes: OWrites[SubscribedResponse] = Json.writes
 }
+
+case object AlreadySubscribedResponse extends SubscriptionResponse

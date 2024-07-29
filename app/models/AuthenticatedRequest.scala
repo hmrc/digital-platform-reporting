@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
-package config
+package models
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+import play.api.mvc.{Request, WrappedRequest}
 
-@Singleton
-class AppConfig @Inject()(config: Configuration) {
-
-  val appName: String = config.get[String]("appName")
-}
+final case class AuthenticatedRequest[A](request: Request[A],
+                                         dprsId: String) extends WrappedRequest[A](request)

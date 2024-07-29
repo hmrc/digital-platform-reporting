@@ -14,13 +14,26 @@
  * limitations under the License.
  */
 
-package config
+package models.subscription.responses
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.must.Matchers
+import play.api.libs.json.Json
 
-@Singleton
-class AppConfig @Inject()(config: Configuration) {
+class SubscribedResponseSpec extends AnyFreeSpec with Matchers {
 
-  val appName: String = config.get[String]("appName")
+  "subscribed response" - {
+    
+    "must deserialise" in {
+      
+      val json = Json.obj(
+        "success" -> Json.obj(
+          "processingDate" -> "2000-01-02T03:04:56Z",
+          "dprsReference" -> "ABC123"
+        )
+      )
+      
+      json.as[SubscribedResponse] mustEqual SubscribedResponse("ABC123")
+    }
+  }
 }
