@@ -19,26 +19,23 @@ package connectors
 import config.Service
 import connectors.RegistrationWithIdParser.*
 import connectors.RegistrationWithoutIdParser.*
-
-import javax.inject.Inject
 import models.registration.requests.{RequestWithId, RequestWithoutId}
 import models.registration.responses.{ResponseWithId, ResponseWithoutId}
 import play.api.Configuration
 import play.api.http.HeaderNames
 import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
+import services.UuidService
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import services.UuidService
+import javax.inject.Inject
+import scala.concurrent.{ExecutionContext, Future}
 
-class RegistrationConnector @Inject()(
-                                       configuration: Configuration,
-                                       httpClient: HttpClientV2,
-                                       uuidService: UuidService
-                                     )(implicit ec: ExecutionContext) {
+class RegistrationConnector @Inject()(configuration: Configuration,
+                                      httpClient: HttpClientV2,
+                                      uuidService: UuidService)
+                                     (implicit ec: ExecutionContext) {
 
   private val baseRegisterWithIdUrl = configuration.get[Service]("microservice.services.register-with-id").baseUrl
   private val registerWithIdBearerToken = configuration.get[String]("microservice.services.register-with-id.bearerToken")
@@ -47,7 +44,7 @@ class RegistrationConnector @Inject()(
   private val registerWithoutIdBearerToken = configuration.get[String]("microservice.services.register-without-id.bearerToken")
 
   def registerWithId(request: RequestWithId)(implicit hc: HeaderCarrier): Future[ResponseWithId] =
-    httpClient.post(url"$baseRegisterWithIdUrl/dac6/DPRS0102/v1")
+    httpClient.post(url"$baseRegisterWithIdUrl/dac6/dprs0102/v1")
       .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer $registerWithIdBearerToken")
       .setHeader("X-Correlation-ID" -> uuidService.generate())
       .setHeader("X-Conversation-ID" -> uuidService.generate())
@@ -57,7 +54,7 @@ class RegistrationConnector @Inject()(
       .execute[ResponseWithId]
 
   def registerWithoutId(request: RequestWithoutId)(implicit hc: HeaderCarrier): Future[ResponseWithoutId] =
-    httpClient.post(url"$baseRegisterWithoutIdUrl/dac6/DPRS0101/v1")
+    httpClient.post(url"$baseRegisterWithoutIdUrl/dac6/dprs0101/v1")
       .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer $registerWithoutIdBearerToken")
       .setHeader("X-Correlation-ID" -> uuidService.generate())
       .setHeader("X-Conversation-ID" -> uuidService.generate())

@@ -22,10 +22,10 @@ import models.registration.requests.*
 import models.registration.responses.*
 import org.mockito.Mockito
 import org.mockito.Mockito.when
-import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
@@ -39,15 +39,14 @@ import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneId}
 import java.util.UUID
 
-class RegistrationConnectorSpec
-  extends AnyFreeSpec
-    with Matchers
-    with ScalaFutures
-    with IntegrationPatience
-    with WireMockSupport
-    with MockitoSugar
-    with BeforeAndAfterEach
-    with EitherValues {
+class RegistrationConnectorSpec extends AnyFreeSpec
+  with Matchers
+  with ScalaFutures
+  with IntegrationPatience
+  with WireMockSupport
+  with MockitoSugar
+  with BeforeAndAfterEach
+  with EitherValues {
 
   private val instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
   private val stubClock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
@@ -79,11 +78,8 @@ class RegistrationConnectorSpec
   implicit private lazy val hc: HeaderCarrier = HeaderCarrier()
 
   ".registerWithId" - {
-
     "must post a request" - {
-
       "and return the response when the server returns OK" in {
-
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
@@ -114,7 +110,7 @@ class RegistrationConnectorSpec
         )
 
         wireMockServer.stubFor(
-          post(urlMatching(".*/dac6/DPRS0102/v1"))
+          post(urlMatching(".*/dac6/dprs0102/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -130,7 +126,6 @@ class RegistrationConnectorSpec
       }
 
       "and return not found when the server returns NOT_FOUND" in {
-
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
@@ -139,7 +134,7 @@ class RegistrationConnectorSpec
         val requestWithId = RequestWithId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
-          post(urlMatching(".*/dac6/DPRS0102/v1"))
+          post(urlMatching(".*/dac6/dprs0102/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -164,7 +159,7 @@ class RegistrationConnectorSpec
         val requestWithId = RequestWithId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
-          post(urlMatching(".*/dac6/DPRS0102/v1"))
+          post(urlMatching(".*/dac6/dprs0102/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -180,7 +175,6 @@ class RegistrationConnectorSpec
       }
 
       "and return a failed future when the server returns an error response" in {
-
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
@@ -189,7 +183,7 @@ class RegistrationConnectorSpec
         val requestWithId = RequestWithId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
-          post(urlMatching(".*/dac6/DPRS0102/v1"))
+          post(urlMatching(".*/dac6/dprs0102/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -203,7 +197,6 @@ class RegistrationConnectorSpec
       }
 
       "and return a failed when the server returns a payload that cannot be parsed" in {
-
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
@@ -212,7 +205,7 @@ class RegistrationConnectorSpec
         val requestWithId = RequestWithId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
-          post(urlMatching(".*/dac6/DPRS0102/v1"))
+          post(urlMatching(".*/dac6/dprs0102/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -228,13 +221,9 @@ class RegistrationConnectorSpec
   }
 
   ".registerWithoutId" - {
-
     "must post a request" - {
-
       "and return the response when the server returns OK" in {
-
-        when(mockUuidService.generate())
-          .thenReturn(correlationId.toString, conversationId.toString)
+        when(mockUuidService.generate()).thenReturn(correlationId.toString, conversationId.toString)
 
         val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
         val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
@@ -266,7 +255,7 @@ class RegistrationConnectorSpec
         )
 
         wireMockServer.stubFor(
-          post(urlMatching(".*/dac6/DPRS0101/v1"))
+          post(urlMatching(".*/dac6/dprs0101/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -282,7 +271,6 @@ class RegistrationConnectorSpec
       }
 
       "and return not found when the server returns NOT_FOUND" in {
-
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
@@ -292,7 +280,7 @@ class RegistrationConnectorSpec
         val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
-          post(urlMatching(".*/dac6/DPRS0101/v1"))
+          post(urlMatching(".*/dac6/dprs0101/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -318,7 +306,7 @@ class RegistrationConnectorSpec
         val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
-          post(urlMatching(".*/dac6/DPRS0101/v1"))
+          post(urlMatching(".*/dac6/dprs0101/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -334,7 +322,6 @@ class RegistrationConnectorSpec
       }
 
       "and return a failed future when the server returns an error response" in {
-
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
@@ -344,7 +331,7 @@ class RegistrationConnectorSpec
         val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
-          post(urlMatching(".*/dac6/DPRS0101/v1"))
+          post(urlMatching(".*/dac6/dprs0101/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -358,7 +345,6 @@ class RegistrationConnectorSpec
       }
 
       "and return a failed future when the server returns a payload that cannot be parsed" in {
-
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
@@ -368,7 +354,7 @@ class RegistrationConnectorSpec
         val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
-          post(urlMatching(".*/dac6/DPRS0101/v1"))
+          post(urlMatching(".*/dac6/dprs0101/v1"))
             .withHeader("Authorization", equalTo("Bearer token"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
