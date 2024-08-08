@@ -38,10 +38,10 @@ class RegistrationConnector @Inject()(configuration: Configuration,
                                      (implicit ec: ExecutionContext) {
 
   private val baseRegisterWithIdUrl = configuration.get[Service]("microservice.services.register-with-id").baseUrl
-  private val registerWithIdBearerToken = configuration.get[String]("microservice.services.register-with-id.bearerToken")
+  private val registerWithIdBearerToken = configuration.get[String]("microservice.services.register-with-id.bearer-token")
 
   private val baseRegisterWithoutIdUrl = configuration.get[Service]("microservice.services.register-without-id").baseUrl
-  private val registerWithoutIdBearerToken = configuration.get[String]("microservice.services.register-without-id.bearerToken")
+  private val registerWithoutIdBearerToken = configuration.get[String]("microservice.services.register-without-id.bearer-token")
 
   def registerWithId(request: RequestWithId)(implicit hc: HeaderCarrier): Future[ResponseWithId] =
     httpClient.post(url"$baseRegisterWithIdUrl/dac6/dprs0102/v1")

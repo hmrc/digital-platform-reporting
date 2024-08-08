@@ -64,9 +64,9 @@ class RegistrationConnectorSpec extends AnyFreeSpec
         bind[UuidService].toInstance(mockUuidService)
       )
       .configure("microservice.services.register-with-id.port" -> wireMockPort)
-      .configure("microservice.services.register-with-id.bearerToken" -> "token")
+      .configure("microservice.services.register-with-id.bearer-token" -> "token")
       .configure("microservice.services.register-without-id.port" -> wireMockPort)
-      .configure("microservice.services.register-without-id.bearerToken" -> "token")
+      .configure("microservice.services.register-without-id.bearer-token" -> "token")
       .build()
 
   private val correlationId = UUID.randomUUID()

@@ -22,10 +22,10 @@ import models.subscription.requests.SubscriptionRequest
 import models.subscription.responses.*
 import org.mockito.Mockito
 import org.mockito.Mockito.when
-import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
@@ -38,15 +38,14 @@ import uk.gov.hmrc.http.test.WireMockSupport
 import java.time.{Clock, LocalDateTime, ZoneId, ZoneOffset}
 import java.util.UUID
 
-class SubscriptionConnectorSpec
-  extends AnyFreeSpec
-    with Matchers
-    with ScalaFutures
-    with IntegrationPatience
-    with WireMockSupport
-    with MockitoSugar
-    with BeforeAndAfterEach
-    with EitherValues {
+class SubscriptionConnectorSpec extends AnyFreeSpec
+  with Matchers
+  with ScalaFutures
+  with IntegrationPatience
+  with WireMockSupport
+  with MockitoSugar
+  with BeforeAndAfterEach
+  with EitherValues {
 
   private val instant = LocalDateTime.of(2000, 1, 2, 3, 4, 5).toInstant(ZoneOffset.UTC)
   private val stubClock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
@@ -57,29 +56,26 @@ class SubscriptionConnectorSpec
     super.beforeEach()
   }
 
-  private lazy val app: Application =
-    new GuiceApplicationBuilder()
-      .overrides(
-        bind[Clock].toInstance(stubClock),
-        bind[UuidService].toInstance(mockUuidService)
-      )
-      .configure("microservice.services.subscribe.port" -> wireMockPort)
-      .configure("microservice.services.subscribe.bearerToken" -> "token")
-      .build()
-  
+  private lazy val app: Application = new GuiceApplicationBuilder()
+    .overrides(
+      bind[Clock].toInstance(stubClock),
+      bind[UuidService].toInstance(mockUuidService)
+    )
+    .configure("microservice.services.subscribe.port" -> wireMockPort)
+    .configure("microservice.services.subscribe.bearerTokens.userSubscription" -> "token")
+    .configure("microservice.services.subscribe.bearerTokens.readContacts" -> "token")
+    .build()
+
   private val correlationId = UUID.randomUUID()
   private val conversationId = UUID.randomUUID()
-  
+
   private lazy val connector = app.injector.instanceOf[SubscriptionConnector]
-  
+
   implicit private lazy val hc: HeaderCarrier = HeaderCarrier()
-  
+
   ".subscribe" - {
-    
     "must post a request" - {
-
       "and return the response when the server returns CREATED" in {
-
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
@@ -114,7 +110,6 @@ class SubscriptionConnectorSpec
       }
 
       "and return already subscribed when the server returns CONFLICT" in {
-
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
@@ -138,7 +133,6 @@ class SubscriptionConnectorSpec
       }
 
       "and return a failed future when the server returns an error" in {
-
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
@@ -160,14 +154,12 @@ class SubscriptionConnectorSpec
       }
     }
   }
-  
-  ".get" - {
-    
-    "must return subscription info when the server returns OK" in {
 
+  ".get" - {
+    "must return subscription info when the server returns OK" in {
       when(mockUuidService.generate())
         .thenReturn(correlationId.toString, conversationId.toString)
-      
+
       val responsePayload = Json.obj(
         "success" -> Json.obj(
           "processingDate" -> "2000-01-02T03:04:56Z",
