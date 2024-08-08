@@ -19,7 +19,6 @@ package connectors
 import logging.Logging
 import models.registration.responses.*
 import play.api.http.Status.{CONFLICT, NOT_FOUND, OK}
-import play.api.libs.json.*
 import uk.gov.hmrc.http.{HttpReads, HttpResponse}
 
 object RegistrationWithIdParser {
