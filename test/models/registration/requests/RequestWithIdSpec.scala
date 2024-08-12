@@ -16,24 +16,22 @@
 
 package models.registration.requests
 
-import java.time.{Instant, LocalDate}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
 
+import java.time.{Instant, LocalDate}
+
 class RequestWithIdSpec extends AnyFreeSpec with Matchers {
 
   "request with Id" - {
-    
-    val instant = Instant.ofEpochSecond(1)
+
+    val instant = Instant.ofEpochSecond(1, 223345000)
     val requestCommon = RequestCommon(instant, "ack ref")
 
     "must serialise with an Individual with NINO" in {
-
       val individualWithNino = IndividualWithNino("nino", "first", "last", LocalDate.of(2000, 1, 2))
-
       val request = RequestWithId(requestCommon, individualWithNino)
-
       val expectedJson = Json.obj(
         "registerWithIDRequest" -> Json.obj(
           "requestCommon" -> Json.obj(
@@ -65,11 +63,8 @@ class RequestWithIdSpec extends AnyFreeSpec with Matchers {
     }
 
     "must serialise with an Individual with UTR" in {
-
       val individualWithUtr = IndividualWithUtr("utr", None)
-
       val request = RequestWithId(requestCommon, individualWithUtr)
-
       val expectedJson = Json.obj(
         "registerWithIDRequest" -> Json.obj(
           "requestCommon" -> Json.obj(
@@ -96,11 +91,8 @@ class RequestWithIdSpec extends AnyFreeSpec with Matchers {
     }
 
     "must serialise with an Organisation with UTR" in {
-
       val organisationWithUtr = OrganisationWithUtr("utr", None)
-
       val request = RequestWithId(requestCommon, organisationWithUtr)
-
       val expectedJson = Json.obj(
         "registerWithIDRequest" -> Json.obj(
           "requestCommon" -> Json.obj(

@@ -17,21 +17,21 @@
 package models.registration.requests
 
 import play.api.libs.json.{JsObject, Json, OWrites}
+import utils.DateTimeFormats.ISO8601Formatter
 
 import java.time.Instant
 
-final case class RequestCommon(
-                                receiptDate: Instant,
-                                acknowledgementReference: String
-                              )
+final case class RequestCommon(receiptDate: Instant,
+                               acknowledgementReference: String)
 
 object RequestCommon {
 
   implicit lazy val writes: OWrites[RequestCommon] = new OWrites[RequestCommon] {
+
     override def writes(o: RequestCommon): JsObject =
       Json.obj(
         "regime" -> "DPRS",
-        "receiptDate" -> o.receiptDate,
+        "receiptDate" -> ISO8601Formatter.format(o.receiptDate),
         "acknowledgementReference" -> o.acknowledgementReference,
         "requestParameters" -> Json.arr(
           Json.obj(
