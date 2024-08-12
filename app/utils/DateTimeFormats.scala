@@ -24,4 +24,8 @@ object DateTimeFormats {
   val RFC7231Formatter: DateTimeFormatter = DateTimeFormatter
     .ofPattern("EEE, dd MMM yyyy HH:mm:ss zzz")
     .withZone(ZoneId.of("UTC"))
+
+  val ISO8601Formatter: DateTimeFormatter = DateTimeFormatter
+    .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    .withZone(ZoneId.of("UTC"))
 }
