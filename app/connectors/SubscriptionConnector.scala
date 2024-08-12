@@ -16,10 +16,9 @@
 
 package connectors
 
-import config.Service
+import config.AppConfig
 import models.subscription.requests.SubscriptionRequest
 import models.subscription.responses.*
-import play.api.Configuration
 import play.api.http.HeaderNames
 import play.api.http.Status.{CONFLICT, CREATED}
 import play.api.libs.json.*
@@ -28,33 +27,27 @@ import services.UuidService
 import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
+import utils.DateTimeFormats.RFC7231Formatter
 
-import java.time.format.DateTimeFormatter
-import java.time.{Clock, ZoneId}
+import java.time.Clock
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class SubscriptionConnector @Inject()(configuration: Configuration,
-                                      httpClient: HttpClientV2,
+class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
                                       uuidService: UuidService,
-                                      clock: Clock)
+                                      clock: Clock,
+                                      appConfig: AppConfig)
                                      (implicit ec: ExecutionContext) {
 
-  private val baseSubscribeUrl = configuration.get[Service]("microservice.services.subscribe").baseUrl
-  private val userSubscriptionBearerToken = configuration.get[String]("microservice.services.subscribe.bearerTokens.userSubscription")
-  private val readContactsBearerToken = configuration.get[String]("microservice.services.subscribe.bearerTokens.readContacts")
-  //  private val updateContactsBearerToken = configuration.get[String]("microservice.services.subscribe.bearerTokens.updateContacts")
-
-  private val dateFormat = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss zzz").withZone(ZoneId.of("UTC"))
-
   def subscribe(request: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[SubscriptionResponse] =
-    httpClient.post(url"$baseSubscribeUrl/dac6/dprs0201/v1")
-      .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer $userSubscriptionBearerToken")
+    httpClient.post(url"${appConfig.SubscribeBaseUrl}/dac6/dprs0201/v1")
+      .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.UserSubscriptionBearerToken}")
       .setHeader("X-Correlation-ID" -> uuidService.generate())
       .setHeader("X-Conversation-ID" -> uuidService.generate())
+      .setHeader("X-Forwarded-Host" -> appConfig.AppName)
       .setHeader(HeaderNames.CONTENT_TYPE -> "application/json")
       .setHeader(HeaderNames.ACCEPT -> "application/json")
-      .setHeader(HeaderNames.DATE -> dateFormat.format(clock.instant()))
+      .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
       .withBody(Json.toJson(request))
       .execute[HttpResponse]
       .map { response =>
@@ -65,11 +58,13 @@ class SubscriptionConnector @Inject()(configuration: Configuration,
       }
 
   def get(dprsId: String)(implicit hc: HeaderCarrier): Future[SubscriptionInfo] =
-    httpClient.get(url"$baseSubscribeUrl/dac6/dprs0202/v1/$dprsId")
-      .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer $readContactsBearerToken")
+    httpClient.get(url"${appConfig.SubscribeBaseUrl}/dac6/dprs0202/v1/$dprsId")
+      .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.ReadContactsBearerToken}")
       .setHeader("X-Correlation-ID" -> uuidService.generate())
       .setHeader("X-Conversation-ID" -> uuidService.generate())
+      .setHeader("X-Forwarded-Host" -> appConfig.AppName)
+      .setHeader(HeaderNames.CONTENT_TYPE -> "application/json")
       .setHeader(HeaderNames.ACCEPT -> "application/json")
-      .setHeader(HeaderNames.DATE -> dateFormat.format(clock.instant()))
+      .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
       .execute[SubscriptionInfo]
 }

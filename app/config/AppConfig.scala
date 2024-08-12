@@ -16,11 +16,23 @@
 
 package config
 
-import javax.inject.{Inject, Singleton}
 import play.api.Configuration
 
-@Singleton
-class AppConfig @Inject()(config: Configuration) {
+import javax.inject.{Inject, Singleton}
 
-  val appName: String = config.get[String]("appName")
+@Singleton
+class AppConfig @Inject()(configuration: Configuration) {
+
+  val AppName: String = configuration.get[String]("appName")
+
+  val RegisterWithIdBaseUrl: String = configuration.get[Service]("microservice.services.register-with-id").baseUrl
+  val RegisterWithIdBearerToken: String = configuration.get[String]("microservice.services.register-with-id.bearer-token")
+
+  val RegisterWithoutIdBaseUrl: String = configuration.get[Service]("microservice.services.register-without-id").baseUrl
+  val RegisterWithoutIdBearerToken: String = configuration.get[String]("microservice.services.register-without-id.bearer-token")
+
+  val SubscribeBaseUrl: String = configuration.get[Service]("microservice.services.subscribe").baseUrl
+  val UserSubscriptionBearerToken: String = configuration.get[String]("microservice.services.subscribe.bearerTokens.userSubscription")
+  val ReadContactsBearerToken: String = configuration.get[String]("microservice.services.subscribe.bearerTokens.readContacts")
+  //  val UpdateContactsBearerToken: String = configuration.get[String]("microservice.services.subscribe.bearerTokens.updateContacts")
 }
