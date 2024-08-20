@@ -42,6 +42,13 @@ class SubscriptionController @Inject()(cc: ControllerComponents,
           case AlreadySubscribedResponse => Conflict
         }
   }
+
+  def updateSubscription(): Action[SubscriptionRequest] = Action(parse.json[SubscriptionRequest]).async {
+    implicit request =>
+      connector
+        .updateSubscription(request.body)
+        .map(_ => Ok)
+  }
   
   def get(): Action[AnyContent] = authenticate(parse.default).async {
     implicit request =>
