@@ -17,6 +17,7 @@
 package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
+import connectors.SubscriptionConnector.UpdateSubscriptionFailure
 import models.subscription.*
 import models.subscription.requests.SubscriptionRequest
 import models.subscription.responses.*
@@ -62,8 +63,9 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
       bind[UuidService].toInstance(mockUuidService)
     )
     .configure("microservice.services.subscribe.port" -> wireMockPort)
-    .configure("microservice.services.subscribe.bearerTokens.userSubscription" -> "token")
-    .configure("microservice.services.subscribe.bearerTokens.readContacts" -> "token")
+    .configure("microservice.services.subscribe.bearerTokens.userSubscription" -> "createSubscriptionToken")
+    .configure("microservice.services.subscribe.bearerTokens.updateContacts" -> "updateSubscriptionToken")
+    .configure("microservice.services.subscribe.bearerTokens.readContacts" -> "getSubscriptionToken")
     .build()
 
   private val correlationId = UUID.randomUUID()
@@ -90,7 +92,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
 
         wireMockServer.stubFor(
           post(urlMatching(".*/dac6/dprs0201/v1"))
-            .withHeader("Authorization", equalTo("Bearer token"))
+            .withHeader("Authorization", equalTo("Bearer createSubscriptionToken"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
             .withHeader("Content-Type", equalTo("application/json"))
@@ -117,7 +119,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
 
         wireMockServer.stubFor(
           post(urlMatching(".*/dac6/dprs0201/v1"))
-            .withHeader("Authorization", equalTo("Bearer token"))
+            .withHeader("Authorization", equalTo("Bearer createSubscriptionToken"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
             .withHeader("Content-Type", equalTo("application/json"))
@@ -155,6 +157,67 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
     }
   }
 
+  ".updateSubscription" - {
+    "must post a request" - {
+      "and return done when the server returns OK" in {
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val request = SubscriptionRequest("safe id", true, None, OrganisationContact(Organisation("name"), "email", None), None)
+        val responsePayload = Json.obj(
+          "success" -> Json.obj(
+            "processingDate" -> "2000-01-02T03:04:56Z",
+            "dprsReference" -> "123"
+          )
+        )
+
+        wireMockServer.stubFor(
+          post(urlMatching(".*/dac6/dprs0203/v1"))
+            .withHeader("Authorization", equalTo("Bearer updateSubscriptionToken"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+            .withRequestBody(equalTo(Json.toJson(request).toString))
+            .willReturn(
+              aResponse()
+                .withStatus(200)
+                .withBody(responsePayload.toString)
+            )
+        )
+
+        connector.updateSubscription(request).futureValue
+      }
+
+      "and return a failed future when the server returns an error" in {
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val request = SubscriptionRequest("safe id", true, None, OrganisationContact(Organisation("name"), "email", None), None)
+
+        wireMockServer.stubFor(
+          post(urlMatching(".*/dac6/dprs0203/v1"))
+            .withHeader("Authorization", equalTo("Bearer updateSubscriptionToken"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+            .withRequestBody(equalTo(Json.toJson(request).toString))
+            .willReturn(serverError())
+        )
+
+        val result = connector.updateSubscription(request).failed.futureValue
+        result mustBe a[SubscriptionConnector.UpdateSubscriptionFailure]
+
+        val updateSubscriptionFailure = result.asInstanceOf[UpdateSubscriptionFailure]
+        updateSubscriptionFailure.correlationId mustEqual correlationId.toString
+        updateSubscriptionFailure.status mustEqual 500
+      }
+    }
+  }
+
   ".get" - {
     "must return subscription info when the server returns OK" in {
       when(mockUuidService.generate())
@@ -181,7 +244,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
 
       wireMockServer.stubFor(
         get(urlMatching(".*/dac6/dprs0202/v1/DPRS123"))
-          .withHeader("Authorization", equalTo("Bearer token"))
+          .withHeader("Authorization", equalTo("Bearer getSubscriptionToken"))
           .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
           .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
           .withHeader("Accept", equalTo("application/json"))
