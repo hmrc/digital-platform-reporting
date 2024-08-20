@@ -17,18 +17,22 @@
 package models.operator.requests
 
 import models.operator.RequestType
-import play.api.libs.json.{Json, OWrites}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.must.Matchers
+import play.api.libs.json.Json
 
-final case class DeletePlatformOperatorRequest(
-                                                subscriptionId: String,
-                                                operatorId: String
-                                              )
+class DeletePlatformOperatorRequestSpec extends AnyFreeSpec with Matchers {
 
-object DeletePlatformOperatorRequest {
+  ".downstreamWrites" - {
 
-  lazy val downstreamWrites: OWrites[DeletePlatformOperatorRequest] =
-    OWrites { request =>
-      Json.obj(
+    "must write to the correct json" in {
+
+      val model = DeletePlatformOperatorRequest(
+        subscriptionId = "subscriptionId",
+        operatorId = "operatorId"
+      )
+
+      val expectedJson = Json.obj(
         "POManagement" -> Json.obj(
           "RequestCommon" -> Json.obj(
             "OriginatingSystem" -> "MDTP",
@@ -37,10 +41,13 @@ object DeletePlatformOperatorRequest {
             "Regime" -> "DPI"
           ),
           "RequestDetails" -> Json.obj(
-            "SubscriptionID" -> request.subscriptionId,
-            "POID" -> request.operatorId
+            "SubscriptionID" -> "subscriptionId",
+            "POID" -> "operatorId"
           )
         )
       )
+
+      Json.toJsObject(model)(DeletePlatformOperatorRequest.downstreamWrites) mustEqual expectedJson
     }
+  }
 }
