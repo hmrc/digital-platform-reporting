@@ -33,8 +33,9 @@ object OrganisationWithoutId {
           "organisationName" -> o.name
         ),
         "address" -> o.address,
-        "isAnAgent" -> false,
-        "isAGroup" -> false
+        "IsAnAgent" -> false,
+        "IsAGroup" -> false,
+        "contactDetails" -> Json.obj()
       )
   }
 }
