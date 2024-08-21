@@ -41,8 +41,9 @@ object IndividualWithoutId {
           "dateOfBirth" -> o.dateOfBirth
         ),
         "address" -> o.address,
-        "isAnAgent" -> false,
-        "isAGroup" -> false
+        "IsAnAgent" -> false,
+        "IsAGroup" -> false,
+        "contactDetails" -> Json.obj()
       )
   }
 }

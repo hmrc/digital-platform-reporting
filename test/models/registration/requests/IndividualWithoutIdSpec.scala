@@ -43,8 +43,9 @@ class IndividualWithoutIdSpec extends AnyFreeSpec with Matchers {
           "postalCode" -> "postcode",
           "countryCode" -> "GB"
         ),
-        "isAnAgent" -> false,
-        "isAGroup" -> false
+        "IsAnAgent" -> false,
+        "IsAGroup" -> false,
+        "contactDetails" -> Json.obj()
       )
 
       Json.toJson(individual) mustEqual expectedJson

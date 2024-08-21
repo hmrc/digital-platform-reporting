@@ -50,8 +50,9 @@ class RequestWithoutIdSpec extends AnyFreeSpec with Matchers {
             )
           ),
           "requestDetail" -> Json.obj(
-            "isAnAgent" -> false,
-            "isAGroup" -> false,
+            "IsAnAgent" -> false,
+            "IsAGroup" -> false,
+            "contactDetails" -> Json.obj(),
             "individual" -> Json.obj(
               "firstName" -> "first",
               "lastName" -> "last",
@@ -89,8 +90,9 @@ class RequestWithoutIdSpec extends AnyFreeSpec with Matchers {
             )
           ),
           "requestDetail" -> Json.obj(
-            "isAnAgent" -> false,
-            "isAGroup" -> false,
+            "IsAnAgent" -> false,
+            "IsAGroup" -> false,
+            "contactDetails" -> Json.obj(),
             "organisation" -> Json.obj(
               "organisationName" -> "name"
             ),
