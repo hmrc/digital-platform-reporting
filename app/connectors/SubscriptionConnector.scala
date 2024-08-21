@@ -17,10 +17,12 @@
 package connectors
 
 import config.AppConfig
+import connectors.SubscriptionConnector.UpdateSubscriptionFailure
 import models.subscription.requests.SubscriptionRequest
 import models.subscription.responses.*
+import org.apache.pekko.Done
 import play.api.http.HeaderNames
-import play.api.http.Status.{CONFLICT, CREATED}
+import play.api.http.Status.{CONFLICT, CREATED, OK}
 import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.UuidService
@@ -57,6 +59,29 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
         }
       }
 
+  def updateSubscription(request: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[Done] = {
+
+    val correlationId = uuidService.generate()
+    val conversationId = uuidService.generate()
+
+    httpClient.post(url"${appConfig.SubscribeBaseUrl}/dac6/dprs0203/v1")
+      .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.UpdateContactsBearerToken}")
+      .setHeader("X-Correlation-ID" -> correlationId)
+      .setHeader("X-Conversation-ID" -> conversationId)
+      .setHeader("X-Forwarded-Host" -> appConfig.AppName)
+      .setHeader(HeaderNames.CONTENT_TYPE -> "application/json")
+      .setHeader(HeaderNames.ACCEPT -> "application/json")
+      .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
+      .withBody(Json.toJson(request))
+      .execute[HttpResponse]
+      .flatMap { response =>
+        response.status match {
+          case OK      => Future.successful(Done)
+          case status  => Future.failed(UpdateSubscriptionFailure(correlationId, status))
+        }
+      }
+  }
+
   def get(dprsId: String)(implicit hc: HeaderCarrier): Future[SubscriptionInfo] =
     httpClient.get(url"${appConfig.SubscribeBaseUrl}/dac6/dprs0202/v1/$dprsId")
       .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.ReadContactsBearerToken}")
@@ -67,4 +92,11 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
       .setHeader(HeaderNames.ACCEPT -> "application/json")
       .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
       .execute[SubscriptionInfo]
+}
+
+object SubscriptionConnector {
+
+  final case class UpdateSubscriptionFailure(correlationId: String, status: Int) extends Throwable {
+    override def getMessage: String = s"Update subscription failed for correlation ID: $correlationId, got status: $status"
+  }
 }

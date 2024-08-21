@@ -22,6 +22,7 @@ import models.AuthenticatedRequest
 import models.subscription.*
 import models.subscription.requests.*
 import models.subscription.responses.*
+import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{times, verify, when}
@@ -87,15 +88,18 @@ class SubscriptionControllerSpec
         
         when(mockConnector.subscribe(any())(any())).thenReturn(Future.successful(subscriptionResponse))
 
-        val request =
-          FakeRequest(routes.SubscriptionController.subscribe())
-            .withJsonBody(payload)
+        running(app) {
 
-        val result = route(app, request).value
+          val request =
+            FakeRequest(routes.SubscriptionController.subscribe())
+              .withJsonBody(payload)
 
-        status(result) mustEqual OK
-        contentAsJson(result) mustEqual Json.toJson(subscriptionResponse)
-        verify(mockConnector, times(1)).subscribe(eqTo(subscriptionRequest))(any())
+          val result = route(app, request).value
+
+          status(result) mustEqual OK
+          contentAsJson(result) mustEqual Json.toJson(subscriptionResponse)
+          verify(mockConnector, times(1)).subscribe(eqTo(subscriptionRequest))(any())
+        }
       }
     }
 
@@ -122,14 +126,17 @@ class SubscriptionControllerSpec
 
       when(mockConnector.subscribe(any())(any())).thenReturn(Future.successful(AlreadySubscribedResponse))
 
-      val request =
-        FakeRequest(routes.SubscriptionController.subscribe())
-          .withJsonBody(payload)
+      running(app) {
 
-      val result = route(app, request).value
+        val request =
+          FakeRequest(routes.SubscriptionController.subscribe())
+            .withJsonBody(payload)
 
-      status(result) mustEqual CONFLICT
-      verify(mockConnector, times(1)).subscribe(eqTo(subscriptionRequest))(any())
+        val result = route(app, request).value
+
+        status(result) mustEqual CONFLICT
+        verify(mockConnector, times(1)).subscribe(eqTo(subscriptionRequest))(any())
+      }
     }
     
     "must fail" - {
@@ -159,11 +166,89 @@ class SubscriptionControllerSpec
           FakeRequest(routes.SubscriptionController.subscribe())
             .withJsonBody(payload)
 
-        route(app, request).value.failed
+        running(app) {
+          route(app, request).value.failed
+        }
       }
     }
   }
-  
+
+  ".updateSubscription" - {
+
+    "must return OK" - {
+
+      "when an update subscription call was successful" in {
+
+        val app =
+          new GuiceApplicationBuilder()
+            .overrides(bind[SubscriptionConnector].toInstance(mockConnector))
+            .build()
+
+        val individual = IndividualContact(Individual("first", "last"), "email", None)
+        val subscriptionRequest = SubscriptionRequest("safe", true, None, individual, None)
+        val payload = Json.obj(
+          "safeId" -> "safe",
+          "gbUser"  -> true,
+          "primaryContact" -> Json.obj(
+            "individual" -> Json.obj(
+              "firstName" -> "first",
+              "lastName" -> "last"
+            ),
+            "email" -> "email"
+          )
+        )
+
+        when(mockConnector.updateSubscription(any())(any())).thenReturn(Future.successful(Done))
+
+        val request =
+          FakeRequest(routes.SubscriptionController.updateSubscription())
+            .withJsonBody(payload)
+
+        running(app) {
+
+          val result = route(app, request).value
+
+          status(result) mustEqual OK
+          verify(mockConnector, times(1)).updateSubscription(eqTo(subscriptionRequest))(any())
+        }
+      }
+    }
+
+    "must fail" - {
+
+      "when a request to the backend fails" in {
+
+        val app =
+          new GuiceApplicationBuilder()
+            .overrides(bind[SubscriptionConnector].toInstance(mockConnector))
+            .build()
+
+        when(mockConnector.updateSubscription(any())(any())).thenReturn(Future.failed(new Exception("foo")))
+
+        val payload = Json.obj(
+          "safeId" -> "safe",
+          "gbUser"  -> false,
+          "primaryContact" -> Json.obj(
+            "individual" -> Json.obj(
+              "firstName" -> "first",
+              "lastName" -> "last"
+            ),
+            "email" -> "email"
+          )
+        )
+
+        running(app) {
+
+          val request =
+            FakeRequest(routes.SubscriptionController.updateSubscription())
+              .withJsonBody(payload)
+
+          route(app, request).value.failed
+        }
+      }
+    }
+  }
+
   ".get" - {
     
     "must return the user's subscription info when the user is authenticated and the server returns OK" in {
@@ -181,10 +266,12 @@ class SubscriptionControllerSpec
       when(mockConnector.get(eqTo(dprsId))(any())).thenReturn(Future.successful(subscriptionInfo))
       
       val request = FakeRequest(GET, routes.SubscriptionController.get().url)
-      
-      val result = route(app, request).value
-      
-      status(result) mustEqual OK
+
+      running(app) {
+
+        val result = route(app, request).value
+        status(result) mustEqual OK
+      }
     }
   }
 }
