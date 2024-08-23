@@ -13,7 +13,7 @@ lazy val microservice = Project("digital-platform-reporting", file("."))
     scalacOptions += "-Wconf:src=routes/.*:s",
   )
   .settings(resolvers += Resolver.jcenterRepo)
-  .settings(CodeCoverageSettings.settings: _*)
+  .settings(CodeCoverageSettings.settings *)
   .settings(PlayKeys.playDefaultPort := 20004)
 
 lazy val it = project
