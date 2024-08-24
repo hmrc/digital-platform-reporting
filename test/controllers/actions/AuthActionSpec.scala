@@ -44,7 +44,7 @@ class AuthActionSpec extends AnyFreeSpec with Matchers {
       
       val validEnrolments = Enrolments(Set(
         Enrolment(
-          key = "HMRC-DPRS-ORG",
+          key = "HMRC-DPRS",
           identifiers = Seq(EnrolmentIdentifier("DPRSID", dprsId)),
           state = "activated"
         )
@@ -64,7 +64,7 @@ class AuthActionSpec extends AnyFreeSpec with Matchers {
       val invalidEnrolments = Enrolments(Set(
         Enrolment(
           key = "ANOTHER-ENROLMENT",
-          identifiers = Seq(EnrolmentIdentifier("DPRSId", dprsId)),
+          identifiers = Seq(EnrolmentIdentifier("DPRSID", dprsId)),
           state = "activated"
         )
       ))
