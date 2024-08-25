@@ -38,7 +38,7 @@ class AuthAction @Inject()(val authConnector: AuthConnector,
 
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
     
-    val enrolmentKey = "HMRC-DPRS-ORG"
+    val enrolmentKey = "HMRC-DPRS"
     val identifierKey = "DPRSID"
     
     authorised(Enrolment(enrolmentKey)).retrieve(Retrievals.authorisedEnrolments) {
