@@ -72,10 +72,10 @@ class SubscriptionControllerSpec
             .build()
           
         val individual = IndividualContact(Individual("first", "last"), "email", None)
-        val subscriptionRequest = SubscriptionRequest("safe", true, None, individual, None)
+        val subscriptionRequest = SubscriptionRequest("userId", true, None, individual, None)
         val subscriptionResponse = SubscribedResponse("dprs id")
         val payload = Json.obj(
-          "safeId" -> "safe",
+          "id" -> "userId",
           "gbUser"  -> true,
           "primaryContact" -> Json.obj(
             "individual" -> Json.obj(
@@ -111,9 +111,9 @@ class SubscriptionControllerSpec
           .build()
 
       val individual = IndividualContact(Individual("first", "last"), "email", None)
-      val subscriptionRequest = SubscriptionRequest("safe", true, None, individual, None)
+      val subscriptionRequest = SubscriptionRequest("userId", true, None, individual, None)
       val payload = Json.obj(
-        "safeId" -> "safe",
+        "id" -> "userId",
         "gbUser" -> true,
         "primaryContact" -> Json.obj(
           "individual" -> Json.obj(
@@ -151,7 +151,7 @@ class SubscriptionControllerSpec
         when(mockConnector.subscribe(any())(any())).thenReturn(Future.failed(new Exception("foo")))
         
         val payload = Json.obj(
-          "safeId" -> "safe",
+          "id" -> "userId",
           "gbUser"  -> false,
           "primaryContact" -> Json.obj(
             "individual" -> Json.obj(
@@ -185,9 +185,9 @@ class SubscriptionControllerSpec
             .build()
 
         val individual = IndividualContact(Individual("first", "last"), "email", None)
-        val subscriptionRequest = SubscriptionRequest("safe", true, None, individual, None)
+        val subscriptionRequest = SubscriptionRequest("userId", true, None, individual, None)
         val payload = Json.obj(
-          "safeId" -> "safe",
+          "id" -> "userId",
           "gbUser"  -> true,
           "primaryContact" -> Json.obj(
             "individual" -> Json.obj(
@@ -226,7 +226,7 @@ class SubscriptionControllerSpec
         when(mockConnector.updateSubscription(any())(any())).thenReturn(Future.failed(new Exception("foo")))
 
         val payload = Json.obj(
-          "safeId" -> "safe",
+          "id" -> "userId",
           "gbUser"  -> false,
           "primaryContact" -> Json.obj(
             "individual" -> Json.obj(

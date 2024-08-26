@@ -20,7 +20,7 @@ import models.subscription.Contact
 import play.api.libs.functional.syntax.*
 import play.api.libs.json.*
 
-final case class SubscriptionRequest(safeId: String,
+final case class SubscriptionRequest(id: String,
                                      gbUser: Boolean,
                                      tradingName: Option[String],
                                      primaryContact: Contact,
@@ -38,5 +38,5 @@ object SubscriptionRequest {
       (__ \ "tradingName").writeNullable[String] and
       (__ \ "primaryContact").write[Contact] and
       (__ \ "secondaryContact").writeNullable[Contact]
-    )(sr => ("SAFE", sr.safeId, sr.gbUser, sr.tradingName, sr.primaryContact, sr.secondaryContact))
+    )(sr => ("SAFE", sr.id, sr.gbUser, sr.tradingName, sr.primaryContact, sr.secondaryContact))
 }
