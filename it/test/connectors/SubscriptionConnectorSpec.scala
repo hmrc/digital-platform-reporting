@@ -98,7 +98,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
             .withHeader("Content-Type", equalTo("application/json"))
             .withHeader("Accept", equalTo("application/json"))
             .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
-            .withRequestBody(equalTo(Json.toJson(request).toString))
+            .withRequestBody(equalTo(Json.toJson(request)(SubscriptionRequest.createWrites).toString))
             .willReturn(
               aResponse()
                 .withStatus(201)
@@ -125,7 +125,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
             .withHeader("Content-Type", equalTo("application/json"))
             .withHeader("Accept", equalTo("application/json"))
             .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
-            .withRequestBody(equalTo(Json.toJson(request).toString))
+            .withRequestBody(equalTo(Json.toJson(request)(SubscriptionRequest.createWrites).toString))
             .willReturn(aResponse().withStatus(409))
         )
 
@@ -148,7 +148,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
             .withHeader("Content-Type", equalTo("application/json"))
             .withHeader("Accept", equalTo("application/json"))
             .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
-            .withRequestBody(equalTo(Json.toJson(request).toString))
+            .withRequestBody(equalTo(Json.toJson(request)(SubscriptionRequest.createWrites).toString))
             .willReturn(serverError())
         )
 
@@ -163,7 +163,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
-        val request = SubscriptionRequest("safe id", true, None, OrganisationContact(Organisation("name"), "email", None), None)
+        val request = SubscriptionRequest("dprs id", true, None, OrganisationContact(Organisation("name"), "email", None), None)
         val responsePayload = Json.obj(
           "success" -> Json.obj(
             "processingDate" -> "2000-01-02T03:04:56Z",
@@ -179,7 +179,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
             .withHeader("Content-Type", equalTo("application/json"))
             .withHeader("Accept", equalTo("application/json"))
             .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
-            .withRequestBody(equalTo(Json.toJson(request).toString))
+            .withRequestBody(equalTo(Json.toJson(request)(SubscriptionRequest.updateWrites).toString))
             .willReturn(
               aResponse()
                 .withStatus(200)
@@ -194,7 +194,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
-        val request = SubscriptionRequest("safe id", true, None, OrganisationContact(Organisation("name"), "email", None), None)
+        val request = SubscriptionRequest("dprs id", true, None, OrganisationContact(Organisation("name"), "email", None), None)
 
         wireMockServer.stubFor(
           post(urlMatching(".*/dac6/dprs0203/v1"))
@@ -204,7 +204,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
             .withHeader("Content-Type", equalTo("application/json"))
             .withHeader("Accept", equalTo("application/json"))
             .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
-            .withRequestBody(equalTo(Json.toJson(request).toString))
+            .withRequestBody(equalTo(Json.toJson(request)(SubscriptionRequest.updateWrites).toString))
             .willReturn(serverError())
         )
 

@@ -30,7 +30,7 @@ object SubscriptionRequest {
 
   implicit lazy val reads: Reads[SubscriptionRequest] = Json.reads
 
-  implicit lazy val writes: OWrites[SubscriptionRequest] =
+  lazy val createWrites: OWrites[SubscriptionRequest] =
     (
       (__ \ "idType").write[String] and
       (__ \ "idNumber").write[String] and
@@ -39,4 +39,14 @@ object SubscriptionRequest {
       (__ \ "primaryContact").write[Contact] and
       (__ \ "secondaryContact").writeNullable[Contact]
     )(sr => ("SAFE", sr.id, sr.gbUser, sr.tradingName, sr.primaryContact, sr.secondaryContact))
+
+  lazy val updateWrites: OWrites[SubscriptionRequest] =
+    (
+      (__ \ "idType").write[String] and
+      (__ \ "idNumber").write[String] and
+      (__ \ "gbUser").write[Boolean] and
+      (__ \ "tradingName").writeNullable[String] and
+      (__ \ "primaryContact").write[Contact] and
+      (__ \ "secondaryContact").writeNullable[Contact]
+    )(sr => ("DPRS", sr.id, sr.gbUser, sr.tradingName, sr.primaryContact, sr.secondaryContact))
 }

@@ -28,11 +28,11 @@ class SubscriptionRequestSpec extends AnyFreeSpec with Matchers {
     val organisationContact = OrganisationContact(Organisation("name"), "email", Some("phone"))
     val individualContact = IndividualContact(Individual("first", "last"), "email", None)
 
-    "must serialise with optional fields missing" in {
+    "must serialise for a create with optional fields missing" in {
 
       val request = SubscriptionRequest("123", true, None, organisationContact, None)
 
-      Json.toJson(request) mustEqual Json.obj(
+      Json.toJson(request)(SubscriptionRequest.createWrites) mustEqual Json.obj(
         "idType" -> "SAFE",
         "idNumber" -> "123",
         "gbUser" -> true,
@@ -46,12 +46,56 @@ class SubscriptionRequestSpec extends AnyFreeSpec with Matchers {
       )
     }
 
-    "must serialise with optional fields present" in {
+    "must serialise for an update with optional fields missing" in {
+
+      val request = SubscriptionRequest("123", true, None, organisationContact, None)
+
+      Json.toJson(request)(SubscriptionRequest.updateWrites) mustEqual Json.obj(
+        "idType" -> "DPRS",
+        "idNumber" -> "123",
+        "gbUser" -> true,
+        "primaryContact" -> Json.obj(
+          "organisation" -> Json.obj(
+            "name" -> "name"
+          ),
+          "email" -> "email",
+          "phone" -> "phone"
+        )
+      )
+    }
+
+    "must serialise for a create with optional fields present" in {
 
       val request = SubscriptionRequest("123", true, Some("trading"), individualContact, Some(organisationContact))
 
-      Json.toJson(request) mustEqual Json.obj(
+      Json.toJson(request)(SubscriptionRequest.createWrites) mustEqual Json.obj(
         "idType" -> "SAFE",
+        "idNumber" -> "123",
+        "gbUser" -> true,
+        "tradingName" -> "trading",
+        "primaryContact" -> Json.obj(
+          "individual" -> Json.obj(
+            "firstName" -> "first",
+            "lastName" -> "last"
+          ),
+          "email" -> "email"
+        ),
+        "secondaryContact" -> Json.obj(
+          "organisation" -> Json.obj(
+            "name" -> "name"
+          ),
+          "email" -> "email",
+          "phone" -> "phone"
+        )
+      )
+    }
+
+    "must serialise for an update with optional fields present" in {
+
+      val request = SubscriptionRequest("123", true, Some("trading"), individualContact, Some(organisationContact))
+
+      Json.toJson(request)(SubscriptionRequest.updateWrites) mustEqual Json.obj(
+        "idType" -> "DPRS",
         "idNumber" -> "123",
         "gbUser" -> true,
         "tradingName" -> "trading",

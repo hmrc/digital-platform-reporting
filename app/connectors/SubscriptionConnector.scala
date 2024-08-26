@@ -50,7 +50,7 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
       .setHeader(HeaderNames.CONTENT_TYPE -> "application/json")
       .setHeader(HeaderNames.ACCEPT -> "application/json")
       .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
-      .withBody(Json.toJson(request))
+      .withBody(Json.toJson(request)(SubscriptionRequest.createWrites))
       .execute[HttpResponse]
       .map { response =>
         response.status match {
@@ -72,7 +72,7 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
       .setHeader(HeaderNames.CONTENT_TYPE -> "application/json")
       .setHeader(HeaderNames.ACCEPT -> "application/json")
       .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
-      .withBody(Json.toJson(request))
+      .withBody(Json.toJson(request)(SubscriptionRequest.updateWrites))
       .execute[HttpResponse]
       .flatMap { response =>
         response.status match {
