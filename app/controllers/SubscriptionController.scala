@@ -19,7 +19,7 @@ package controllers
 import connectors.SubscriptionConnector
 import controllers.actions.AuthAction
 import models.subscription.requests.SubscriptionRequest
-import models.subscription.responses.{AlreadySubscribedResponse, SubscribedResponse}
+import models.subscription.responses.{AlreadySubscribedResponse, SubscribedResponse, UnexpectedResponse}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -40,6 +40,7 @@ class SubscriptionController @Inject()(cc: ControllerComponents,
         .map {
           case x: SubscribedResponse => Ok(Json.toJson(x))
           case AlreadySubscribedResponse => Conflict
+          case UnexpectedResponse(_) => InternalServerError
         }
   }
 

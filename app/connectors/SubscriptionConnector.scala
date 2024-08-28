@@ -18,11 +18,12 @@ package connectors
 
 import config.AppConfig
 import connectors.SubscriptionConnector.UpdateSubscriptionFailure
+import models.ErrorResponse
 import models.subscription.requests.SubscriptionRequest
 import models.subscription.responses.*
 import org.apache.pekko.Done
 import play.api.http.HeaderNames
-import play.api.http.Status.{CONFLICT, CREATED, OK}
+import play.api.http.Status.{CREATED, OK, UNPROCESSABLE_ENTITY}
 import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.UuidService
@@ -55,7 +56,11 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
       .map { response =>
         response.status match {
           case CREATED => response.json.as[SubscribedResponse]
-          case CONFLICT => AlreadySubscribedResponse
+          case UNPROCESSABLE_ENTITY =>
+            response.json.as[ErrorResponse].errorDetail.errorCode match {
+              case ErrorResponse.DuplicateSubmission => AlreadySubscribedResponse
+              case errorCode               => UnexpectedResponse(errorCode)
+            }
         }
       }
 
@@ -76,8 +81,8 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
       .execute[HttpResponse]
       .flatMap { response =>
         response.status match {
-          case OK      => Future.successful(Done)
-          case status  => Future.failed(UpdateSubscriptionFailure(correlationId, status))
+          case OK => Future.successful(Done)
+          case status => Future.failed(UpdateSubscriptionFailure(correlationId, status))
         }
       }
   }

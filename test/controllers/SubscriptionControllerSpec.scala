@@ -103,7 +103,7 @@ class SubscriptionControllerSpec
       }
     }
 
-    "must return CONFLICT when the server returns CONFLICT" in {
+    "must return CONFLICT when the server returns duplicate submission" in {
 
       val app =
         new GuiceApplicationBuilder()
@@ -138,7 +138,43 @@ class SubscriptionControllerSpec
         verify(mockConnector, times(1)).subscribe(eqTo(subscriptionRequest))(any())
       }
     }
-    
+
+    "must return INTERNAL_SERVER_ERROR when the server returns an unexpected error" in {
+
+      val app =
+        new GuiceApplicationBuilder()
+          .overrides(bind[SubscriptionConnector].toInstance(mockConnector))
+          .build()
+
+      val individual = IndividualContact(Individual("first", "last"), "email", None)
+      val subscriptionRequest = SubscriptionRequest("userId", true, None, individual, None)
+      val payload = Json.obj(
+        "id" -> "userId",
+        "gbUser" -> true,
+        "primaryContact" -> Json.obj(
+          "individual" -> Json.obj(
+            "firstName" -> "first",
+            "lastName" -> "last"
+          ),
+          "email" -> "email"
+        )
+      )
+
+      when(mockConnector.subscribe(any())(any())).thenReturn(Future.successful(UnexpectedResponse("")))
+
+      running(app) {
+
+        val request =
+          FakeRequest(routes.SubscriptionController.subscribe())
+            .withJsonBody(payload)
+
+        val result = route(app, request).value
+
+        status(result) mustEqual INTERNAL_SERVER_ERROR
+        verify(mockConnector, times(1)).subscribe(eqTo(subscriptionRequest))(any())
+      }
+    }
+
     "must fail" - {
 
       "when a request to the backend fails" in {

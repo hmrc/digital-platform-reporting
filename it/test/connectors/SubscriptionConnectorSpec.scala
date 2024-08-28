@@ -18,6 +18,7 @@ package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import connectors.SubscriptionConnector.UpdateSubscriptionFailure
+import models.{ErrorDetail, ErrorResponse}
 import models.subscription.*
 import models.subscription.requests.SubscriptionRequest
 import models.subscription.responses.*
@@ -126,8 +127,11 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
             .withHeader("Accept", equalTo("application/json"))
             .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
             .withRequestBody(equalTo(Json.toJson(request)(SubscriptionRequest.createWrites).toString))
-            .willReturn(aResponse().withStatus(409))
-        )
+            .willReturn(
+              aResponse()
+                .withStatus(422)
+                .withBody(Json.toJson(ErrorResponse(ErrorDetail("004"))).toString)
+        ))
 
         val result = connector.subscribe(request).futureValue
 
