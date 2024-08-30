@@ -46,10 +46,10 @@ object OrganisationWithUtr {
       val detailsJson = o.details.map { details =>
         Json.obj("organisation" -> Json.toJson(details))
       }.getOrElse(Json.obj())
-      
+
       Json.obj(
         "IDType" -> "UTR",
-        "IDNumber" -> o.utr,
+        "IDNumber" -> o.utr.toUpperCase().replace("K",""),
         "requiresNameMatch" -> o.details.nonEmpty,
         "isAnAgent" -> false
       ) ++ detailsJson

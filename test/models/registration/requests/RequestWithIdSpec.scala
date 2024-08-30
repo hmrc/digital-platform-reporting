@@ -63,7 +63,7 @@ class RequestWithIdSpec extends AnyFreeSpec with Matchers {
     }
 
     "must serialise with an Individual with UTR" in {
-      val individualWithUtr = IndividualWithUtr("utr", None)
+      val individualWithUtr = IndividualWithUtr("K1234k", None)
       val request = RequestWithId(requestCommon, individualWithUtr)
       val expectedJson = Json.obj(
         "registerWithIDRequest" -> Json.obj(
@@ -80,7 +80,7 @@ class RequestWithIdSpec extends AnyFreeSpec with Matchers {
           ),
           "requestDetail" -> Json.obj(
             "IDType" -> "UTR",
-            "IDNumber" -> "utr",
+            "IDNumber" -> "1234",
             "requiresNameMatch" -> false,
             "isAnAgent" -> false
           )
@@ -91,7 +91,7 @@ class RequestWithIdSpec extends AnyFreeSpec with Matchers {
     }
 
     "must serialise with an Organisation with UTR" in {
-      val organisationWithUtr = OrganisationWithUtr("utr", None)
+      val organisationWithUtr = OrganisationWithUtr("123456", None)
       val request = RequestWithId(requestCommon, organisationWithUtr)
       val expectedJson = Json.obj(
         "registerWithIDRequest" -> Json.obj(
@@ -108,7 +108,7 @@ class RequestWithIdSpec extends AnyFreeSpec with Matchers {
           ),
           "requestDetail" -> Json.obj(
             "IDType" -> "UTR",
-            "IDNumber" -> "utr",
+            "IDNumber" -> "123456",
             "requiresNameMatch" -> false,
             "isAnAgent" -> false
           )

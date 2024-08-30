@@ -56,6 +56,24 @@ class OrganisationWithUtrSpec extends AnyFreeSpec with Matchers {
       Json.toJson(organisation) mustEqual expectedJson
     }
 
+    "must correctly format UTR with 'k' characters in" in {
+
+      val organisation = OrganisationWithUtr("k123K", Some(OrganisationDetails("name", OrganisationType.LimitedCompany)))
+
+      val expectedJson = Json.obj(
+        "IDType" -> "UTR",
+        "IDNumber" -> "123",
+        "requiresNameMatch" -> true,
+        "isAnAgent" -> false,
+        "organisation" -> Json.obj(
+          "organisationName" -> "name",
+          "organisationType" -> "0003"
+        )
+      )
+
+      Json.toJson(organisation) mustEqual expectedJson
+    }
+
     "must read with no organisation details" in {
 
       val json = Json.obj(

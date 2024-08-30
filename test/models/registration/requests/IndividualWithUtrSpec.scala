@@ -56,6 +56,23 @@ class IndividualWithUtrSpec extends AnyFreeSpec with Matchers {
       Json.toJson(individual) mustEqual expectedJson
     }
 
+    "must correctly format UTR with 'k' characters in" in {
+      val individual = IndividualWithUtr("k123K", Some(IndividualWithUtrDetails("first", "last")))
+
+      val expectedJson = Json.obj(
+        "IDType" -> "UTR",
+        "IDNumber" -> "123",
+        "requiresNameMatch" -> true,
+        "isAnAgent" -> false,
+        "individual" -> Json.obj(
+          "firstName" -> "first",
+          "lastName" -> "last"
+        )
+      )
+
+      Json.toJson(individual) mustEqual expectedJson
+    }
+
     "must read with no individual details" in {
 
       val json = Json.obj(
@@ -66,7 +83,7 @@ class IndividualWithUtrSpec extends AnyFreeSpec with Matchers {
       val result = json.as[IndividualWithUtr]
       result mustEqual IndividualWithUtr("123", None)
     }
-    
+
     "must read with individual details" in {
 
       val json = Json.obj(
@@ -91,6 +108,6 @@ class IndividualWithUtrSpec extends AnyFreeSpec with Matchers {
 
       json.validate[IndividualWithUtr] mustBe a[JsError]
     }
-    
+
   }
 }
