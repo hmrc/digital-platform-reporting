@@ -20,16 +20,15 @@ import models.registration.Address
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
+import utils.ContactDetailsBuilder.aContactDetails
 
 class OrganisationWithoutIdSpec extends AnyFreeSpec with Matchers {
-  
+
   "organisation without Id" - {
-
     "must serialise" in {
-
       val address = Address("line 1", Some("line 2"), None, None, Some("postcode"), "GB")
-      val organisation = OrganisationWithoutId("name", address)
-
+      val contactDetails = aContactDetails.copy(emailAddress = "some.email@example.com", phoneNumber = Some("01234"))
+      val organisation = OrganisationWithoutId("name", address, contactDetails)
       val expectedJson = Json.obj(
         "organisation" -> Json.obj(
           "organisationName" -> "name"
@@ -42,7 +41,10 @@ class OrganisationWithoutIdSpec extends AnyFreeSpec with Matchers {
         ),
         "IsAnAgent" -> false,
         "IsAGroup" -> false,
-        "contactDetails" -> Json.obj()
+        "contactDetails" -> Json.obj(
+          "emailAddress" -> "some.email@example.com",
+          "phoneNumber" -> "01234"
+        )
       )
 
       Json.toJson(organisation) mustEqual expectedJson

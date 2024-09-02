@@ -16,10 +16,12 @@
 
 package models.registration.requests
 
-import play.api.libs.json.*
 import models.registration.Address
+import play.api.libs.json.*
 
-final case class OrganisationWithoutId(name: String, address: Address) extends RequestDetailWithoutId
+final case class OrganisationWithoutId(name: String,
+                                       address: Address,
+                                       contactDetails: ContactDetails) extends RequestDetailWithoutId
 
 object OrganisationWithoutId {
 
@@ -35,7 +37,7 @@ object OrganisationWithoutId {
         "address" -> o.address,
         "IsAnAgent" -> false,
         "IsAGroup" -> false,
-        "contactDetails" -> Json.obj()
+        "contactDetails" -> o.contactDetails
       )
   }
 }
