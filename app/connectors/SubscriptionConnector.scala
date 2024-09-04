@@ -23,7 +23,7 @@ import models.subscription.requests.SubscriptionRequest
 import models.subscription.responses.*
 import org.apache.pekko.Done
 import play.api.http.HeaderNames
-import play.api.http.Status.{CREATED, OK, UNPROCESSABLE_ENTITY}
+import play.api.http.Status.{ACCEPTED, CREATED, UNPROCESSABLE_ENTITY}
 import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.UuidService
@@ -80,7 +80,7 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
       .execute[HttpResponse]
       .flatMap { response =>
         response.status match {
-          case OK => Future.successful(Done)
+          case ACCEPTED => Future.successful(Done)
           case status => Future.failed(UpdateSubscriptionFailure(correlationId, status))
         }
       }
