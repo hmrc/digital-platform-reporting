@@ -24,7 +24,7 @@ object TinType extends PlayEnum[TinType] {
 
   override val values: IndexedSeq[TinType] = findValues
 
-  case object Dpi extends TinType("DPI")
+  case object Crn extends TinType("CRN")
   case object Utr extends TinType("UTR")
   case object Vrn extends TinType("VRN")
   case object Empref extends TinType("EMPREF")

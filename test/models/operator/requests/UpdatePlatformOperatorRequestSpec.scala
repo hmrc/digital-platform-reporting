@@ -34,7 +34,7 @@ class UpdatePlatformOperatorRequestSpec extends AnyFreeSpec with Matchers {
         tinDetails = Seq(
           TinDetails(
             tin = "tin",
-            tinType = TinType.Dpi,
+            tinType = TinType.Crn,
             issuedBy = "issuedBy"
           )
         ),
@@ -76,7 +76,7 @@ class UpdatePlatformOperatorRequestSpec extends AnyFreeSpec with Matchers {
             "POName" -> "operatorName",
             "TINDetails" -> Json.arr(Json.obj(
               "TIN" -> "tin",
-              "TINType" -> "DPI",
+              "TINType" -> "CRN",
               "IssuedBy" -> "issuedBy"
             )),
             "BusinessName" -> "businessName",
