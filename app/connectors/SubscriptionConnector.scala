@@ -59,17 +59,16 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
           case UNPROCESSABLE_ENTITY =>
             response.json.as[ErrorResponse].errorDetail.errorCode match {
               case ErrorResponse.DuplicateSubmission => AlreadySubscribedResponse
-              case errorCode               => UnexpectedResponse(errorCode)
+              case errorCode => UnexpectedResponse(errorCode)
             }
         }
       }
 
   def updateSubscription(request: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[Done] = {
-
     val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
 
-    httpClient.post(url"${appConfig.SubscribeBaseUrl}/dac6/dprs0203/v1")
+    httpClient.put(url"${appConfig.SubscribeBaseUrl}/dac6/dprs0203/v1")
       .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.UpdateContactsBearerToken}")
       .setHeader("X-Correlation-ID" -> correlationId)
       .setHeader("X-Conversation-ID" -> conversationId)

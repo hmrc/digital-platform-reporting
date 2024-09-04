@@ -18,10 +18,10 @@ package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import connectors.SubscriptionConnector.UpdateSubscriptionFailure
-import models.{ErrorDetail, ErrorResponse}
 import models.subscription.*
 import models.subscription.requests.SubscriptionRequest
 import models.subscription.responses.*
+import models.{ErrorDetail, ErrorResponse}
 import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
@@ -131,7 +131,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
               aResponse()
                 .withStatus(422)
                 .withBody(Json.toJson(ErrorResponse(ErrorDetail("004"))).toString)
-        ))
+            ))
 
         val result = connector.subscribe(request).futureValue
 
@@ -176,7 +176,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
         )
 
         wireMockServer.stubFor(
-          post(urlMatching(".*/dac6/dprs0203/v1"))
+          put(urlMatching(".*/dac6/dprs0203/v1"))
             .withHeader("Authorization", equalTo("Bearer updateSubscriptionToken"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -201,7 +201,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
         val request = SubscriptionRequest("dprs id", true, None, OrganisationContact(Organisation("name"), "email", None), None)
 
         wireMockServer.stubFor(
-          post(urlMatching(".*/dac6/dprs0203/v1"))
+          put(urlMatching(".*/dac6/dprs0203/v1"))
             .withHeader("Authorization", equalTo("Bearer updateSubscriptionToken"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
