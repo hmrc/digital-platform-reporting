@@ -23,10 +23,10 @@ import models.registration.responses.*
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{times, verify, when}
-import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -34,6 +34,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import services.UuidService
+import utils.ContactDetailsBuilder.aContactDetails
 
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneId}
@@ -57,7 +58,7 @@ class RegistrationControllerSpec
     Mockito.reset(mockUuidService, mockConnector)
     super.beforeEach()
   }
-  
+
   private val app =
     new GuiceApplicationBuilder()
       .overrides(
@@ -66,22 +67,18 @@ class RegistrationControllerSpec
         bind[UuidService].toInstance(mockUuidService)
       )
       .build()
-    
+
   private val acknowledgementReferenceUuid = UUID.randomUUID().toString
   private val acknowledgementReference = acknowledgementReferenceUuid.replace("-", "")
-    
+
   ".register" - {
-    
     "must return OK and the response detail" - {
-
       "when a 'with Id` request was successfully matched" in {
-
         val requestDetail = OrganisationWithUtr("123", None)
         val expectedFullRequest = RequestWithId(
           RequestCommon(instant, acknowledgementReference),
           requestDetail
         )
-
         val responseDetail = ResponseDetailWithId("safeId", Address("addressLine1", None, None, None, Some("postcode"), "GB"), None)
         val fullResponse = MatchResponseWithId(
           ResponseCommon("OK"),
@@ -93,12 +90,11 @@ class RegistrationControllerSpec
 
         val payload = Json.obj(
           "type" -> "organisation",
-          "utr"  -> "123"
+          "utr" -> "123"
         )
 
-        val request =
-          FakeRequest(routes.RegistrationController.register())
-            .withJsonBody(payload)
+        val request = FakeRequest(routes.RegistrationController.register())
+          .withJsonBody(payload)
 
         val result = route(app, request).value
 
@@ -108,8 +104,8 @@ class RegistrationControllerSpec
       }
 
       "when a 'without Id` request was successfully matched" in {
-
-        val requestDetail = OrganisationWithoutId("name", Address("line 1", None, None, None, Some("postcode"), "GB"))
+        val contactDetails = aContactDetails.copy(emailAddress = "some.email@example.com", phoneNumber = Some("0123456"))
+        val requestDetail = OrganisationWithoutId("name", Address("line 1", None, None, None, Some("postcode"), "GB"), contactDetails)
         val expectedFullRequest = RequestWithoutId(
           RequestCommon(instant, acknowledgementReference),
           requestDetail
@@ -126,16 +122,18 @@ class RegistrationControllerSpec
 
         val payload = Json.obj(
           "name" -> "name",
-          "address"  -> Json.obj(
+          "address" -> Json.obj(
             "addressLine1" -> "line 1",
             "postalCode" -> "postcode",
             "countryCode" -> "GB"
+          ),
+          "contactDetails" -> Json.obj(
+            "emailAddress" -> "some.email@example.com",
+            "phoneNumber" -> "0123456"
           )
         )
 
-        val request =
-          FakeRequest(routes.RegistrationController.register())
-            .withJsonBody(payload)
+        val request = FakeRequest(routes.RegistrationController.register()).withJsonBody(payload)
 
         val result = route(app, request).value
 
@@ -146,9 +144,7 @@ class RegistrationControllerSpec
     }
 
     "must return NotFound" - {
-
       "when a `with Id` request was not matched" in {
-
         when(mockConnector.registerWithId(any())(any())).thenReturn(Future.successful(NoMatchResponse))
         when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
 
@@ -157,9 +153,7 @@ class RegistrationControllerSpec
           "utr" -> "123"
         )
 
-        val request =
-          FakeRequest(routes.RegistrationController.register())
-            .withJsonBody(payload)
+        val request = FakeRequest(routes.RegistrationController.register()).withJsonBody(payload)
 
         val result = route(app, request).value
 
@@ -167,22 +161,22 @@ class RegistrationControllerSpec
       }
 
       "when a `without Id` request was not matched" in {
-
         when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.successful(NoMatchResponse))
         when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
 
         val payload = Json.obj(
           "name" -> "name",
-          "address"  -> Json.obj(
+          "address" -> Json.obj(
             "addressLine1" -> "line 1",
             "postalCode" -> "postcode",
             "countryCode" -> "GB"
+          ),
+          "contactDetails" -> Json.obj(
+            "emailAddress" -> "email"
           )
         )
 
-        val request =
-          FakeRequest(routes.RegistrationController.register())
-            .withJsonBody(payload)
+        val request = FakeRequest(routes.RegistrationController.register()).withJsonBody(payload)
 
         val result = route(app, request).value
 
@@ -191,9 +185,7 @@ class RegistrationControllerSpec
     }
 
     "must return Conflict" - {
-
       "when a `with Id` request was  already subscribed" in {
-
         when(mockConnector.registerWithId(any())(any())).thenReturn(Future.successful(AlreadySubscribedResponse))
         when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
 
@@ -202,9 +194,7 @@ class RegistrationControllerSpec
           "utr" -> "123"
         )
 
-        val request =
-          FakeRequest(routes.RegistrationController.register())
-            .withJsonBody(payload)
+        val request = FakeRequest(routes.RegistrationController.register()).withJsonBody(payload)
 
         val result = route(app, request).value
 
@@ -212,22 +202,22 @@ class RegistrationControllerSpec
       }
 
       "when a `without Id` request was already subscribed" in {
-
         when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.successful(AlreadySubscribedResponse))
         when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
 
         val payload = Json.obj(
           "name" -> "name",
-          "address"  -> Json.obj(
+          "address" -> Json.obj(
             "addressLine1" -> "line 1",
             "postalCode" -> "postcode",
             "countryCode" -> "GB"
+          ),
+          "contactDetails" -> Json.obj(
+            "emailAddress" -> "email"
           )
         )
 
-        val request =
-          FakeRequest(routes.RegistrationController.register())
-            .withJsonBody(payload)
+        val request = FakeRequest(routes.RegistrationController.register()).withJsonBody(payload)
 
         val result = route(app, request).value
 
@@ -236,9 +226,7 @@ class RegistrationControllerSpec
     }
 
     "must fail" - {
-
       "when a `with Id` request to the backend fails" in {
-
         when(mockConnector.registerWithId(any())(any())).thenReturn(Future.failed(new Exception("foo")))
         when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
 
@@ -247,15 +235,12 @@ class RegistrationControllerSpec
           "utr" -> "123"
         )
 
-        val request =
-          FakeRequest(routes.RegistrationController.register())
-            .withJsonBody(payload)
+        val request = FakeRequest(routes.RegistrationController.register()).withJsonBody(payload)
 
         route(app, request).value.failed
       }
 
       "when a `without Id` request to the backend fails" in {
-
         when(mockConnector.registerWithoutId(any())(any())).thenReturn(Future.failed(new Exception("foo")))
         when(mockUuidService.generate()).thenReturn(acknowledgementReferenceUuid)
 
@@ -265,12 +250,13 @@ class RegistrationControllerSpec
             "addressLine1" -> "line 1",
             "postalCode" -> "postcode",
             "countryCode" -> "GB"
+          ),
+          "contact" -> Json.obj(
+            "email" -> "email"
           )
         )
 
-        val request =
-          FakeRequest(routes.RegistrationController.register())
-            .withJsonBody(payload)
+        val request = FakeRequest(routes.RegistrationController.register()).withJsonBody(payload)
 
         route(app, request).value.failed
       }

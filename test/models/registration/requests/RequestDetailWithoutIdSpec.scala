@@ -20,14 +20,14 @@ import models.registration.Address
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.*
+import utils.ContactDetailsBuilder.aContactDetails
+
 import java.time.LocalDate
 
 class RequestDetailWithoutIdSpec extends AnyFreeSpec with Matchers {
-  
+
   "request detail without id" - {
-
     "must read an individual without id" in {
-
       val json = Json.obj(
         "firstName" -> "first",
         "lastName" -> "last",
@@ -36,12 +36,17 @@ class RequestDetailWithoutIdSpec extends AnyFreeSpec with Matchers {
           "addressLine1" -> "line 1",
           "postalCode" -> "postcode",
           "countryCode" -> "GB"
+        ),
+        "contactDetails" -> Json.obj(
+          "emailAddress" -> "some.email@example.com",
+          "phoneNumber" -> "01234"
         )
       )
 
       val result = json.as[RequestDetailWithoutId]
       val expectedAddress = Address("line 1", None, None, None, Some("postcode"), "GB")
-      result mustEqual IndividualWithoutId("first", "last", LocalDate.of(2000, 1, 2), expectedAddress)
+      val expectedContactDetails = aContactDetails.copy(emailAddress = "some.email@example.com", phoneNumber = Some("01234"))
+      result mustEqual IndividualWithoutId("first", "last", LocalDate.of(2000, 1, 2), expectedAddress, expectedContactDetails)
     }
 
     "must read an organisation without id" in {
@@ -52,12 +57,18 @@ class RequestDetailWithoutIdSpec extends AnyFreeSpec with Matchers {
           "addressLine1" -> "line 1",
           "postalCode" -> "postcode",
           "countryCode" -> "GB"
+        ),
+        "contactDetails" -> Json.obj(
+          "emailAddress" -> "some.email@example.com",
+          "phoneNumber" -> "01234"
         )
       )
 
       val result = json.as[RequestDetailWithoutId]
       val expectedAddress = Address("line 1", None, None, None, Some("postcode"), "GB")
-      result mustEqual OrganisationWithoutId("name", expectedAddress)
+      val expectedContactDetails = aContactDetails.copy(emailAddress = "some.email@example.com", phoneNumber = Some("01234"))
+
+      result mustEqual OrganisationWithoutId("name", expectedAddress, expectedContactDetails)
     }
   }
 }

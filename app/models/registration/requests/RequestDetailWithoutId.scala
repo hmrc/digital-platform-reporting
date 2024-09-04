@@ -17,7 +17,7 @@
 package models.registration.requests
 
 import play.api.libs.functional.syntax.*
-import play.api.libs.json.{Json, JsObject, OWrites, Reads}
+import play.api.libs.json.{JsObject, Json, OFormat, OWrites, Reads}
 
 trait RequestDetailWithoutId extends RequestDetail
 
@@ -33,4 +33,10 @@ object RequestDetailWithoutId {
         case x: OrganisationWithoutId => Json.toJsObject(x)(OrganisationWithoutId.writes)
       }
   }
+}
+
+case class ContactDetails(emailAddress: String, phoneNumber: Option[String])
+
+object ContactDetails {
+  implicit val format: OFormat[ContactDetails] = Json.format[ContactDetails]
 }

@@ -34,6 +34,7 @@ import play.api.libs.json.Json
 import services.UuidService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.WireMockSupport
+import utils.ContactDetailsBuilder.aContactDetails
 
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneId}
@@ -227,7 +228,7 @@ class RegistrationConnectorSpec extends AnyFreeSpec
 
         val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
         val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
-        val requestDetail = OrganisationWithoutId("name", address)
+        val requestDetail = OrganisationWithoutId("name", address, aContactDetails)
         val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
 
         val responseCommon = ResponseCommon("OK")
@@ -276,7 +277,7 @@ class RegistrationConnectorSpec extends AnyFreeSpec
 
         val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
         val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
-        val requestDetail = OrganisationWithoutId("name", address)
+        val requestDetail = OrganisationWithoutId("name", address, aContactDetails)
         val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
@@ -302,7 +303,7 @@ class RegistrationConnectorSpec extends AnyFreeSpec
 
         val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
         val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
-        val requestDetail = OrganisationWithoutId("name", address)
+        val requestDetail = OrganisationWithoutId("name", address, aContactDetails)
         val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
@@ -327,7 +328,7 @@ class RegistrationConnectorSpec extends AnyFreeSpec
 
         val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
         val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
-        val requestDetail = OrganisationWithoutId("name", address)
+        val requestDetail = OrganisationWithoutId("name", address, aContactDetails)
         val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(
@@ -350,7 +351,7 @@ class RegistrationConnectorSpec extends AnyFreeSpec
 
         val requestCommon = RequestCommon(instant, acknowledgementReference.toString)
         val address = Address("addressLine1", None, None, None, Some("postcode"), "GB")
-        val requestDetail = OrganisationWithoutId("name", address)
+        val requestDetail = OrganisationWithoutId("name", address, aContactDetails)
         val requestWithoutId = RequestWithoutId(requestCommon, requestDetail)
 
         wireMockServer.stubFor(

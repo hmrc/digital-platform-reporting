@@ -16,26 +16,26 @@
 
 package models.registration.requests
 
-import java.time.{Instant, LocalDate}
 import models.registration.Address
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
+import utils.ContactDetailsBuilder.aContactDetails
+
+import java.time.{Instant, LocalDate}
 
 class RequestWithoutIdSpec extends AnyFreeSpec with Matchers {
 
   "request without Id" - {
-    
+
     val instant = Instant.ofEpochSecond(1)
     val requestCommon = RequestCommon(instant, "ack ref")
     val address = Address("line 1", None, None, None, Some("postcode"), "GB")
+    val contactDetails = aContactDetails.copy(emailAddress = "some.email@example.com", phoneNumber = Some("01234"))
 
     "must serialise with an Individual" in {
-
-      val individual = IndividualWithoutId("first", "last", LocalDate.of(2000, 1, 2), address)
-
+      val individual = IndividualWithoutId("first", "last", LocalDate.of(2000, 1, 2), address, contactDetails)
       val request = RequestWithoutId(requestCommon, individual)
-
       val expectedJson = Json.obj(
         "registerWithoutIDRequest" -> Json.obj(
           "requestCommon" -> Json.obj(
@@ -62,6 +62,10 @@ class RequestWithoutIdSpec extends AnyFreeSpec with Matchers {
               "addressLine1" -> "line 1",
               "postalCode" -> "postcode",
               "countryCode" -> "GB"
+            ),
+            "contactDetails" -> Json.obj(
+              "emailAddress" -> "some.email@example.com",
+              "phoneNumber" -> "01234"
             )
           )
         )
@@ -71,11 +75,8 @@ class RequestWithoutIdSpec extends AnyFreeSpec with Matchers {
     }
 
     "must serialise with an Organisation" in {
-
-      val organisation = OrganisationWithoutId("name", address)
-
+      val organisation = OrganisationWithoutId("name", address, contactDetails)
       val request = RequestWithoutId(requestCommon, organisation)
-
       val expectedJson = Json.obj(
         "registerWithoutIDRequest" -> Json.obj(
           "requestCommon" -> Json.obj(
@@ -100,6 +101,10 @@ class RequestWithoutIdSpec extends AnyFreeSpec with Matchers {
               "addressLine1" -> "line 1",
               "postalCode" -> "postcode",
               "countryCode" -> "GB"
+            ),
+            "contactDetails" -> Json.obj(
+              "emailAddress" -> "some.email@example.com",
+              "phoneNumber" -> "01234"
             )
           )
         )

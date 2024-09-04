@@ -16,16 +16,16 @@
 
 package models.registration.requests
 
-import java.time.LocalDate
-import play.api.libs.json.*
 import models.registration.Address
+import play.api.libs.json.*
 
-final case class IndividualWithoutId(
-                                      firstName: String,
-                                      lastName: String,
-                                      dateOfBirth: LocalDate,
-                                      address: Address
-                                    ) extends RequestDetailWithoutId
+import java.time.LocalDate
+
+final case class IndividualWithoutId(firstName: String,
+                                     lastName: String,
+                                     dateOfBirth: LocalDate,
+                                     address: Address,
+                                     contactDetails: ContactDetails) extends RequestDetailWithoutId
 
 object IndividualWithoutId {
 
@@ -43,7 +43,7 @@ object IndividualWithoutId {
         "address" -> o.address,
         "IsAnAgent" -> false,
         "IsAGroup" -> false,
-        "contactDetails" -> Json.obj()
+        "contactDetails" -> o.contactDetails
       )
   }
 }
