@@ -163,7 +163,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
 
   ".updateSubscription" - {
     "must post a request" - {
-      "and return done when the server returns OK" in {
+      "and return done when the server returns ACCEPTED" in {
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
@@ -186,7 +186,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
             .withRequestBody(equalTo(Json.toJson(request)(SubscriptionRequest.updateWrites).toString))
             .willReturn(
               aResponse()
-                .withStatus(200)
+                .withStatus(202)
                 .withBody(responsePayload.toString)
             )
         )
