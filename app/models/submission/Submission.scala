@@ -53,4 +53,10 @@ object Submission {
   }
 
   implicit lazy val format: OFormat[Submission] = Json.format
+
+  lazy val mongoFormat: OFormat[Submission] = {
+    import MongoJavatimeFormats.Implicits._
+    implicit val stateFormat: OFormat[State] = State.mongoFormat
+    Json.format
+  }
 }
