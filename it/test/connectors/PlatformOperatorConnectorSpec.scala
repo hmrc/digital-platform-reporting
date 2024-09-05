@@ -73,7 +73,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
 
   implicit private lazy val hc: HeaderCarrier = HeaderCarrier()
   
-  ".createPlatformOperator" - {
+  ".create" - {
     
     "must post a request" - {
       
@@ -120,7 +120,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
             )
         )
 
-        val result = connector.createPlatformOperator(request).futureValue
+        val result = connector.create(request).futureValue
 
         result mustEqual expectedResponse
       }
@@ -153,7 +153,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
             .willReturn(serverError())
         )
 
-        connector.createPlatformOperator(request).failed.futureValue
+        connector.create(request).failed.futureValue
       }
     }
   }

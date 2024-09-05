@@ -27,6 +27,8 @@ final case class ContactDetails(
 
 object ContactDetails {
 
+  lazy val defaultFormat: OFormat[ContactDetails] = Json.format
+  
   lazy val downstreamWrites: OWrites[ContactDetails] = (
     (__ \ "PhoneNumber").writeNullable[String] and
     (__ \ "ContactName").write[String] and

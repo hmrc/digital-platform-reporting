@@ -12,3 +12,5 @@ POST        /submission/:id/start-upload            controllers.SubmissionContro
 POST        /submission/:id/upload-success          controllers.SubmissionController.uploadSuccess(id: String)
 POST        /submission/:id/upload-failed           controllers.SubmissionController.uploadFailed(id: String)
 POST        /submission/:id/submit                  controllers.SubmissionController.submit(id: String)
+
+POST        /platform-operator      controllers.PlatformOperatorController.create()

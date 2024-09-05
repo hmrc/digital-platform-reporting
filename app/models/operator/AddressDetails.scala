@@ -30,6 +30,8 @@ final case class AddressDetails(
 
 object AddressDetails {
 
+  lazy val defaultFormat: OFormat[AddressDetails] = Json.format
+  
   lazy val downstreamWrites: OWrites[AddressDetails] = (
     (__ \ "AddressLine1").write[String] and
     (__ \ "AddressLine2").writeNullable[String] and

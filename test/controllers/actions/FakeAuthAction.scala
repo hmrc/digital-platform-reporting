@@ -14,24 +14,19 @@
  * limitations under the License.
  */
 
-package models.operator
+package controllers.actions
 
-import play.api.libs.json._
-import play.api.libs.functional.syntax._
+import models.AuthenticatedRequest
+import org.scalatestplus.mockito.MockitoSugar.mock
+import play.api.mvc.{BodyParsers, Request, Result}
+import uk.gov.hmrc.auth.core.AuthConnector
 
-final case class TinDetails(
-                             tin: String,
-                             tinType: TinType,
-                             issuedBy: String
-                           )
+import javax.inject.Inject
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-object TinDetails {
+class FakeAuthAction @Inject() extends AuthAction(mock[AuthConnector], mock[BodyParsers.Default]) {
 
-  lazy val defaultFormat: OFormat[TinDetails] = Json.format
-  
-  lazy val downstreamWrites: OWrites[TinDetails] = (
-    (__ \ "TIN").write[String] and
-    (__ \ "TINType").write[TinType] and
-    (__ \ "IssuedBy").write[String]
-  )(o => Tuple.fromProductTyped(o))
+  override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] =
+    block(AuthenticatedRequest(request, "dprs id"))
 }

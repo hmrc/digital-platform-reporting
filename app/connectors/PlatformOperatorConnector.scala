@@ -44,8 +44,8 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
                                           appConfig: AppConfig)
                                          (implicit ec: ExecutionContext) {
   
-  def createPlatformOperator(request: CreatePlatformOperatorRequest)
-                            (implicit hc: HeaderCarrier): Future[PlatformOperatorCreatedResponse] = {
+  def create(request: CreatePlatformOperatorRequest)
+            (implicit hc: HeaderCarrier): Future[PlatformOperatorCreatedResponse] = {
     
     val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
