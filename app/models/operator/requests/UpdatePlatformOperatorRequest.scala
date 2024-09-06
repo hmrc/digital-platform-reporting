@@ -34,6 +34,15 @@ final case class UpdatePlatformOperatorRequest(
 
 object UpdatePlatformOperatorRequest {
 
+  lazy val defaultFormat: OFormat[UpdatePlatformOperatorRequest] = {
+
+    given OFormat[TinDetails] = TinDetails.defaultFormat
+    given OFormat[ContactDetails] = ContactDetails.defaultFormat
+    given OFormat[AddressDetails] = AddressDetails.defaultFormat
+
+    Json.format
+  }
+  
   lazy val downstreamWrites: OWrites[UpdatePlatformOperatorRequest] = {
 
     given OWrites[TinDetails] = TinDetails.downstreamWrites

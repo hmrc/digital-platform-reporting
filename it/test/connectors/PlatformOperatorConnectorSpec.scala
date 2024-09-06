@@ -18,7 +18,7 @@ package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import models.operator.{AddressDetails, ContactDetails}
-import models.operator.requests.CreatePlatformOperatorRequest
+import models.operator.requests.*
 import models.operator.responses.PlatformOperatorCreatedResponse
 import org.mockito.Mockito
 import org.mockito.Mockito.when
@@ -72,16 +72,16 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
   private lazy val connector = app.injector.instanceOf[PlatformOperatorConnector]
 
   implicit private lazy val hc: HeaderCarrier = HeaderCarrier()
-  
+
   ".create" - {
-    
+
     "must post a request" - {
-      
+
       "and return the response when the server returns OK" in {
-        
+
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
-        
+
         val request = CreatePlatformOperatorRequest(
           subscriptionId = "dprsid",
           operatorName = "foo",
@@ -124,7 +124,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
 
         result mustEqual expectedResponse
       }
-      
+
       "and return a failed future when the server returns an error" in {
 
         when(mockUuidService.generate())
@@ -154,6 +154,152 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
         )
 
         connector.create(request).failed.futureValue
+      }
+    }
+  }
+
+  ".update" - {
+
+    "must post a request" - {
+
+      "and return the response when the server returns OK" in {
+
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val request = UpdatePlatformOperatorRequest(
+          subscriptionId = "dprsid",
+          operatorId = "operatorid",
+          operatorName = "foo",
+          tinDetails = Seq.empty,
+          businessName = None,
+          tradingName = None,
+          primaryContactDetails = ContactDetails(None, "name", "email"),
+          secondaryContactDetails = None,
+          addressDetails = AddressDetails("line 1", None, None, None, None, None)
+        )
+
+        val responsePayload = Json.obj(
+          "success" -> Json.obj(
+            "processingDate" -> "2000-01-02T03:04:56Z"
+          )
+        )
+        
+        wireMockServer.stubFor(
+          post(urlMatching(".*/dac6/dprs9301/v1"))
+            .withHeader("Authorization", equalTo("Bearer updatePlatformOperatorToken"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+            .withRequestBody(equalTo(Json.toJson(request)(UpdatePlatformOperatorRequest.downstreamWrites).toString))
+            .willReturn(
+              aResponse()
+                .withStatus(200)
+                .withBody(responsePayload.toString)
+            )
+        )
+
+        connector.update(request).futureValue
+      }
+
+      "and return a failed future when the server returns an error" in {
+
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val request = UpdatePlatformOperatorRequest(
+          subscriptionId = "dprsid",
+          operatorId = "operatorid",
+          operatorName = "foo",
+          tinDetails = Seq.empty,
+          businessName = None,
+          tradingName = None,
+          primaryContactDetails = ContactDetails(None, "name", "email"),
+          secondaryContactDetails = None,
+          addressDetails = AddressDetails("line 1", None, None, None, None, None)
+        )
+
+        wireMockServer.stubFor(
+          post(urlMatching(".*/dac6/dprs9301/v1"))
+            .withHeader("Authorization", equalTo("Bearer updatePlatformOperatorToken"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+            .withRequestBody(equalTo(Json.toJson(request)(UpdatePlatformOperatorRequest.downstreamWrites).toString))
+            .willReturn(serverError())
+        )
+
+        connector.update(request).failed.futureValue
+      }
+    }
+  }
+  
+  ".delete" - {
+
+    "must post a request" - {
+
+      "and return the response when the server returns OK" in {
+
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val request = DeletePlatformOperatorRequest(
+          subscriptionId = "dprsid",
+          operatorId = "operatorid"
+        )
+
+        val responsePayload = Json.obj(
+          "success" -> Json.obj(
+            "processingDate" -> "2000-01-02T03:04:56Z"
+          )
+        )
+        
+        wireMockServer.stubFor(
+          post(urlMatching(".*/dac6/dprs9301/v1"))
+            .withHeader("Authorization", equalTo("Bearer updatePlatformOperatorToken"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+            .withRequestBody(equalTo(Json.toJson(request)(DeletePlatformOperatorRequest.downstreamWrites).toString))
+            .willReturn(
+              aResponse()
+                .withStatus(200)
+                .withBody(responsePayload.toString)
+            )
+        )
+
+        connector.delete(request).futureValue
+      }
+
+      "and return a failed future when the server returns an error" in {
+
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val request = DeletePlatformOperatorRequest(
+          subscriptionId = "dprsid",
+          operatorId = "operatorid"
+        )
+
+        wireMockServer.stubFor(
+          post(urlMatching(".*/dac6/dprs9301/v1"))
+            .withHeader("Authorization", equalTo("Bearer updatePlatformOperatorToken"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+            .withRequestBody(equalTo(Json.toJson(request)(DeletePlatformOperatorRequest.downstreamWrites).toString))
+            .willReturn(serverError())
+        )
+
+        connector.delete(request).failed.futureValue
       }
     }
   }

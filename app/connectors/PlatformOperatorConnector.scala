@@ -17,15 +17,12 @@
 package connectors
 
 import config.AppConfig
-import connectors.PlatformOperatorConnector.CreatePlatformOperatorFailure
-import models.ErrorResponse
-import models.operator.requests.CreatePlatformOperatorRequest
+import connectors.PlatformOperatorConnector.*
+import models.operator.requests.*
 import models.operator.responses.PlatformOperatorCreatedResponse
-import models.subscription.requests.SubscriptionRequest
-import models.subscription.responses.*
 import org.apache.pekko.Done
 import play.api.http.HeaderNames
-import play.api.http.Status.{CREATED, OK, UNPROCESSABLE_ENTITY}
+import play.api.http.Status.OK
 import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.UuidService
@@ -67,11 +64,67 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
         }
       }
   }
+
+  def update(request: UpdatePlatformOperatorRequest)
+            (implicit hc: HeaderCarrier): Future[Done] = {
+
+    val correlationId = uuidService.generate()
+    val conversationId = uuidService.generate()
+
+    httpClient.post(url"${appConfig.UpdatePlatformOperatorBaseUrl}/dac6/dprs9301/v1")
+      .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.UpdatePlatformOperatorBearerToken}")
+      .setHeader("X-Correlation-ID" -> correlationId)
+      .setHeader("X-Conversation-ID" -> conversationId)
+      .setHeader("X-Forwarded-Host" -> appConfig.AppName)
+      .setHeader(HeaderNames.CONTENT_TYPE -> "application/json")
+      .setHeader(HeaderNames.ACCEPT -> "application/json")
+      .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
+      .withBody(Json.toJson(request)(UpdatePlatformOperatorRequest.downstreamWrites))
+      .execute[HttpResponse]
+      .flatMap { response =>
+        response.status match {
+          case OK     => Future.successful(Done)
+          case status => Future.failed(UpdatePlatformOperatorFailure(correlationId, status))
+        }
+      }
+  }
+
+  def delete(request: DeletePlatformOperatorRequest)
+            (implicit hc: HeaderCarrier): Future[Done] = {
+
+    val correlationId = uuidService.generate()
+    val conversationId = uuidService.generate()
+
+    httpClient.post(url"${appConfig.UpdatePlatformOperatorBaseUrl}/dac6/dprs9301/v1")
+      .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.UpdatePlatformOperatorBearerToken}")
+      .setHeader("X-Correlation-ID" -> correlationId)
+      .setHeader("X-Conversation-ID" -> conversationId)
+      .setHeader("X-Forwarded-Host" -> appConfig.AppName)
+      .setHeader(HeaderNames.CONTENT_TYPE -> "application/json")
+      .setHeader(HeaderNames.ACCEPT -> "application/json")
+      .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
+      .withBody(Json.toJson(request)(DeletePlatformOperatorRequest.downstreamWrites))
+      .execute[HttpResponse]
+      .flatMap { response =>
+        response.status match {
+          case OK      => Future.successful(Done)
+          case status => Future.failed(DeletePlatformOperatorFailure(correlationId, status))
+        }
+      }
+  }
 }
 
 object PlatformOperatorConnector {
-  
+
   final case class CreatePlatformOperatorFailure(correlationId: String, status: Int) extends Throwable {
     override def getMessage: String = s"Create platform operator failed for correlation ID: $correlationId, got status: $status"
+  }
+
+  final case class UpdatePlatformOperatorFailure(correlationId: String, status: Int) extends Throwable {
+    override def getMessage: String = s"Update platform operator failed for correlation ID: $correlationId, got status: $status"
+  }
+
+  final case class DeletePlatformOperatorFailure(correlationId: String, status: Int) extends Throwable {
+    override def getMessage: String = s"Delete platform operator failed for correlation ID: $correlationId, got status: $status"
   }
 }
