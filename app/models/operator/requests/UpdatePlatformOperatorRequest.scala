@@ -16,7 +16,7 @@
 
 package models.operator.requests
 
-import models.operator.{AddressDetails, ContactDetails, RequestType, TinDetails}
+import models.operator.{AddressDetails, ContactDetails, Notification, RequestType, TinDetails}
 import play.api.libs.json.*
 import play.api.libs.functional.syntax.*
 
@@ -29,7 +29,8 @@ final case class UpdatePlatformOperatorRequest(
                                                 tradingName: Option[String],
                                                 primaryContactDetails: ContactDetails,
                                                 secondaryContactDetails: Option[ContactDetails],
-                                                addressDetails: AddressDetails
+                                                addressDetails: AddressDetails,
+                                                notification: Option[Notification]
                                               )
 
 object UpdatePlatformOperatorRequest {
@@ -39,6 +40,7 @@ object UpdatePlatformOperatorRequest {
     given OFormat[TinDetails] = TinDetails.defaultFormat
     given OFormat[ContactDetails] = ContactDetails.defaultFormat
     given OFormat[AddressDetails] = AddressDetails.defaultFormat
+    given OFormat[Notification] = Notification.defaultFormat
 
     Json.format
   }
@@ -48,6 +50,7 @@ object UpdatePlatformOperatorRequest {
     given OWrites[TinDetails] = TinDetails.downstreamWrites
     given OWrites[ContactDetails] = ContactDetails.downstreamWrites
     given OWrites[AddressDetails] = AddressDetails.downstreamWrites
+    given OWrites[Notification] = Notification.downstreamWrites
 
     given OWrites[UpdatePlatformOperatorRequest] = (
       (__ \ "SubscriptionID").write[String] and
@@ -58,7 +61,8 @@ object UpdatePlatformOperatorRequest {
       (__ \ "TradingName").writeNullable[String] and
       (__ \ "PrimaryContactDetails").write[ContactDetails] and
       (__ \ "SecondaryContactDetails").writeNullable[ContactDetails] and
-      (__ \ "AddressDetails").write[AddressDetails]
+      (__ \ "AddressDetails").write[AddressDetails] and
+      (__ \ "NotificationDetails").writeNullable[Notification]
     )(o => Tuple.fromProductTyped(o))
 
     OWrites { request =>

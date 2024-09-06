@@ -176,7 +176,8 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
           tradingName = None,
           primaryContactDetails = ContactDetails(None, "name", "email"),
           secondaryContactDetails = None,
-          addressDetails = AddressDetails("line 1", None, None, None, None, None)
+          addressDetails = AddressDetails("line 1", None, None, None, None, None),
+          notification = None
         )
 
         val responsePayload = Json.obj(
@@ -218,7 +219,8 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
           tradingName = None,
           primaryContactDetails = ContactDetails(None, "name", "email"),
           secondaryContactDetails = None,
-          addressDetails = AddressDetails("line 1", None, None, None, None, None)
+          addressDetails = AddressDetails("line 1", None, None, None, None, None),
+          notification = None
         )
 
         wireMockServer.stubFor(
