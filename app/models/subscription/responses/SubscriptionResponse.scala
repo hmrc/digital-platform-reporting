@@ -16,17 +16,23 @@
 
 package models.subscription.responses
 
+import play.api.libs.functional.syntax.*
 import play.api.libs.json.*
+
+import java.time.Instant
 
 sealed trait SubscriptionResponse
 
-final case class SubscribedResponse(dprsId: String) extends SubscriptionResponse
+final case class SubscribedResponse(dprsId: String,
+                                    subscribedDateTime: Instant) extends SubscriptionResponse
 
 object SubscribedResponse {
-  
-  implicit lazy val reads: Reads[SubscribedResponse] =
-    (__ \ "success" \ "dprsReference").read[String].map(SubscribedResponse.apply)
-    
+
+  implicit lazy val reads: Reads[SubscribedResponse] = (
+    (__ \ "success" \ "dprsReference").read[String] and
+      (__ \ "success" \ "processingDate").read[Instant]
+    )(SubscribedResponse(_, _))
+
   implicit lazy val writes: OWrites[SubscribedResponse] = Json.writes
 }
 

@@ -37,7 +37,7 @@ import services.UuidService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.WireMockSupport
 
-import java.time.{Clock, LocalDateTime, ZoneId, ZoneOffset}
+import java.time.*
 import java.util.UUID
 
 class SubscriptionConnectorSpec extends AnyFreeSpec
@@ -89,7 +89,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
             "dprsReference" -> "123"
           )
         )
-        val expectedResponse = SubscribedResponse("123")
+        val expectedResponse = SubscribedResponse("123", Instant.parse("2000-01-02T03:04:56Z"))
 
         wireMockServer.stubFor(
           post(urlMatching(".*/dac6/dprs0201/v1"))

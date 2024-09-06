@@ -20,20 +20,20 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
 
+import java.time.Instant
+
 class SubscribedResponseSpec extends AnyFreeSpec with Matchers {
 
   "subscribed response" - {
-    
     "must deserialise" in {
-      
       val json = Json.obj(
         "success" -> Json.obj(
           "processingDate" -> "2000-01-02T03:04:56Z",
           "dprsReference" -> "ABC123"
         )
       )
-      
-      json.as[SubscribedResponse] mustEqual SubscribedResponse("ABC123")
+
+      json.as[SubscribedResponse] mustEqual SubscribedResponse("ABC123", Instant.parse("2000-01-02T03:04:56Z"))
     }
   }
 }
