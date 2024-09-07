@@ -17,7 +17,7 @@
 package models.operator.requests
 
 import models.operator.RequestType
-import play.api.libs.json.{Json, OWrites}
+import play.api.libs.json.{Json, OFormat, OWrites}
 
 final case class DeletePlatformOperatorRequest(
                                                 subscriptionId: String,
@@ -26,6 +26,8 @@ final case class DeletePlatformOperatorRequest(
 
 object DeletePlatformOperatorRequest {
 
+  lazy val defaultFormat: OFormat[DeletePlatformOperatorRequest] = Json.format
+  
   lazy val downstreamWrites: OWrites[DeletePlatformOperatorRequest] =
     OWrites { request =>
       Json.obj(

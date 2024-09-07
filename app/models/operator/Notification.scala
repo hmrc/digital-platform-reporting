@@ -19,25 +19,19 @@ package models.operator
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
-final case class TinDetails(
-                             tin: String,
-                             tinType: TinType,
-                             issuedBy: String
-                           )
+final case class Notification(notificationType: NotificationType,
+                              isActiveSeller: Boolean,
+                              isDueDiligence: Boolean,
+                              firstPeriod: String)
 
-object TinDetails {
-
-  lazy val defaultFormat: OFormat[TinDetails] = Json.format
+object Notification {
   
-  lazy val downstreamWrites: OWrites[TinDetails] = (
-    (__ \ "TIN").write[String] and
-    (__ \ "TINType").write[TinType] and
-    (__ \ "IssuedBy").write[String]
+  lazy val defaultFormat: OFormat[Notification] = Json.format
+  
+  lazy val downstreamWrites: OWrites[Notification] = (
+    (__ \ "NotificationType").write[NotificationType] and
+    (__ \ "IsActiveSeller").write[Boolean] and
+    (__ \ "IsDueDiligence").write[Boolean] and
+    (__ \ "FirstNotifiedReportingPeriod").write[String]
   )(o => Tuple.fromProductTyped(o))
-  
-  lazy val downstreamReads: Reads[TinDetails] = (
-    (__ \ "TIN").read[String] and
-    (__ \ "TINType").read[TinType] and
-    (__ \ "IssuedBy").read[String]
-  )(TinDetails.apply _)
 }

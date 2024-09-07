@@ -18,19 +18,13 @@ package models.operator
 
 import enumeratum._
 
-sealed abstract class TinType(override val entryName: String) extends EnumEntry
+sealed abstract class NotificationType(override val entryName: String) extends EnumEntry
 
-object TinType extends PlayEnum[TinType] {
+object NotificationType extends PlayEnum[NotificationType] {
 
-  override val values: IndexedSeq[TinType] = findValues
+  override val values: IndexedSeq[NotificationType] = findValues
 
-  case object Crn extends TinType("CRN")
-  case object Utr extends TinType("UTR")
-  case object Vrn extends TinType("VRN")
-  case object Empref extends TinType("EMPREF")
-  case object Brocs extends TinType("BROCS")
-  case object Chrn extends TinType("CHRN")
-  case object Other extends TinType("OTHER")
+  case object Rpo extends NotificationType("RPO")
+  case object Epo extends NotificationType("EPO")
 }
-
 

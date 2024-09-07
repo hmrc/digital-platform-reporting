@@ -30,6 +30,8 @@ final case class AddressDetails(
 
 object AddressDetails {
 
+  lazy val defaultFormat: OFormat[AddressDetails] = Json.format
+  
   lazy val downstreamWrites: OWrites[AddressDetails] = (
     (__ \ "AddressLine1").write[String] and
     (__ \ "AddressLine2").writeNullable[String] and
@@ -38,4 +40,13 @@ object AddressDetails {
     (__ \ "PostalCode").writeNullable[String] and
     (__ \ "CountryCode").writeNullable[String]
   )(o => Tuple.fromProductTyped(o))
+  
+  lazy val downstreamReads: Reads[AddressDetails] = (
+    (__ \ "AddressLine1").read[String] and
+    (__ \ "AddressLine2").readNullable[String] and
+    (__ \ "AddressLine3").readNullable[String] and
+    (__ \ "AddressLine4").readNullable[String] and
+    (__ \ "PostalCode").readNullable[String] and
+    (__ \ "CountryCode").readNullable[String]
+  )(AddressDetails.apply _)
 }

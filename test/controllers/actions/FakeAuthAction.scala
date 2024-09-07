@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package models.operator
+package controllers.actions
 
-import enumeratum._
+import models.AuthenticatedRequest
+import org.scalatestplus.mockito.MockitoSugar.mock
+import play.api.mvc.{BodyParsers, Request, Result}
+import uk.gov.hmrc.auth.core.AuthConnector
 
-sealed abstract class TinType(override val entryName: String) extends EnumEntry
+import javax.inject.Inject
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-object TinType extends PlayEnum[TinType] {
+class FakeAuthAction @Inject() extends AuthAction(mock[AuthConnector], mock[BodyParsers.Default]) {
 
-  override val values: IndexedSeq[TinType] = findValues
-
-  case object Crn extends TinType("CRN")
-  case object Utr extends TinType("UTR")
-  case object Vrn extends TinType("VRN")
-  case object Empref extends TinType("EMPREF")
-  case object Brocs extends TinType("BROCS")
-  case object Chrn extends TinType("CHRN")
-  case object Other extends TinType("OTHER")
+  override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] =
+    block(AuthenticatedRequest(request, "dprs id"))
 }
-
-

@@ -27,9 +27,17 @@ final case class ContactDetails(
 
 object ContactDetails {
 
+  lazy val defaultFormat: OFormat[ContactDetails] = Json.format
+  
   lazy val downstreamWrites: OWrites[ContactDetails] = (
     (__ \ "PhoneNumber").writeNullable[String] and
     (__ \ "ContactName").write[String] and
     (__ \ "EmailAddress").write[String]
   )(o => Tuple.fromProductTyped(o))
+  
+  lazy val downStreamReads: Reads[ContactDetails] = (
+    (__ \ "PhoneNumber").readNullable[String] and
+    (__ \ "ContactName").read[String] and
+    (__ \ "EmailAddress").read[String]
+  )(ContactDetails.apply _)
 }

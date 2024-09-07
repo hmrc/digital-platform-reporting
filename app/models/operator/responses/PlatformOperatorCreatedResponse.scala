@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package models.operator
+package models.operator.responses
 
-import enumeratum._
+import play.api.libs.json.*
 
-sealed abstract class TinType(override val entryName: String) extends EnumEntry
+final case class PlatformOperatorCreatedResponse(operatorId: String)
 
-object TinType extends PlayEnum[TinType] {
+object PlatformOperatorCreatedResponse {
 
-  override val values: IndexedSeq[TinType] = findValues
+  implicit lazy val reads: Reads[PlatformOperatorCreatedResponse] =
+    (__ \ "success" \ "ReturnParameters" \ "Value").read[String].map(PlatformOperatorCreatedResponse.apply)
 
-  case object Crn extends TinType("CRN")
-  case object Utr extends TinType("UTR")
-  case object Vrn extends TinType("VRN")
-  case object Empref extends TinType("EMPREF")
-  case object Brocs extends TinType("BROCS")
-  case object Chrn extends TinType("CHRN")
-  case object Other extends TinType("OTHER")
+  implicit lazy val writes: OWrites[PlatformOperatorCreatedResponse] = Json.writes
 }
-
-

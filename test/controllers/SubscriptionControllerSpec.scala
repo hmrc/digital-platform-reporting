@@ -17,8 +17,7 @@
 package controllers
 
 import connectors.SubscriptionConnector
-import controllers.actions.AuthAction
-import models.AuthenticatedRequest
+import controllers.actions.{AuthAction, FakeAuthAction}
 import models.subscription.*
 import models.subscription.requests.*
 import models.subscription.responses.*
@@ -35,14 +34,13 @@ import org.scalatestplus.mockito.MockitoSugar.mock
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.mvc.{BodyParsers, Request, Result}
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import uk.gov.hmrc.auth.core.AuthConnector
 
 import java.time.Instant
 import javax.inject.Inject
 import scala.concurrent.ExecutionContext.Implicits.global
+
 import scala.concurrent.Future
 
 class SubscriptionControllerSpec
@@ -269,10 +267,4 @@ class SubscriptionControllerSpec
       }
     }
   }
-}
-
-class FakeAuthAction @Inject() extends AuthAction(mock[AuthConnector], mock[BodyParsers.Default]) {
-
-  override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] =
-    block(AuthenticatedRequest(request, "dprs id"))
 }

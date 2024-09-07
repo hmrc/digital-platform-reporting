@@ -34,7 +34,7 @@ class UpdatePlatformOperatorRequestSpec extends AnyFreeSpec with Matchers {
         tinDetails = Seq(
           TinDetails(
             tin = "tin",
-            tinType = TinType.Dpi,
+            tinType = TinType.Crn,
             issuedBy = "issuedBy"
           )
         ),
@@ -59,7 +59,13 @@ class UpdatePlatformOperatorRequestSpec extends AnyFreeSpec with Matchers {
           line4 = None,
           postCode = Some("postCode"),
           countryCode = None
-        )
+        ),
+        notification = Some(Notification(
+          notificationType = NotificationType.Epo,
+          isActiveSeller = true,
+          isDueDiligence = false,
+          firstPeriod = "2024"
+        ))
       )
 
       val expectedJson = Json.obj(
@@ -76,7 +82,7 @@ class UpdatePlatformOperatorRequestSpec extends AnyFreeSpec with Matchers {
             "POName" -> "operatorName",
             "TINDetails" -> Json.arr(Json.obj(
               "TIN" -> "tin",
-              "TINType" -> "DPI",
+              "TINType" -> "CRN",
               "IssuedBy" -> "issuedBy"
             )),
             "BusinessName" -> "businessName",
@@ -94,6 +100,12 @@ class UpdatePlatformOperatorRequestSpec extends AnyFreeSpec with Matchers {
             "AddressDetails" -> Json.obj(
               "AddressLine1" -> "line1",
               "PostalCode" -> "postCode"
+            ),
+            "NotificationDetails" -> Json.obj(
+              "NotificationType" -> "EPO",
+              "IsActiveSeller" -> true,
+              "IsDueDiligence" -> false,
+              "FirstNotifiedReportingPeriod" -> "2024"
             )
           )
         )
@@ -124,7 +136,8 @@ class UpdatePlatformOperatorRequestSpec extends AnyFreeSpec with Matchers {
           line4 = None,
           postCode = None,
           countryCode = None
-        )
+        ),
+        notification = None
       )
 
       val expectedJson = Json.obj(

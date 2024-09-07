@@ -35,4 +35,10 @@ class AppConfig @Inject()(configuration: Configuration) {
   val UserSubscriptionBearerToken: String = configuration.get[String]("microservice.services.subscribe.bearerTokens.userSubscription")
   val ReadContactsBearerToken: String = configuration.get[String]("microservice.services.subscribe.bearerTokens.readContacts")
   val UpdateContactsBearerToken: String = configuration.get[String]("microservice.services.subscribe.bearerTokens.updateContacts")
+  
+  val UpdatePlatformOperatorBaseUrl: String = configuration.get[Service]("microservice.services.update-platform-operator").baseUrl
+  val UpdatePlatformOperatorBearerToken: String = configuration.get[String]("microservice.services.update-platform-operator.bearer-token")
+  
+  val ViewPlatformOperatorsBaseUrl: String = configuration.get[Service]("microservice.services.view-platform-operator").baseUrl
+  val ViewPlatformOperatorBearerToken: String = configuration.get[String]("microservice.services.view-platform-operator.bearer-token")
 }
