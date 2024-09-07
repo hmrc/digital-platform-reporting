@@ -16,6 +16,7 @@
 
 package controllers
 
+import controllers.actions.AuthAction
 import models.submission.Submission.State.{Ready, Submitted, UploadFailed, Uploading, Validated}
 import models.submission.{StartSubmissionRequest, Submission, UploadFailedRequest}
 import play.api.libs.json.Json
@@ -33,13 +34,14 @@ class SubmissionController @Inject() (
                                        cc: ControllerComponents,
                                        uuidService: UuidService,
                                        clock: Clock,
-                                       submissionRepository: SubmissionRepository
+                                       submissionRepository: SubmissionRepository,
+                                       auth: AuthAction
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
-  def start(dprsId: String, id: Option[String]): Action[StartSubmissionRequest] =
-    Action.async(parse.json[StartSubmissionRequest]) { implicit request =>
+  def start(id: Option[String]): Action[StartSubmissionRequest] =
+    auth.async(parse.json[StartSubmissionRequest]) { implicit request =>
       id.map { id =>
-        submissionRepository.get(dprsId, id).flatMap {
+        submissionRepository.get(request.dprsId, id).flatMap {
           _.map { submission =>
             if (submission.state == Validated) {
 
@@ -63,7 +65,7 @@ class SubmissionController @Inject() (
 
         val submission = Submission(
           _id = uuidService.generate(),
-          dprsId = dprsId,
+          dprsId = request.dprsId,
           platformOperatorId = request.body.platformOperatorId,
           state = Ready,
           created = clock.instant(),
@@ -76,8 +78,8 @@ class SubmissionController @Inject() (
       }
     }
 
-  def get(dprsId: String, id: String): Action[AnyContent] = Action.async { implicit request =>
-    submissionRepository.get(dprsId, id).map {
+  def get(id: String): Action[AnyContent] = auth.async { implicit request =>
+    submissionRepository.get(request.dprsId, id).map {
       _.map { submission =>
         Ok(Json.toJson(submission))
       }.getOrElse {
@@ -86,8 +88,8 @@ class SubmissionController @Inject() (
     }
   }
 
-  def startUpload(dprsId: String, id: String): Action[AnyContent] = Action.async { implicit request =>
-    submissionRepository.get(dprsId, id).flatMap {
+  def startUpload(id: String): Action[AnyContent] = auth.async { implicit request =>
+    submissionRepository.get(request.dprsId, id).flatMap {
       _.map { submission =>
         if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[UploadFailed]) {
 
@@ -108,8 +110,8 @@ class SubmissionController @Inject() (
     }
   }
 
-  def uploadSuccess(dprsId: String, id: String): Action[AnyContent] = Action.async { implicit request =>
-    submissionRepository.get(dprsId, id).flatMap {
+  def uploadSuccess(id: String): Action[AnyContent] = auth.async { implicit request =>
+    submissionRepository.get(request.dprsId, id).flatMap {
       _.map { submission =>
         if (submission.state.isInstanceOf[Uploading.type]) {
           // TODO validation
@@ -131,8 +133,8 @@ class SubmissionController @Inject() (
     }
   }
 
-  def uploadFailed(dprsId: String, id: String): Action[UploadFailedRequest] = Action.async(parse.json[UploadFailedRequest]) { implicit request =>
-    submissionRepository.get(dprsId, id).flatMap {
+  def uploadFailed(id: String): Action[UploadFailedRequest] = auth.async(parse.json[UploadFailedRequest]) { implicit request =>
+    submissionRepository.get(request.dprsId, id).flatMap {
       _.map { submission =>
         if (submission.state.isInstanceOf[Uploading.type]) {
 
@@ -153,8 +155,8 @@ class SubmissionController @Inject() (
     }
   }
 
-  def submit(dprsId: String, id: String): Action[AnyContent] = Action.async { implicit request =>
-    submissionRepository.get(dprsId, id).flatMap {
+  def submit(id: String): Action[AnyContent] = auth.async { implicit request =>
+    submissionRepository.get(request.dprsId, id).flatMap {
       _.map { submission =>
         if (submission.state.isInstanceOf[Validated.type]) {
 
