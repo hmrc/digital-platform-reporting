@@ -18,7 +18,7 @@ package controllers
 
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
-import models.submission.{StartSubmissionRequest, Submission}
+import models.submission.{StartSubmissionRequest, Submission, UploadFailedRequest}
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
@@ -370,7 +370,7 @@ class SubmissionControllerSpec
 
         "when the submission passes validation" - {
 
-          "must set the state of the submission submission to Validated and return OK" in {
+          "must set the state of the submission to Validated and return OK" in {
 
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(dprsId, uuid))
 
@@ -436,6 +436,193 @@ class SubmissionControllerSpec
       "must return NOT_FOUND" in {
 
         val request = FakeRequest(routes.SubmissionController.uploadSuccess(dprsId, uuid))
+
+        when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
+        when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+
+        val result = route(app, request).value
+
+        status(result) mustEqual NOT_FOUND
+
+        verify(mockSubmissionRepository).get(dprsId, uuid)
+        verify(mockSubmissionRepository, times(0)).save(any())
+      }
+    }
+  }
+
+  "uploadFailed" - {
+
+    val dprsId = "dprsId"
+    val platformOperatorId = "poid"
+    val uuid = UUID.randomUUID().toString
+
+    "when there is a matching submission" - {
+
+      "when the matching submission is in an Uploading state" - {
+
+        "must set the state of the submission to UploadFailed and return OK" in {
+
+          val request = FakeRequest(routes.SubmissionController.uploadFailed(dprsId, uuid))
+            .withBody(Json.toJson(UploadFailedRequest(
+              reason = "some reason"
+            )))
+
+          val existingSubmission = Submission(
+            _id = uuid,
+            dprsId = dprsId,
+            platformOperatorId = platformOperatorId,
+            state = Uploading,
+            created = now.minus(1, ChronoUnit.DAYS),
+            updated = now.minus(1, ChronoUnit.DAYS)
+          )
+
+          val expectedSubmission = existingSubmission.copy(
+            state = UploadFailed("some reason"),
+            updated = now
+          )
+
+          when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
+          when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+
+          val result = route(app, request).value
+
+          status(result) mustEqual OK
+          contentAsJson(result) mustEqual Json.toJson(expectedSubmission)
+
+          verify(mockSubmissionRepository).get(dprsId, uuid)
+          verify(mockSubmissionRepository).save(expectedSubmission)
+        }
+      }
+
+      "when the matching submission is in any other state" - {
+
+        "must return CONFLICT" in {
+
+          val request = FakeRequest(routes.SubmissionController.uploadFailed(dprsId, uuid))
+            .withBody(Json.toJson(UploadFailedRequest(
+              reason = "some reason"
+            )))
+
+          val state = Gen.oneOf(readyGen, uploadFailedGen, validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
+          val existingSubmission = Submission(
+            _id = uuid,
+            dprsId = dprsId,
+            platformOperatorId = platformOperatorId,
+            state = state,
+            created = now,
+            updated = now
+          )
+
+          when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
+          when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+
+          val result = route(app, request).value
+
+          status(result) mustEqual CONFLICT
+
+          verify(mockSubmissionRepository).get(dprsId, uuid)
+          verify(mockSubmissionRepository, times(0)).save(any())
+        }
+      }
+    }
+
+    "when there is no matching submission" - {
+
+      "must return NOT_FOUND" in {
+
+        val request = FakeRequest(routes.SubmissionController.uploadFailed(dprsId, uuid))
+          .withBody(Json.toJson(UploadFailedRequest(
+            reason = "some reason"
+          )))
+
+        when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
+        when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+
+        val result = route(app, request).value
+
+        status(result) mustEqual NOT_FOUND
+
+        verify(mockSubmissionRepository).get(dprsId, uuid)
+        verify(mockSubmissionRepository, times(0)).save(any())
+      }
+    }
+  }
+
+  "submit" - {
+
+    val dprsId = "dprsId"
+    val platformOperatorId = "poid"
+    val uuid = UUID.randomUUID().toString
+
+    "when there is a matching submission" - {
+
+      "when the matching submission is in a Validated state" - {
+
+        "must set the state of the submission to UploadFailed and return OK" in {
+
+          val request = FakeRequest(routes.SubmissionController.submit(dprsId, uuid))
+
+          val existingSubmission = Submission(
+            _id = uuid,
+            dprsId = dprsId,
+            platformOperatorId = platformOperatorId,
+            state = Validated,
+            created = now.minus(1, ChronoUnit.DAYS),
+            updated = now.minus(1, ChronoUnit.DAYS)
+          )
+
+          val expectedSubmission = existingSubmission.copy(
+            state = Submitted,
+            updated = now
+          )
+
+          when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
+          when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+
+          val result = route(app, request).value
+
+          status(result) mustEqual OK
+          contentAsJson(result) mustEqual Json.toJson(expectedSubmission)
+
+          verify(mockSubmissionRepository).get(dprsId, uuid)
+          verify(mockSubmissionRepository).save(expectedSubmission)
+        }
+      }
+
+      "when the matching submission is in any other state" - {
+
+        "must return CONFLICT" in {
+
+          val request = FakeRequest(routes.SubmissionController.submit(dprsId, uuid))
+
+          val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen, submittedGen, approvedGen, rejectedGen).sample.value
+          val existingSubmission = Submission(
+            _id = uuid,
+            dprsId = dprsId,
+            platformOperatorId = platformOperatorId,
+            state = state,
+            created = now,
+            updated = now
+          )
+
+          when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
+          when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+
+          val result = route(app, request).value
+
+          status(result) mustEqual CONFLICT
+
+          verify(mockSubmissionRepository).get(dprsId, uuid)
+          verify(mockSubmissionRepository, times(0)).save(any())
+        }
+      }
+    }
+
+    "when there is no matching submission" - {
+
+      "must return NOT_FOUND" in {
+
+        val request = FakeRequest(routes.SubmissionController.submit(dprsId, uuid))
 
         when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
         when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))

@@ -16,8 +16,8 @@
 
 package controllers
 
-import models.submission.Submission.State.{Ready, UploadFailed, Uploading, Validated}
-import models.submission.{StartSubmissionRequest, Submission}
+import models.submission.Submission.State.{Ready, Submitted, UploadFailed, Uploading, Validated}
+import models.submission.{StartSubmissionRequest, Submission, UploadFailedRequest}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.SubmissionRepository
@@ -131,7 +131,47 @@ class SubmissionController @Inject() (
     }
   }
 
-  def uploadFailed(dprsId: String, id: String): Action[AnyContent] = ???
+  def uploadFailed(dprsId: String, id: String): Action[UploadFailedRequest] = Action.async(parse.json[UploadFailedRequest]) { implicit request =>
+    submissionRepository.get(dprsId, id).flatMap {
+      _.map { submission =>
+        if (submission.state.isInstanceOf[Uploading.type]) {
 
-  def submit(dprsId: String, id: String): Action[AnyContent] = ???
+          val updatedSubmission = submission.copy(
+            state = UploadFailed(request.body.reason),
+            updated = clock.instant()
+          )
+
+          submissionRepository.save(updatedSubmission).map { _ =>
+            Ok(Json.toJson(updatedSubmission))
+          }
+        } else {
+          Future.successful(Conflict)
+        }
+      }.getOrElse {
+        Future.successful(NotFound)
+      }
+    }
+  }
+
+  def submit(dprsId: String, id: String): Action[AnyContent] = Action.async { implicit request =>
+    submissionRepository.get(dprsId, id).flatMap {
+      _.map { submission =>
+        if (submission.state.isInstanceOf[Validated.type]) {
+
+          val updatedSubmission = submission.copy(
+            state = Submitted,
+            updated = clock.instant()
+          )
+
+          submissionRepository.save(updatedSubmission).map { _ =>
+            Ok(Json.toJson(updatedSubmission))
+          }
+        } else {
+          Future.successful(Conflict)
+        }
+      }.getOrElse {
+        Future.successful(NotFound)
+      }
+    }
+  }
 }
