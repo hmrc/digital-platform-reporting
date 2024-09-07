@@ -19,7 +19,7 @@ package connectors
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import models.operator.{AddressDetails, ContactDetails}
 import models.operator.requests.*
-import models.operator.responses.PlatformOperatorCreatedResponse
+import models.operator.responses.*
 import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.scalatest.{BeforeAndAfterEach, EitherValues}
@@ -64,6 +64,8 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
     )
     .configure("microservice.services.update-platform-operator.port" -> wireMockPort)
     .configure("microservice.services.update-platform-operator.bearer-token" -> "updatePlatformOperatorToken")
+    .configure("microservice.services.view-platform-operator.port" -> wireMockPort)
+    .configure("microservice.services.view-platform-operator.bearer-token" -> "viewPlatformOperatorToken")
     .build()
 
   private val correlationId = UUID.randomUUID()
@@ -303,6 +305,93 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
 
         connector.delete(request).failed.futureValue
       }
+    }
+  }
+  
+  ".get" - {
+
+    "must return the response when the server returns OK" in {
+    
+      when(mockUuidService.generate())
+        .thenReturn(correlationId.toString, conversationId.toString)
+
+      val responsePayload = Json.obj(
+        "ViewPODetails" -> Json.obj(
+          "ResponseCommon" -> Json.obj(
+            "OriginatingSystem" -> "CADX",
+            "TransmittingSystem" -> "EIS",
+            "RequestType" -> "VIEW",
+            "Regime" -> "DPRS"
+          ),
+          "ResponseDetails" -> Json.obj(
+            "PlatformOperatorDetails" -> Json.arr(
+              Json.obj(
+                "SubscriptionId" -> "subscriptionId",
+                "POID" -> "operatorId",
+                "POName" -> "operatorName",
+                "BusinessName" -> "foo",
+                "AddressDetails" -> Json.obj(
+                  "AddressLine1" -> "line1",
+                  "PostalCode" -> "postCode"
+                ),
+                "PrimaryContactDetails" -> Json.obj(
+                  "ContactName" -> "primaryContactName",
+                  "EmailAddress" -> "primaryEmail"
+                )
+              )
+            )
+          )
+        )
+      )
+
+      val expectedResponse = ViewPlatformOperatorsResponse(platformOperators = Seq(
+        PlatformOperator(
+          operatorId = "operatorId",
+          operatorName = "operatorName",
+          tinDetails = Seq.empty,
+          businessName = None,
+          tradingName = None,
+          primaryContactDetails = ContactDetails(None, "primaryContactName", "primaryEmail"),
+          secondaryContactDetails = None,
+          addressDetails = AddressDetails("line1", None, None, None, Some("postCode"), None),
+          notifications = Seq.empty
+        )
+      ))
+
+      wireMockServer.stubFor(
+        get(urlMatching(".*/dac6/dprs9302/v1/operatorid"))
+          .withHeader("Authorization", equalTo("Bearer viewPlatformOperatorToken"))
+          .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+          .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+          .withHeader("Accept", equalTo("application/json"))
+          .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody(responsePayload.toString)
+          )
+      )
+
+      val result = connector.get("operatorid").futureValue
+      result mustEqual expectedResponse
+    }
+
+    "and return a failed future when the server returns an error" in {
+
+      when(mockUuidService.generate())
+        .thenReturn(correlationId.toString, conversationId.toString)
+
+      wireMockServer.stubFor(
+        get(urlMatching(".*/dac6/dprs9302/v1/operatorid"))
+          .withHeader("Authorization", equalTo("Bearer viewPlatformOperatorToken"))
+          .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+          .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+          .withHeader("Accept", equalTo("application/json"))
+          .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+          .willReturn(serverError())
+      )
+
+      connector.get("operatorid").failed.futureValue
     }
   }
 }

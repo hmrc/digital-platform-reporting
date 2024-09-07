@@ -19,7 +19,7 @@ package connectors
 import config.AppConfig
 import connectors.PlatformOperatorConnector.*
 import models.operator.requests.*
-import models.operator.responses.PlatformOperatorCreatedResponse
+import models.operator.responses.{PlatformOperatorCreatedResponse, ViewPlatformOperatorsResponse}
 import org.apache.pekko.Done
 import play.api.http.HeaderNames
 import play.api.http.Status.OK
@@ -112,6 +112,28 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
         }
       }
   }
+  
+  def get(subscriptionId: String)
+         (implicit hc: HeaderCarrier): Future[ViewPlatformOperatorsResponse] = {
+    
+    val correlationId = uuidService.generate()
+    val conversationId = uuidService.generate()
+
+    httpClient.get(url"${appConfig.ViewPlatformOperatorsBaseUrl}/dac6/dprs9302/v1/$subscriptionId")
+      .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.ViewPlatformOperatorBearerToken}")
+      .setHeader("X-Correlation-ID" -> correlationId)
+      .setHeader("X-Conversation-ID" -> conversationId)
+      .setHeader("X-Forwarded-Host" -> appConfig.AppName)
+      .setHeader(HeaderNames.ACCEPT -> "application/json")
+      .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
+      .execute[HttpResponse]
+      .flatMap { response =>
+        response.status match {
+          case OK => Future.successful(response.json.as[ViewPlatformOperatorsResponse](ViewPlatformOperatorsResponse.downstreamReads))
+          case status => Future.failed(ViewPlatformOperatorsFailure(correlationId, status))
+        }
+      }
+  }
 }
 
 object PlatformOperatorConnector {
@@ -126,5 +148,9 @@ object PlatformOperatorConnector {
 
   final case class DeletePlatformOperatorFailure(correlationId: String, status: Int) extends Throwable {
     override def getMessage: String = s"Delete platform operator failed for correlation ID: $correlationId, got status: $status"
+  }
+  
+  final case class ViewPlatformOperatorsFailure(correlationId: String, status: Int) extends Throwable {
+    override def getMessage: String = s"View platform operator failed for correlation ID: $correlationId, got status: $status"
   }
 }

@@ -25,10 +25,10 @@ import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{times, verify, when}
-import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.mockito.MockitoSugar.mock
 import play.api.inject.bind
@@ -147,8 +147,8 @@ class PlatformOperatorControllerSpec
           )
           .build()
 
-      val deleteRequest = DeletePlatformOperatorRequest(
-        subscriptionId = "dprsid",
+      val expectedDeleteRequest = DeletePlatformOperatorRequest(
+        subscriptionId = "dprs id",
         operatorId = "operatorid"
       )
 
@@ -156,14 +156,52 @@ class PlatformOperatorControllerSpec
 
       running(app) {
 
-        val request =
-          FakeRequest(routes.PlatformOperatorController.delete())
-            .withJsonBody(Json.toJson(deleteRequest)(DeletePlatformOperatorRequest.defaultFormat))
+        val request = FakeRequest(routes.PlatformOperatorController.delete("operatorid"))
 
         val result = route(app, request).value
 
         status(result) mustEqual OK
-        verify(mockConnector, times(1)).delete(eqTo(deleteRequest))(any())
+        verify(mockConnector, times(1)).delete(eqTo(expectedDeleteRequest))(any())
+      }
+    }
+  }
+  
+  ".get" - {
+    
+    "must return platform operator details" in {
+
+      val app =
+        new GuiceApplicationBuilder()
+          .overrides(
+            bind[PlatformOperatorConnector].toInstance(mockConnector),
+            bind[AuthAction].toInstance(new FakeAuthAction)
+          )
+          .build()
+
+      val platformOperatorResponse = ViewPlatformOperatorsResponse(platformOperators = Seq(
+        PlatformOperator(
+          operatorId = "operatorId",
+          operatorName = "operatorName",
+          tinDetails = Seq.empty,
+          businessName = None,
+          tradingName = None,
+          primaryContactDetails = ContactDetails(None, "primaryContactName", "primaryEmail"),
+          secondaryContactDetails = None,
+          addressDetails = AddressDetails("line1", None, None, None, Some("postCode"), None),
+          notifications = Seq.empty
+        )
+      ))
+      
+      when(mockConnector.get(any())(any())).thenReturn(Future.successful(platformOperatorResponse))
+      
+      running(app) {
+
+        val request = FakeRequest(routes.PlatformOperatorController.get())
+        val result = route(app, request).value
+
+        status(result) mustEqual OK
+        contentAsJson(result) mustEqual Json.toJson(platformOperatorResponse)(ViewPlatformOperatorsResponse.defaultWrites)
+        verify(mockConnector, times(1)).get(any())(any())
       }
     }
   }
