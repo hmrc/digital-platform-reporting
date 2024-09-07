@@ -1,7 +1,14 @@
 # microservice specific routes
 
-POST        /register               controllers.RegistrationController.register()
+POST        /register                     controllers.RegistrationController.register()
 
-GET         /subscribe              controllers.SubscriptionController.get()
-POST        /subscribe              controllers.SubscriptionController.subscribe()
-PUT         /subscribe              controllers.SubscriptionController.updateSubscription()
+GET         /subscribe                    controllers.SubscriptionController.get()
+POST        /subscribe                    controllers.SubscriptionController.subscribe()
+PUT         /subscribe                    controllers.SubscriptionController.updateSubscription()
+
+PUT         /submission/start                       controllers.SubmissionController.start(id: Option[String] ?= None)
+GET         /submission/:id                         controllers.SubmissionController.get(id: String)
+POST        /submission/:id/start-upload            controllers.SubmissionController.startUpload(id: String)
+POST        /submission/:id/upload-success          controllers.SubmissionController.uploadSuccess(id: String)
+POST        /submission/:id/upload-failed           controllers.SubmissionController.uploadFailed(id: String)
+POST        /submission/:id/submit                  controllers.SubmissionController.submit(id: String)
