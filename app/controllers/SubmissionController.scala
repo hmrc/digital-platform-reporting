@@ -76,7 +76,15 @@ class SubmissionController @Inject() (
       }
     }
 
-  def get(dprsId: String, id: String): Action[AnyContent] = ???
+  def get(dprsId: String, id: String): Action[AnyContent] = Action.async { implicit request =>
+    submissionRepository.get(dprsId, id).map {
+      _.map { submission =>
+        Ok(Json.toJson(submission))
+      }.getOrElse {
+        NotFound
+      }
+    }
+  }
 
   def uploadSuccess(dprsId: String, id: String): Action[AnyContent] = ???
 

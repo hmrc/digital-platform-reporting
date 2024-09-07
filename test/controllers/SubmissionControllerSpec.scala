@@ -187,4 +187,53 @@ class SubmissionControllerSpec
       }
     }
   }
+
+  "get" - {
+
+    val dprsId = "dprsId"
+    val platformOperatorId = "poid"
+    val uuid = UUID.randomUUID().toString
+
+    "when there is a matching submission" - {
+
+      "must return OK with the submission body included" in {
+
+        val request = FakeRequest(routes.SubmissionController.get(dprsId, uuid))
+
+        val expectedSubmission = Submission(
+          _id = uuid,
+          dprsId = dprsId,
+          platformOperatorId = platformOperatorId,
+          state = Ready,
+          created = now,
+          updated = now
+        )
+
+        when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(expectedSubmission)))
+
+        val result = route(app, request).value
+
+        status(result) mustEqual OK
+        contentAsJson(result) mustEqual Json.toJson(expectedSubmission)
+
+        verify(mockSubmissionRepository).get(dprsId, uuid)
+      }
+    }
+
+    "when there is no matching submission" - {
+
+      "must return NOT_FOUND" in {
+
+        val request = FakeRequest(routes.SubmissionController.get(dprsId, uuid))
+
+        when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
+
+        val result = route(app, request).value
+
+        status(result) mustEqual NOT_FOUND
+
+        verify(mockSubmissionRepository).get(dprsId, uuid)
+      }
+    }
+  }
 }
