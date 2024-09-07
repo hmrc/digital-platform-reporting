@@ -16,7 +16,7 @@
 
 package controllers
 
-import models.submission.Submission.State.{Ready, Validated}
+import models.submission.Submission.State.{Ready, Uploading, Validated}
 import models.submission.{StartSubmissionRequest, Submission}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
@@ -82,6 +82,28 @@ class SubmissionController @Inject() (
         Ok(Json.toJson(submission))
       }.getOrElse {
         NotFound
+      }
+    }
+  }
+
+  def startUpload(dprsId: String, id: String): Action[AnyContent] = Action.async { implicit request =>
+    submissionRepository.get(dprsId, id).flatMap {
+      _.map { submission =>
+        if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[Validated.type]) {
+
+          val updatedSubmission = submission.copy(
+            state = Uploading,
+            updated = clock.instant()
+          )
+
+          submissionRepository.save(updatedSubmission).map { _ =>
+            Ok(Json.toJson(updatedSubmission))
+          }
+        } else {
+          Future.successful(Conflict)
+        }
+      }.getOrElse {
+        Future.successful(NotFound)
       }
     }
   }

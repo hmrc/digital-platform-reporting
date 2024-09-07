@@ -1,11 +1,13 @@
 package controllers
 
-import models.submission.Submission.State.{Ready, Uploading, Validated}
+import models.submission.Submission.State
+import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
 import models.submission.{StartSubmissionRequest, Submission}
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.Mockito.{times, verify, when}
+import org.scalacheck.Gen
 import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
@@ -53,6 +55,14 @@ class SubmissionControllerSpec
     super.beforeEach()
     Mockito.reset(mockSubmissionRepository)
   }
+
+  private val readyGen: Gen[Ready.type] = Gen.const(Ready)
+  private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
+  private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
+  private val validatedGen: Gen[Validated.type] = Gen.const(Validated)
+  private val submittedGen: Gen[Submitted.type] = Gen.const(Submitted)
+  private val approvedGen: Gen[Approved.type] = Gen.const(Approved)
+  private val rejectedGen: Gen[Rejected] = Gen.asciiPrintableStr.map(Rejected.apply)
 
   "start" - {
 
@@ -144,11 +154,12 @@ class SubmissionControllerSpec
               platformOperatorId = platformOperatorId
             )))
 
+          val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
             platformOperatorId = initialPoId,
-            state = Uploading,
+            state = state,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
           )
@@ -200,7 +211,7 @@ class SubmissionControllerSpec
 
         val request = FakeRequest(routes.SubmissionController.get(dprsId, uuid))
 
-        val expectedSubmission = Submission(
+        val existingSubmission = Submission(
           _id = uuid,
           dprsId = dprsId,
           platformOperatorId = platformOperatorId,
@@ -209,12 +220,12 @@ class SubmissionControllerSpec
           updated = now
         )
 
-        when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(expectedSubmission)))
+        when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
 
         val result = route(app, request).value
 
         status(result) mustEqual OK
-        contentAsJson(result) mustEqual Json.toJson(expectedSubmission)
+        contentAsJson(result) mustEqual Json.toJson(existingSubmission)
 
         verify(mockSubmissionRepository).get(dprsId, uuid)
       }
@@ -233,6 +244,96 @@ class SubmissionControllerSpec
         status(result) mustEqual NOT_FOUND
 
         verify(mockSubmissionRepository).get(dprsId, uuid)
+      }
+    }
+  }
+
+  "startUpload" - {
+
+    val dprsId = "dprsId"
+    val platformOperatorId = "poid"
+    val uuid = UUID.randomUUID().toString
+
+    "when there is a matching submission" - {
+
+      "when the matching submission is in a Ready or UploadFailed state" - {
+
+        "must set the state of the submission to Uploading and return OK" in {
+
+          val request = FakeRequest(routes.SubmissionController.startUpload(dprsId, uuid))
+
+          val state = Gen.oneOf(readyGen, uploadFailedGen).sample.value
+          val existingSubmission = Submission(
+            _id = uuid,
+            dprsId = dprsId,
+            platformOperatorId = platformOperatorId,
+            state = state,
+            created = now.minus(1, ChronoUnit.DAYS),
+            updated = now.minus(1, ChronoUnit.DAYS)
+          )
+
+          val expectedSubmission = existingSubmission.copy(
+            state = Uploading,
+            updated = now
+          )
+
+          when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
+          when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+
+          val result = route(app, request).value
+
+          status(result) mustEqual OK
+          contentAsJson(result) mustEqual Json.toJson(expectedSubmission)
+
+          verify(mockSubmissionRepository).get(dprsId, uuid)
+          verify(mockSubmissionRepository).save(expectedSubmission)
+        }
+      }
+
+      "when the matching submission is in any other state" - {
+
+        "must return CONFLICT" in {
+
+          val request = FakeRequest(routes.SubmissionController.startUpload(dprsId, uuid))
+
+          val state = Gen.oneOf(uploadingGen, validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
+          val existingSubmission = Submission(
+            _id = uuid,
+            dprsId = dprsId,
+            platformOperatorId = platformOperatorId,
+            state = state,
+            created = now,
+            updated = now
+          )
+
+          when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
+          when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+
+          val result = route(app, request).value
+
+          status(result) mustEqual CONFLICT
+
+          verify(mockSubmissionRepository).get(dprsId, uuid)
+          verify(mockSubmissionRepository, times(0)).save(any())
+        }
+      }
+    }
+
+    "when there is no matching submission" - {
+
+      "must return NOT_FOUND" in {
+
+        val request = FakeRequest(routes.SubmissionController.startUpload(dprsId, uuid))
+
+        when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
+        when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+
+        val result = route(app, request).value
+
+        status(result) mustEqual NOT_FOUND
+
+        verify(mockSubmissionRepository).get(dprsId, uuid)
+        verify(mockSubmissionRepository, times(0)).save(any())
       }
     }
   }

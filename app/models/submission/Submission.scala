@@ -32,7 +32,7 @@ final case class Submission(
 
 object Submission {
 
-  sealed trait State
+  sealed trait State extends Product with Serializable
 
   object State {
 
