@@ -34,4 +34,10 @@ object TinDetails {
     (__ \ "TINType").write[TinType] and
     (__ \ "IssuedBy").write[String]
   )(o => Tuple.fromProductTyped(o))
+  
+  lazy val downstreamReads: Reads[TinDetails] = (
+    (__ \ "TIN").read[String] and
+    (__ \ "TINType").read[TinType] and
+    (__ \ "IssuedBy").read[String]
+  )(TinDetails.apply _)
 }

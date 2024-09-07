@@ -34,4 +34,10 @@ object ContactDetails {
     (__ \ "ContactName").write[String] and
     (__ \ "EmailAddress").write[String]
   )(o => Tuple.fromProductTyped(o))
+  
+  lazy val downStreamReads: Reads[ContactDetails] = (
+    (__ \ "PhoneNumber").readNullable[String] and
+    (__ \ "ContactName").read[String] and
+    (__ \ "EmailAddress").read[String]
+  )(ContactDetails.apply _)
 }
