@@ -18,7 +18,7 @@ package controllers
 
 import connectors.PlatformOperatorConnector
 import controllers.actions.AuthAction
-import models.operator.requests.CreatePlatformOperatorRequest
+import models.operator.requests.*
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -33,11 +33,23 @@ class PlatformOperatorController @Inject()(cc: ControllerComponents,
   extends BackendController(cc) {
 
   given OFormat[CreatePlatformOperatorRequest] = CreatePlatformOperatorRequest.defaultFormat
+  given OFormat[UpdatePlatformOperatorRequest] = UpdatePlatformOperatorRequest.defaultFormat
+  given OFormat[DeletePlatformOperatorRequest] = DeletePlatformOperatorRequest.defaultFormat
   
   def create(): Action[CreatePlatformOperatorRequest] = authenticate(parse.json[CreatePlatformOperatorRequest]).async {
     implicit request =>
       connector.create(request.body).map { result =>
         Ok(Json.toJson(result))
       }
+  }
+
+  def update(): Action[UpdatePlatformOperatorRequest] = authenticate(parse.json[UpdatePlatformOperatorRequest]).async {
+    implicit request =>
+      connector.update(request.body).map(_ => Ok)
+  }
+
+  def delete(): Action[DeletePlatformOperatorRequest] = authenticate(parse.json[DeletePlatformOperatorRequest]).async {
+    implicit request =>
+      connector.delete(request.body).map(_ => Ok)
   }
 }

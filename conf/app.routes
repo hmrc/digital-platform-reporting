@@ -1,5 +1,6 @@
 # microservice specific routes
 
+<<<<<<< HEAD
 POST        /register                     controllers.RegistrationController.register()
 
 GET         /subscribe                    controllers.SubscriptionController.get()
@@ -13,4 +14,6 @@ POST        /submission/:id/upload-success          controllers.SubmissionContro
 POST        /submission/:id/upload-failed           controllers.SubmissionController.uploadFailed(id: String)
 POST        /submission/:id/submit                  controllers.SubmissionController.submit(id: String)
 
-POST        /platform-operator      controllers.PlatformOperatorController.create()
+POST        /platform-operator          controllers.PlatformOperatorController.create()
+PUT         /platform-operator          controllers.PlatformOperatorController.update()
+POST        /platform-operator/remove   controllers.PlatformOperatorController.delete()

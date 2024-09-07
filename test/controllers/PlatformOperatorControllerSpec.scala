@@ -48,16 +48,16 @@ class PlatformOperatorControllerSpec
     with BeforeAndAfterEach {
 
   private val mockConnector = mock[PlatformOperatorConnector]
-    
+
   override def beforeEach(): Unit = {
     Mockito.reset(mockConnector)
     super.beforeEach()
   }
-  
+
   ".create" - {
-    
-    "must create a platform operator and return OK with the response detail" in {
-      
+
+    "must create a platform operator and return OK" in {
+
       val app =
         new GuiceApplicationBuilder()
           .overrides(
@@ -77,23 +77,94 @@ class PlatformOperatorControllerSpec
         addressDetails = AddressDetails("line 1", None, None, None, None, None)
       )
       val creationResponse = PlatformOperatorCreatedResponse("po id")
-      
+
       when(mockConnector.create(any())(any())).thenReturn(Future.successful(creationResponse))
-      
+
       running(app) {
-        
-        val request = 
+
+        val request =
           FakeRequest(routes.PlatformOperatorController.create())
             .withJsonBody(Json.toJson(creationRequest)(CreatePlatformOperatorRequest.defaultFormat))
-          
+
         val result = route(app, request).value
-        
+
         status(result) mustEqual OK
         contentAsJson(result) mustEqual Json.toJson(creationResponse)
         verify(mockConnector, times(1)).create(eqTo(creationRequest))(any())
       }
     }
   }
+
+  ".update" - {
+
+    "must update a platform operator and return OK with the response detail" in {
+      val app =
+        new GuiceApplicationBuilder()
+          .overrides(
+            bind[PlatformOperatorConnector].toInstance(mockConnector),
+            bind[AuthAction].toInstance(new FakeAuthAction)
+          )
+          .build()
+
+      val updateRequest = UpdatePlatformOperatorRequest(
+        subscriptionId = "dprsid",
+        operatorId = "operatorid",
+        operatorName = "foo",
+        tinDetails = Seq.empty,
+        businessName = None,
+        tradingName = None,
+        primaryContactDetails = ContactDetails(None, "name", "email"),
+        secondaryContactDetails = None,
+        addressDetails = AddressDetails("line 1", None, None, None, None, None),
+        notification = None
+      )
+
+      when(mockConnector.update(any())(any())).thenReturn(Future.successful(Done))
+
+      running(app) {
+
+        val request =
+          FakeRequest(routes.PlatformOperatorController.update())
+            .withJsonBody(Json.toJson(updateRequest)(UpdatePlatformOperatorRequest.defaultFormat))
+
+        val result = route(app, request).value
+
+        status(result) mustEqual OK
+        verify(mockConnector, times(1)).update(eqTo(updateRequest))(any())
+      }
+    }
+  }
+
+  ".delete" - {
+
+    "must delete a platform operator and return OK" in {
+      
+      val app =
+        new GuiceApplicationBuilder()
+          .overrides(
+            bind[PlatformOperatorConnector].toInstance(mockConnector),
+            bind[AuthAction].toInstance(new FakeAuthAction)
+          )
+          .build()
+
+      val deleteRequest = DeletePlatformOperatorRequest(
+        subscriptionId = "dprsid",
+        operatorId = "operatorid"
+      )
+
+      when(mockConnector.delete(any())(any())).thenReturn(Future.successful(Done))
+
+      running(app) {
+
+        val request =
+          FakeRequest(routes.PlatformOperatorController.delete())
+            .withJsonBody(Json.toJson(deleteRequest)(DeletePlatformOperatorRequest.defaultFormat))
+
+        val result = route(app, request).value
+
+        status(result) mustEqual OK
+        verify(mockConnector, times(1)).delete(eqTo(deleteRequest))(any())
+      }
+    }
+  }
 }
-
-
