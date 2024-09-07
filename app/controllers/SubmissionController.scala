@@ -16,7 +16,7 @@
 
 package controllers
 
-import models.submission.Submission.State.{Ready, Uploading, Validated}
+import models.submission.Submission.State.{Ready, UploadFailed, Uploading, Validated}
 import models.submission.{StartSubmissionRequest, Submission}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
@@ -89,7 +89,7 @@ class SubmissionController @Inject() (
   def startUpload(dprsId: String, id: String): Action[AnyContent] = Action.async { implicit request =>
     submissionRepository.get(dprsId, id).flatMap {
       _.map { submission =>
-        if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[Validated.type]) {
+        if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[UploadFailed]) {
 
           val updatedSubmission = submission.copy(
             state = Uploading,
@@ -108,7 +108,28 @@ class SubmissionController @Inject() (
     }
   }
 
-  def uploadSuccess(dprsId: String, id: String): Action[AnyContent] = ???
+  def uploadSuccess(dprsId: String, id: String): Action[AnyContent] = Action.async { implicit request =>
+    submissionRepository.get(dprsId, id).flatMap {
+      _.map { submission =>
+        if (submission.state.isInstanceOf[Uploading.type]) {
+          // TODO validation
+
+          val updatedSubmission = submission.copy(
+            state = Validated,
+            updated = clock.instant()
+          )
+
+          submissionRepository.save(updatedSubmission).map { _ =>
+            Ok(Json.toJson(updatedSubmission))
+          }
+        } else {
+          Future.successful(Conflict)
+        }
+      }.getOrElse {
+        Future.successful(NotFound)
+      }
+    }
+  }
 
   def uploadFailed(dprsId: String, id: String): Action[AnyContent] = ???
 
