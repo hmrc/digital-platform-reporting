@@ -19,7 +19,7 @@ package controllers
 import connectors.PlatformOperatorConnector
 import controllers.actions.AuthAction
 import models.operator.requests.*
-import models.operator.responses.ViewPlatformOperatorsResponse
+import models.operator.responses.*
 import play.api.libs.json.{Json, OFormat}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -54,11 +54,23 @@ class PlatformOperatorController @Inject()(cc: ControllerComponents,
       val deleteRequest = DeletePlatformOperatorRequest(request.dprsId, operatorId)
       connector.delete(deleteRequest).map(_ => Ok)
   }
-  
+
   def get(): Action[AnyContent] = authenticate(parse.default).async {
     implicit request =>
       connector
         .get(request.dprsId)
         .map(response => Ok(Json.toJson(response)(ViewPlatformOperatorsResponse.defaultWrites)))
+  }
+
+  def getOne(operatorId: String): Action[AnyContent] = authenticate(parse.default).async {
+    implicit request =>
+      connector
+        .get(request.dprsId, operatorId)
+        .map {
+          _.platformOperators
+            .find(_.operatorId == operatorId)
+            .map(operator => Ok(Json.toJson(operator)(PlatformOperator.defaultWrites)))
+            .getOrElse(NotFound)
+        }
   }
 }

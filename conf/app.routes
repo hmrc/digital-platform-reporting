@@ -17,3 +17,4 @@ POST        /platform-operator                  controllers.PlatformOperatorCont
 PUT         /platform-operator                  controllers.PlatformOperatorController.update()
 POST        /platform-operator/:operatorId      controllers.PlatformOperatorController.delete(operatorId: String)
 GET         /platform-operator                  controllers.PlatformOperatorController.get()
+GET         /platform-operator/:operatorId      controllers.PlatformOperatorController.getOne(operatorId: String)

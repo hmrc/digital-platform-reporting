@@ -19,7 +19,7 @@ package connectors
 import config.AppConfig
 import connectors.PlatformOperatorConnector.*
 import models.operator.requests.*
-import models.operator.responses.{PlatformOperatorCreatedResponse, ViewPlatformOperatorsResponse}
+import models.operator.responses.*
 import org.apache.pekko.Done
 import play.api.http.HeaderNames
 import play.api.http.Status.OK
@@ -129,7 +129,29 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
       .execute[HttpResponse]
       .flatMap { response =>
         response.status match {
-          case OK => Future.successful(response.json.as[ViewPlatformOperatorsResponse](ViewPlatformOperatorsResponse.downstreamReads))
+          case OK     => Future.successful(response.json.as[ViewPlatformOperatorsResponse](ViewPlatformOperatorsResponse.downstreamReads))
+          case status => Future.failed(ViewPlatformOperatorsFailure(correlationId, status))
+        }
+      }
+  }
+  
+  def get(subscriptionId: String, operatorId: String)
+         (implicit hc: HeaderCarrier): Future[ViewPlatformOperatorsResponse] = {
+
+    val correlationId = uuidService.generate()
+    val conversationId = uuidService.generate()
+
+    httpClient.get(url"${appConfig.ViewPlatformOperatorsBaseUrl}/dac6/dprs9302/v1/$subscriptionId/$operatorId")
+      .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.ViewPlatformOperatorBearerToken}")
+      .setHeader("X-Correlation-ID" -> correlationId)
+      .setHeader("X-Conversation-ID" -> conversationId)
+      .setHeader("X-Forwarded-Host" -> appConfig.AppName)
+      .setHeader(HeaderNames.ACCEPT -> "application/json")
+      .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
+      .execute[HttpResponse]
+      .flatMap { response =>
+        response.status match {
+          case OK     => Future.successful(response.json.as[ViewPlatformOperatorsResponse](ViewPlatformOperatorsResponse.downstreamReads))
           case status => Future.failed(ViewPlatformOperatorsFailure(correlationId, status))
         }
       }
