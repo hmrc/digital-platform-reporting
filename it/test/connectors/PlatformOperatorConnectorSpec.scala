@@ -22,7 +22,7 @@ import models.operator.requests.*
 import models.operator.responses.*
 import org.mockito.Mockito
 import org.mockito.Mockito.when
-import org.scalatest.{BeforeAndAfterEach, EitherValues}
+import org.scalatest.{BeforeAndAfterEach, EitherValues, OptionValues}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -45,7 +45,8 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
   with WireMockSupport
   with MockitoSugar
   with BeforeAndAfterEach
-  with EitherValues {
+  with EitherValues
+  with OptionValues {
 
   private val instant = LocalDateTime.of(2000, 1, 2, 3, 4, 5).toInstant(ZoneOffset.UTC)
   private val stubClock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
@@ -171,7 +172,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
 
         val request = UpdatePlatformOperatorRequest(
           subscriptionId = "dprsid",
-          operatorId = "operatorid",
+          operatorId = "operatorId",
           operatorName = "foo",
           tinDetails = Seq.empty,
           businessName = None,
@@ -214,7 +215,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
 
         val request = UpdatePlatformOperatorRequest(
           subscriptionId = "dprsid",
-          operatorId = "operatorid",
+          operatorId = "operatorId",
           operatorName = "foo",
           tinDetails = Seq.empty,
           businessName = None,
@@ -253,7 +254,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
 
         val request = DeletePlatformOperatorRequest(
           subscriptionId = "dprsid",
-          operatorId = "operatorid"
+          operatorId = "operatorId"
         )
 
         val responsePayload = Json.obj(
@@ -288,7 +289,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
 
         val request = DeletePlatformOperatorRequest(
           subscriptionId = "dprsid",
-          operatorId = "operatorid"
+          operatorId = "operatorId"
         )
 
         wireMockServer.stubFor(
@@ -359,7 +360,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
       ))
 
       wireMockServer.stubFor(
-        get(urlMatching(".*/dac6/dprs9302/v1/operatorid"))
+        get(urlMatching(".*/dac6/dprs9302/v1/operatorId"))
           .withHeader("Authorization", equalTo("Bearer viewPlatformOperatorToken"))
           .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
           .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -372,7 +373,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
           )
       )
 
-      val result = connector.get("operatorid").futureValue
+      val result = connector.get("operatorId").futureValue
       result mustEqual expectedResponse
     }
 
@@ -382,7 +383,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
         .thenReturn(correlationId.toString, conversationId.toString)
 
       wireMockServer.stubFor(
-        get(urlMatching(".*/dac6/dprs9302/v1/operatorid"))
+        get(urlMatching(".*/dac6/dprs9302/v1/operatorId"))
           .withHeader("Authorization", equalTo("Bearer viewPlatformOperatorToken"))
           .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
           .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -391,13 +392,13 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
           .willReturn(serverError())
       )
 
-      connector.get("operatorid").failed.futureValue
+      connector.get("operatorId").failed.futureValue
     }
   }
 
   ".getOne" - {
 
-    "must return the response when the server returns OK" in {
+    "must return the response when the server returns OK and contains platform operator details" in {
 
       when(mockUuidService.generate())
         .thenReturn(correlationId.toString, conversationId.toString)
@@ -431,7 +432,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
         )
       )
 
-      val expectedResponse = ViewPlatformOperatorsResponse(platformOperators = Seq(
+      val expectedResponse =
         PlatformOperator(
           operatorId = "operatorId",
           operatorName = "operatorName",
@@ -443,10 +444,9 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
           addressDetails = AddressDetails("line1", None, None, None, Some("postCode"), None),
           notifications = Seq.empty
         )
-      ))
 
       wireMockServer.stubFor(
-        get(urlMatching(".*/dac6/dprs9302/v1/subscriptionid/operatorid"))
+        get(urlMatching(".*/dac6/dprs9302/v1/subscriptionId/operatorId"))
           .withHeader("Authorization", equalTo("Bearer viewPlatformOperatorToken"))
           .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
           .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -459,8 +459,75 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
           )
       )
 
-      val result = connector.get("subscriptionid", "operatorid").futureValue
-      result mustEqual expectedResponse
+      val result = connector.get("subscriptionId", "operatorId").futureValue
+      result.value mustEqual expectedResponse
+    }
+
+    "must return None when the server returns OK and does not contain platform operator details" in {
+
+      when(mockUuidService.generate())
+        .thenReturn(correlationId.toString, conversationId.toString)
+
+      val responsePayload = Json.obj(
+        "ViewPODetails" -> Json.obj(
+          "ResponseCommon" -> Json.obj(
+            "OriginatingSystem" -> "CADX",
+            "TransmittingSystem" -> "EIS",
+            "RequestType" -> "VIEW",
+            "Regime" -> "DPRS"
+          ),
+          "ResponseDetails" -> Json.obj(
+            "PlatformOperatorDetails" -> Json.arr()
+          )
+        )
+      )
+
+      wireMockServer.stubFor(
+        get(urlMatching(".*/dac6/dprs9302/v1/subscriptionId/operatorId"))
+          .withHeader("Authorization", equalTo("Bearer viewPlatformOperatorToken"))
+          .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+          .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+          .withHeader("Accept", equalTo("application/json"))
+          .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+          .willReturn(
+            aResponse()
+              .withStatus(200)
+              .withBody(responsePayload.toString)
+          )
+      )
+
+      val result = connector.get("subscriptionId", "operatorId").futureValue
+      result must not be defined
+    }
+
+    "must return None when the server returns 422" in {
+
+      when(mockUuidService.generate())
+        .thenReturn(correlationId.toString, conversationId.toString)
+
+      val responsePayload = Json.obj(
+        "errorDetail" -> Json.obj(
+          "errorCode" -> "001",
+          "errorMessage" -> "No Matching Records found for the request"
+        )
+      )
+
+      wireMockServer.stubFor(
+        get(urlMatching(".*/dac6/dprs9302/v1/subscriptionId/operatorId"))
+          .withHeader("Authorization", equalTo("Bearer viewPlatformOperatorToken"))
+          .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+          .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+          .withHeader("Accept", equalTo("application/json"))
+          .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+          .willReturn(
+            aResponse()
+              .withStatus(422)
+              .withBody(responsePayload.toString)
+          )
+      )
+
+      val result = connector.get("subscriptionId", "operatorId").futureValue
+      result must not be defined
     }
 
     "and return a failed future when the server returns an error" in {
@@ -469,7 +536,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
         .thenReturn(correlationId.toString, conversationId.toString)
 
       wireMockServer.stubFor(
-        get(urlMatching(".*/dac6/dprs9302/v1/subscriptionid/operatorid"))
+        get(urlMatching(".*/dac6/dprs9302/v1/subscriptionId/operatorId"))
           .withHeader("Authorization", equalTo("Bearer viewPlatformOperatorToken"))
           .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
           .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
@@ -478,7 +545,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
           .willReturn(serverError())
       )
 
-      connector.get("subscriptionid", "operatorid").failed.futureValue
+      connector.get("subscriptionId", "operatorId").failed.futureValue
     }
   }
 }

@@ -16,7 +16,7 @@
 
 package controllers
 
-import connectors.{PlatformOperatorConnector, SubscriptionConnector}
+import connectors.PlatformOperatorConnector
 import controllers.actions.{AuthAction, FakeAuthAction}
 import models.operator.*
 import models.operator.requests.*
@@ -230,11 +230,7 @@ class PlatformOperatorControllerSpec
         notifications = Seq.empty
       )
 
-      val platformOperatorResponse = ViewPlatformOperatorsResponse(
-        platformOperators = Seq(platformOperator)
-      )
-
-      when(mockConnector.get(any(), any())(any())).thenReturn(Future.successful(platformOperatorResponse))
+      when(mockConnector.get(any(), any())(any())).thenReturn(Future.successful(Some(platformOperator)))
 
       running(app) {
 
@@ -257,9 +253,7 @@ class PlatformOperatorControllerSpec
           )
           .build()
 
-      val platformOperatorResponse = ViewPlatformOperatorsResponse(platformOperators = Seq.empty)
-
-      when(mockConnector.get(any(), any())(any())).thenReturn(Future.successful(platformOperatorResponse))
+      when(mockConnector.get(any(), any())(any())).thenReturn(Future.successful(None))
 
       running(app) {
 

@@ -22,7 +22,7 @@ import models.operator.requests.*
 import models.operator.responses.*
 import org.apache.pekko.Done
 import play.api.http.HeaderNames
-import play.api.http.Status.OK
+import play.api.http.Status.{OK, UNPROCESSABLE_ENTITY}
 import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.UuidService
@@ -134,9 +134,9 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
         }
       }
   }
-  
+
   def get(subscriptionId: String, operatorId: String)
-         (implicit hc: HeaderCarrier): Future[ViewPlatformOperatorsResponse] = {
+         (implicit hc: HeaderCarrier): Future[Option[PlatformOperator]] = {
 
     val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
@@ -151,8 +151,17 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
       .execute[HttpResponse]
       .flatMap { response =>
         response.status match {
-          case OK     => Future.successful(response.json.as[ViewPlatformOperatorsResponse](ViewPlatformOperatorsResponse.downstreamReads))
-          case status => Future.failed(ViewPlatformOperatorsFailure(correlationId, status))
+          case OK =>
+            Future.successful(response.json.as[ViewPlatformOperatorsResponse](ViewPlatformOperatorsResponse.downstreamReads)
+              .platformOperators
+              .find(_.operatorId == operatorId)
+            )
+
+          case UNPROCESSABLE_ENTITY =>
+            Future.successful(None)
+
+          case status =>
+            Future.failed(ViewPlatformOperatorsFailure(correlationId, status))
         }
       }
   }

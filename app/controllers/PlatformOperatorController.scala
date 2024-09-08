@@ -20,7 +20,7 @@ import connectors.PlatformOperatorConnector
 import controllers.actions.AuthAction
 import models.operator.requests.*
 import models.operator.responses.*
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.{Json, OFormat, OWrites}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -64,12 +64,13 @@ class PlatformOperatorController @Inject()(cc: ControllerComponents,
 
   def getOne(operatorId: String): Action[AnyContent] = authenticate(parse.default).async {
     implicit request =>
+      
+      given OWrites[PlatformOperator] = PlatformOperator.defaultWrites
+      
       connector
         .get(request.dprsId, operatorId)
         .map {
-          _.platformOperators
-            .find(_.operatorId == operatorId)
-            .map(operator => Ok(Json.toJson(operator)(PlatformOperator.defaultWrites)))
+          _.map(operator => Ok(Json.toJson(operator)))
             .getOrElse(NotFound)
         }
   }
