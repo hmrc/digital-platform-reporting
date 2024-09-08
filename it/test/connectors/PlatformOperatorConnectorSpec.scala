@@ -374,7 +374,37 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
       )
 
       val result = connector.get("operatorId").futureValue
-      result mustEqual expectedResponse
+      result.value mustEqual expectedResponse
+    }
+    
+    "must return None when the server returns 422" in {
+      
+      when(mockUuidService.generate())
+        .thenReturn(correlationId.toString, conversationId.toString)
+
+      val responsePayload = Json.obj(
+        "errorDetail" -> Json.obj(
+          "errorCode" -> "001",
+          "errorMessage" -> "No Matching Records found for the request"
+        )
+      )
+
+      wireMockServer.stubFor(
+        get(urlMatching(".*/dac6/dprs9302/v1/operatorId"))
+          .withHeader("Authorization", equalTo("Bearer viewPlatformOperatorToken"))
+          .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+          .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+          .withHeader("Accept", equalTo("application/json"))
+          .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+          .willReturn(
+            aResponse()
+              .withStatus(422)
+              .withBody(responsePayload.toString)
+          )
+      )
+
+      val result = connector.get("operatorId").futureValue
+      result must not be defined
     }
 
     "and return a failed future when the server returns an error" in {

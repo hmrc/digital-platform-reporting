@@ -192,7 +192,7 @@ class PlatformOperatorControllerSpec
         )
       ))
 
-      when(mockConnector.get(any())(any())).thenReturn(Future.successful(platformOperatorResponse))
+      when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(platformOperatorResponse)))
 
       running(app) {
 
@@ -201,6 +201,28 @@ class PlatformOperatorControllerSpec
 
         status(result) mustEqual OK
         contentAsJson(result) mustEqual Json.toJson(platformOperatorResponse)(ViewPlatformOperatorsResponse.defaultWrites)
+        verify(mockConnector, times(1)).get(eqTo("dprs id"))(any())
+      }
+    }
+    
+    "must return NOT_FOUND when no platform operators exist for this subscription" in {
+
+      val app =
+        new GuiceApplicationBuilder()
+          .overrides(
+            bind[PlatformOperatorConnector].toInstance(mockConnector),
+            bind[AuthAction].toInstance(new FakeAuthAction)
+          )
+          .build()
+
+      when(mockConnector.get(any())(any())).thenReturn(Future.successful(None))
+
+      running(app) {
+
+        val request = FakeRequest(routes.PlatformOperatorController.get())
+        val result = route(app, request).value
+
+        status(result) mustEqual NOT_FOUND
         verify(mockConnector, times(1)).get(eqTo("dprs id"))(any())
       }
     }

@@ -114,7 +114,9 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
   }
   
   def get(subscriptionId: String)
-         (implicit hc: HeaderCarrier): Future[ViewPlatformOperatorsResponse] = {
+         (implicit hc: HeaderCarrier): Future[Option[ViewPlatformOperatorsResponse]] = {
+    
+    given Reads[ViewPlatformOperatorsResponse] = ViewPlatformOperatorsResponse.downstreamReads
     
     val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
@@ -129,8 +131,9 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
       .execute[HttpResponse]
       .flatMap { response =>
         response.status match {
-          case OK     => Future.successful(response.json.as[ViewPlatformOperatorsResponse](ViewPlatformOperatorsResponse.downstreamReads))
-          case status => Future.failed(ViewPlatformOperatorsFailure(correlationId, status))
+          case OK                   => Future.successful(Some(response.json.as[ViewPlatformOperatorsResponse]))
+          case UNPROCESSABLE_ENTITY => Future.successful(None)
+          case status               => Future.failed(ViewPlatformOperatorsFailure(correlationId, status))
         }
       }
   }

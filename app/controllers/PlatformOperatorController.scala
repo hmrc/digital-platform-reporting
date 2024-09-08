@@ -57,9 +57,15 @@ class PlatformOperatorController @Inject()(cc: ControllerComponents,
 
   def get(): Action[AnyContent] = authenticate(parse.default).async {
     implicit request =>
+      
+      given OWrites[ViewPlatformOperatorsResponse] = ViewPlatformOperatorsResponse.defaultWrites
+      
       connector
         .get(request.dprsId)
-        .map(response => Ok(Json.toJson(response)(ViewPlatformOperatorsResponse.defaultWrites)))
+        .map {
+          _.map(response => Ok(Json.toJson(response)))
+            .getOrElse(NotFound)
+        }
   }
 
   def getOne(operatorId: String): Action[AnyContent] = authenticate(parse.default).async {
