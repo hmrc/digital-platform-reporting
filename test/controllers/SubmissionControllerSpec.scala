@@ -19,7 +19,7 @@ package controllers
 import controllers.actions.AuthAction
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
-import models.submission.{StartSubmissionRequest, Submission, UploadFailedRequest}
+import models.submission.{Submission, UploadFailedRequest}
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
@@ -85,7 +85,6 @@ class SubmissionControllerSpec
   private val rejectedGen: Gen[Rejected] = Gen.asciiPrintableStr.map(Rejected.apply)
 
   private val dprsId = "dprsId"
-  private val platformOperatorId = "poid"
   private val uuid = UUID.randomUUID().toString
 
   private val validEnrolments = Enrolments(Set(
@@ -104,14 +103,10 @@ class SubmissionControllerSpec
       "must create and save a new submission for the given DPRS id and return CREATED with the new submission body included" in {
 
         val request = FakeRequest(routes.SubmissionController.start(None))
-          .withBody(Json.toJson(StartSubmissionRequest(
-            platformOperatorId = platformOperatorId
-          )))
 
         val expectedSubmission = Submission(
           _id = uuid,
           dprsId = dprsId,
-          platformOperatorId = platformOperatorId,
           state = Ready,
           created = now,
           updated = now
@@ -137,17 +132,11 @@ class SubmissionControllerSpec
 
         "must update the existing submission and return OK" in {
 
-          val initialPoId = "initialPoId"
-
           val request = FakeRequest(routes.SubmissionController.start(Some(uuid)))
-            .withBody(Json.toJson(StartSubmissionRequest(
-              platformOperatorId = platformOperatorId
-            )))
 
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            platformOperatorId = initialPoId,
             state = Validated,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -155,7 +144,6 @@ class SubmissionControllerSpec
 
           val expectedSubmission = existingSubmission
             .copy(
-              platformOperatorId = platformOperatorId,
               state = Ready,
               updated = now
             )
@@ -178,18 +166,12 @@ class SubmissionControllerSpec
 
         "must not update the existing submission and return CONFLICT" in {
 
-          val initialPoId = "initialPoId"
-
           val request = FakeRequest(routes.SubmissionController.start(Some(uuid)))
-            .withBody(Json.toJson(StartSubmissionRequest(
-              platformOperatorId = platformOperatorId
-            )))
 
           val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            platformOperatorId = initialPoId,
             state = state,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -213,9 +195,6 @@ class SubmissionControllerSpec
         "must return NOT FOUND" in {
 
           val request = FakeRequest(routes.SubmissionController.start(Some(uuid)))
-            .withBody(Json.toJson(StartSubmissionRequest(
-              platformOperatorId = platformOperatorId
-            )))
 
           when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
           when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
@@ -243,7 +222,6 @@ class SubmissionControllerSpec
         val existingSubmission = Submission(
           _id = uuid,
           dprsId = dprsId,
-          platformOperatorId = platformOperatorId,
           state = Ready,
           created = now,
           updated = now
@@ -293,7 +271,6 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            platformOperatorId = platformOperatorId,
             state = state,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -328,7 +305,6 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            platformOperatorId = platformOperatorId,
             state = state,
             created = now,
             updated = now
@@ -387,7 +363,6 @@ class SubmissionControllerSpec
             val existingSubmission = Submission(
               _id = uuid,
               dprsId = dprsId,
-              platformOperatorId = platformOperatorId,
               state = Uploading,
               created = now.minus(1, ChronoUnit.DAYS),
               updated = now.minus(1, ChronoUnit.DAYS)
@@ -423,7 +398,6 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            platformOperatorId = platformOperatorId,
             state = state,
             created = now,
             updated = now
@@ -479,7 +453,6 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            platformOperatorId = platformOperatorId,
             state = Uploading,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -517,7 +490,6 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            platformOperatorId = platformOperatorId,
             state = state,
             created = now,
             updated = now
@@ -573,7 +545,6 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            platformOperatorId = platformOperatorId,
             state = Validated,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -608,7 +579,6 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            platformOperatorId = platformOperatorId,
             state = state,
             created = now,
             updated = now

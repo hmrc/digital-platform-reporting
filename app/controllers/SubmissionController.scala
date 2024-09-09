@@ -18,7 +18,7 @@ package controllers
 
 import controllers.actions.AuthAction
 import models.submission.Submission.State.{Ready, Submitted, UploadFailed, Uploading, Validated}
-import models.submission.{StartSubmissionRequest, Submission, UploadFailedRequest}
+import models.submission.{Submission, UploadFailedRequest}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.SubmissionRepository
@@ -38,15 +38,14 @@ class SubmissionController @Inject() (
                                        auth: AuthAction
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
-  def start(id: Option[String]): Action[StartSubmissionRequest] =
-    auth.async(parse.json[StartSubmissionRequest]) { implicit request =>
+  def start(id: Option[String]): Action[AnyContent] =
+    auth.async { implicit request =>
       id.map { id =>
         submissionRepository.get(request.dprsId, id).flatMap {
           _.map { submission =>
             if (submission.state == Validated) {
 
               val updatedSubmission = submission.copy(
-                platformOperatorId = request.body.platformOperatorId,
                 state = Ready,
                 updated = clock.instant()
               )
@@ -66,7 +65,6 @@ class SubmissionController @Inject() (
         val submission = Submission(
           _id = uuidService.generate(),
           dprsId = request.dprsId,
-          platformOperatorId = request.body.platformOperatorId,
           state = Ready,
           created = clock.instant(),
           updated = clock.instant()

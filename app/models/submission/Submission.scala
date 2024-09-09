@@ -24,7 +24,6 @@ import java.time.Instant
 final case class Submission(
                              _id: String,
                              dprsId: String,
-                             platformOperatorId: String,
                              state: Submission.State,
                              created: Instant,
                              updated: Instant
