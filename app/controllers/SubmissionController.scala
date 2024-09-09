@@ -18,7 +18,7 @@ package controllers
 
 import controllers.actions.AuthAction
 import models.submission.Submission.State.{Ready, Submitted, UploadFailed, Uploading, Validated}
-import models.submission.{Submission, UploadFailedRequest}
+import models.submission.{Submission, UploadFailedRequest, UploadSuccessRequest}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.SubmissionRepository
@@ -108,8 +108,9 @@ class SubmissionController @Inject() (
     }
   }
 
-  def uploadSuccess(id: String): Action[AnyContent] = auth.async { implicit request =>
-    submissionRepository.get(request.dprsId, id).flatMap {
+  // TODO Should we add internal auth to this endpoint?
+  def uploadSuccess(id: String): Action[UploadSuccessRequest] = Action.async(parse.json[UploadSuccessRequest]) { implicit request =>
+    submissionRepository.get(request.body.dprsId, id).flatMap {
       _.map { submission =>
         if (submission.state.isInstanceOf[Uploading.type]) {
           // TODO validation
@@ -131,8 +132,9 @@ class SubmissionController @Inject() (
     }
   }
 
-  def uploadFailed(id: String): Action[UploadFailedRequest] = auth.async(parse.json[UploadFailedRequest]) { implicit request =>
-    submissionRepository.get(request.dprsId, id).flatMap {
+  // TODO Should we add internal auth to this endpoint?
+  def uploadFailed(id: String): Action[UploadFailedRequest] = Action.async(parse.json[UploadFailedRequest]) { implicit request =>
+    submissionRepository.get(request.body.dprsId, id).flatMap {
       _.map { submission =>
         if (submission.state.isInstanceOf[Uploading.type]) {
 

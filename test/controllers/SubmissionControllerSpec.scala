@@ -16,27 +16,26 @@
 
 package controllers
 
-import controllers.actions.AuthAction
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
-import models.submission.{Submission, UploadFailedRequest}
+import models.submission.{Submission, UploadFailedRequest, UploadSuccessRequest}
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.Mockito.{times, verify, when}
 import org.scalacheck.Gen
-import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
+import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import play.api.inject.bind
-import play.api.libs.json.Json
 import repository.SubmissionRepository
 import services.UuidService
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
@@ -73,7 +72,7 @@ class SubmissionControllerSpec
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset(mockSubmissionRepository)
+    Mockito.reset(mockSubmissionRepository, mockAuthConnector)
   }
 
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
@@ -359,6 +358,7 @@ class SubmissionControllerSpec
           "must set the state of the submission to Validated and return OK" in {
 
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
+              .withBody(Json.toJson(UploadSuccessRequest(dprsId)))
 
             val existingSubmission = Submission(
               _id = uuid,
@@ -373,7 +373,6 @@ class SubmissionControllerSpec
               updated = now
             )
 
-            when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
@@ -393,6 +392,7 @@ class SubmissionControllerSpec
         "must return CONFLICT" in {
 
           val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
+            .withBody(Json.toJson(UploadSuccessRequest(dprsId)))
 
           val state = Gen.oneOf(readyGen, uploadFailedGen, validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
@@ -403,7 +403,6 @@ class SubmissionControllerSpec
             updated = now
           )
 
-          when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
           when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
           when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
@@ -422,8 +421,8 @@ class SubmissionControllerSpec
       "must return NOT_FOUND" in {
 
         val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
+          .withBody(Json.toJson(UploadSuccessRequest(dprsId)))
 
-        when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
         when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
         when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
@@ -447,6 +446,7 @@ class SubmissionControllerSpec
 
           val request = FakeRequest(routes.SubmissionController.uploadFailed(uuid))
             .withBody(Json.toJson(UploadFailedRequest(
+              dprsId = dprsId,
               reason = "some reason"
             )))
 
@@ -463,7 +463,6 @@ class SubmissionControllerSpec
             updated = now
           )
 
-          when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
           when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
           when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
@@ -483,6 +482,7 @@ class SubmissionControllerSpec
 
           val request = FakeRequest(routes.SubmissionController.uploadFailed(uuid))
             .withBody(Json.toJson(UploadFailedRequest(
+              dprsId = dprsId,
               reason = "some reason"
             )))
 
@@ -495,7 +495,6 @@ class SubmissionControllerSpec
             updated = now
           )
 
-          when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
           when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
           when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
@@ -515,10 +514,10 @@ class SubmissionControllerSpec
 
         val request = FakeRequest(routes.SubmissionController.uploadFailed(uuid))
           .withBody(Json.toJson(UploadFailedRequest(
+            dprsId = dprsId,
             reason = "some reason"
           )))
 
-        when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
         when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
         when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 

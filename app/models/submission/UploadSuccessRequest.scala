@@ -18,9 +18,9 @@ package models.submission
 
 import play.api.libs.json.{Json, OFormat}
 
-final case class UploadFailedRequest(dprsId: String, reason: String)
+final case class UploadSuccessRequest(dprsId: String)
 
-object UploadFailedRequest {
-
-  given OFormat[UploadFailedRequest] = Json.format
+object UploadSuccessRequest {
+  
+  given OFormat[UploadSuccessRequest] = Json.format
 }
