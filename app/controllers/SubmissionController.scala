@@ -136,7 +136,7 @@ class SubmissionController @Inject() (
   def uploadFailed(id: String): Action[UploadFailedRequest] = Action.async(parse.json[UploadFailedRequest]) { implicit request =>
     submissionRepository.get(request.body.dprsId, id).flatMap {
       _.map { submission =>
-        if (submission.state.isInstanceOf[Uploading.type]) {
+        if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[Uploading.type] || submission.state.isInstanceOf[UploadFailed]) {
 
           val updatedSubmission = submission.copy(
             state = UploadFailed(request.body.reason),
