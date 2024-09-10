@@ -82,7 +82,7 @@ class PlatformOperatorControllerSpec
 
       running(app) {
 
-        val request =
+        val request = 
           FakeRequest(routes.PlatformOperatorController.create())
             .withJsonBody(Json.toJson(creationRequest)(CreatePlatformOperatorRequest.defaultFormat))
 

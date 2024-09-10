@@ -18,20 +18,16 @@ package models
 
 import play.api.libs.json.{Json, OFormat}
 
-case class ErrorDetail(
-  errorCode: String
-)
+case class ErrorDetail(errorCode: String)
 
 object ErrorDetail {
   implicit val format: OFormat[ErrorDetail] = Json.format[ErrorDetail]
 }
 
-case class ErrorResponse(
-  errorDetail: ErrorDetail
-)
+case class ErrorResponse(errorDetail: ErrorDetail)
 
 object ErrorResponse {
   implicit val format: OFormat[ErrorResponse] = Json.format[ErrorResponse]
-  
-  val DuplicateSubmission: String = "004"
+
+  val HasActiveSubscriptionCode: String = "007"
 }

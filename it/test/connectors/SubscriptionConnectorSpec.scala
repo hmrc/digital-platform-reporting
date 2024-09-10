@@ -130,7 +130,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
             .willReturn(
               aResponse()
                 .withStatus(422)
-                .withBody(Json.toJson(ErrorResponse(ErrorDetail("004"))).toString)
+                .withBody(Json.toJson(ErrorResponse(ErrorDetail("007"))).toString)
             ))
 
         val result = connector.subscribe(request).futureValue

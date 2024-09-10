@@ -58,7 +58,7 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
           case CREATED => response.json.as[SubscribedResponse]
           case UNPROCESSABLE_ENTITY =>
             response.json.as[ErrorResponse].errorDetail.errorCode match {
-              case ErrorResponse.DuplicateSubmission => AlreadySubscribedResponse
+              case ErrorResponse.HasActiveSubscriptionCode => AlreadySubscribedResponse
               case errorCode => UnexpectedResponse(errorCode)
             }
         }
