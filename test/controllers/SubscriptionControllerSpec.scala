@@ -38,9 +38,6 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 
 import java.time.Instant
-import javax.inject.Inject
-import scala.concurrent.ExecutionContext.Implicits.global
-
 import scala.concurrent.Future
 
 class SubscriptionControllerSpec

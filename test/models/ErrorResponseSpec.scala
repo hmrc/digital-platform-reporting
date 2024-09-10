@@ -23,13 +23,11 @@ import play.api.libs.json.{JsString, Json}
 class ErrorResponseSpec extends AnyFreeSpec with Matchers {
 
   "error detail" - {
-    
     "must deserialise" in {
-      
       val json = Json.obj(
         "errorDetail" -> Json.obj(
-          "errorCode" -> ErrorResponse.DuplicateSubmission,
-          "errorMessage" -> "Duplicate Submission",
+          "errorCode" -> ErrorResponse.HasActiveSubscriptionCode,
+          "errorMessage" -> "Business partner already has active subscription for this regime",
           "source" -> "ETMP",
           "sourceFaultDetail" -> Json.obj(
             "detail" -> Json.arr(JsString("Duplicate Submission"))
@@ -39,7 +37,7 @@ class ErrorResponseSpec extends AnyFreeSpec with Matchers {
         )
       )
       
-      json.as[ErrorResponse] mustEqual ErrorResponse(ErrorDetail(ErrorResponse.DuplicateSubmission))
+      json.as[ErrorResponse] mustEqual ErrorResponse(ErrorDetail(ErrorResponse.HasActiveSubscriptionCode))
     }
   }
 }
