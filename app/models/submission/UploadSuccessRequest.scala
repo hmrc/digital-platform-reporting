@@ -18,9 +18,9 @@ package models.submission
 
 import play.api.libs.json.{Json, OFormat}
 
-final case class StartSubmissionRequest(platformOperatorId: String)
+final case class UploadSuccessRequest(dprsId: String)
 
-object StartSubmissionRequest {
-
-  implicit lazy val format: OFormat[StartSubmissionRequest] = Json.format
+object UploadSuccessRequest {
+  
+  given OFormat[UploadSuccessRequest] = Json.format
 }

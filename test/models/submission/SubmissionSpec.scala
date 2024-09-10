@@ -34,7 +34,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val submission = Submission(
       _id = "id",
       dprsId = "dprsId",
-      platformOperatorId = "poid",
       state = Ready,
       created = created,
       updated = updated
@@ -43,7 +42,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val json = Json.obj(
       "_id" -> "id",
       "dprsId" -> "dprsId",
-      "platformOperatorId" -> "poid",
       "state" -> Json.obj(
         "type" -> "Ready"
       ),
@@ -65,7 +63,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val submission = Submission(
       _id = "id",
       dprsId = "dprsId",
-      platformOperatorId = "poid",
       state = Uploading,
       created = created,
       updated = updated
@@ -74,7 +71,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val json = Json.obj(
       "_id" -> "id",
       "dprsId" -> "dprsId",
-      "platformOperatorId" -> "poid",
       "state" -> Json.obj(
         "type" -> "Uploading"
       ),
@@ -96,7 +92,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val submission = Submission(
       _id = "id",
       dprsId = "dprsId",
-      platformOperatorId = "poid",
       state = UploadFailed("some reason"),
       created = created,
       updated = updated
@@ -105,7 +100,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val json = Json.obj(
       "_id" -> "id",
       "dprsId" -> "dprsId",
-      "platformOperatorId" -> "poid",
       "state" -> Json.obj(
         "type" -> "UploadFailed",
         "reason" -> "some reason"
@@ -128,7 +122,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val submission = Submission(
       _id = "id",
       dprsId = "dprsId",
-      platformOperatorId = "poid",
       state = Validated,
       created = created,
       updated = updated
@@ -137,7 +130,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val json = Json.obj(
       "_id" -> "id",
       "dprsId" -> "dprsId",
-      "platformOperatorId" -> "poid",
       "state" -> Json.obj(
         "type" -> "Validated"
       ),
@@ -159,7 +151,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val submission = Submission(
       _id = "id",
       dprsId = "dprsId",
-      platformOperatorId = "poid",
       state = Submitted,
       created = created,
       updated = updated
@@ -168,7 +159,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val json = Json.obj(
       "_id" -> "id",
       "dprsId" -> "dprsId",
-      "platformOperatorId" -> "poid",
       "state" -> Json.obj(
         "type" -> "Submitted"
       ),
@@ -190,7 +180,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val submission = Submission(
       _id = "id",
       dprsId = "dprsId",
-      platformOperatorId = "poid",
       state = Approved,
       created = created,
       updated = updated
@@ -199,7 +188,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val json = Json.obj(
       "_id" -> "id",
       "dprsId" -> "dprsId",
-      "platformOperatorId" -> "poid",
       "state" -> Json.obj(
         "type" -> "Approved"
       ),
@@ -221,7 +209,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val submission = Submission(
       _id = "id",
       dprsId = "dprsId",
-      platformOperatorId = "poid",
       state = Rejected("some reason"),
       created = created,
       updated = updated
@@ -230,7 +217,6 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val json = Json.obj(
       "_id" -> "id",
       "dprsId" -> "dprsId",
-      "platformOperatorId" -> "poid",
       "state" -> Json.obj(
         "type" -> "Rejected",
         "reason" -> "some reason"

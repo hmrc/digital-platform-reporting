@@ -69,14 +69,12 @@ class SubmissionRepositorySpec
   private val submission = Submission(
     _id = "id",
     dprsId = "dprsId",
-    platformOperatorId = "poid",
     state = Ready,
     created = created,
     updated = updated
   )
 
   "must have the correct ttl index" in {
-    println(repository.indexes)
     val ttlIndex = repository.indexes.find(_.getOptions.getName == "updated_ttl_idx").value
     ttlIndex.getOptions.getExpireAfter(TimeUnit.MINUTES) mustEqual 5
     ttlIndex.getKeys mustEqual Indexes.ascending("updated")
