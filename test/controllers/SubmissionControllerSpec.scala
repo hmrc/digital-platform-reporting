@@ -345,6 +345,8 @@ class SubmissionControllerSpec
 
   "uploadSuccess" - {
 
+    val downloadUrl = "downloadUrl"
+
     "when there is a matching submission" - {
 
       "when the matching submission is in an Uploading state" - {
@@ -358,7 +360,7 @@ class SubmissionControllerSpec
           "must set the state of the submission to Validated and return OK" in {
 
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-              .withBody(Json.toJson(UploadSuccessRequest(dprsId)))
+              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl)))
 
             val existingSubmission = Submission(
               _id = uuid,
@@ -392,7 +394,7 @@ class SubmissionControllerSpec
         "must return CONFLICT" in {
 
           val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-            .withBody(Json.toJson(UploadSuccessRequest(dprsId)))
+            .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl)))
 
           val state = Gen.oneOf(readyGen, uploadFailedGen, validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
@@ -421,7 +423,7 @@ class SubmissionControllerSpec
       "must return NOT_FOUND" in {
 
         val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-          .withBody(Json.toJson(UploadSuccessRequest(dprsId)))
+          .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl)))
 
         when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
         when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))

@@ -22,7 +22,7 @@ import models.submission.{Submission, UploadFailedRequest, UploadSuccessRequest}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.SubmissionRepository
-import services.UuidService
+import services.{UuidService, ValidationService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.Clock
@@ -35,7 +35,7 @@ class SubmissionController @Inject() (
                                        uuidService: UuidService,
                                        clock: Clock,
                                        submissionRepository: SubmissionRepository,
-                                       auth: AuthAction
+                                       auth: AuthAction,
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def start(id: Option[String]): Action[AnyContent] =
