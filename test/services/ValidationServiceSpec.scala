@@ -21,7 +21,7 @@ import org.apache.pekko.stream.scaladsl.StreamConverters
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.Mockito.{verify, when}
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.{BeforeAndAfterEach, OptionValues}
@@ -42,7 +42,8 @@ class ValidationServiceSpec
     with ScalaFutures
     with MockitoSugar
     with OptionValues
-    with BeforeAndAfterEach {
+    with BeforeAndAfterEach
+    with IntegrationPatience {
 
   private val mockDownloadConnector = mock[DownloadConnector]
 
