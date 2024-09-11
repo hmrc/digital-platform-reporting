@@ -113,7 +113,7 @@ class SubmissionController @Inject() (
   def uploadSuccess(id: String): Action[UploadSuccessRequest] = Action.async(parse.json[UploadSuccessRequest]) { implicit request =>
     submissionRepository.get(request.body.dprsId, id).flatMap {
       _.map { submission =>
-        if (submission.state.isInstanceOf[Uploading.type]) {
+        if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[Uploading.type] || submission.state.isInstanceOf[UploadFailed]) {
 
           validationService.validateXml(request.body.downloadUrl, request.body.platformOperatorId).flatMap { maybeError =>
 

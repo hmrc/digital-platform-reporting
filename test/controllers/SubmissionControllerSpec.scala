@@ -354,7 +354,7 @@ class SubmissionControllerSpec
 
     "when there is a matching submission" - {
 
-      "when the matching submission is in an Uploading state" - {
+      "when the matching submission is in an Uploading, Ready, or UploadFailed state" - {
 
         "when the submission fails validation" - {
 
@@ -363,10 +363,11 @@ class SubmissionControllerSpec
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
               .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid)))
 
+            val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
               _id = uuid,
               dprsId = dprsId,
-              state = Uploading,
+              state = state,
               created = now.minus(1, ChronoUnit.DAYS),
               updated = now.minus(1, ChronoUnit.DAYS)
             )
@@ -398,10 +399,11 @@ class SubmissionControllerSpec
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
               .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid)))
 
+            val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
               _id = uuid,
               dprsId = dprsId,
-              state = Uploading,
+              state = state,
               created = now.minus(1, ChronoUnit.DAYS),
               updated = now.minus(1, ChronoUnit.DAYS)
             )
@@ -434,7 +436,7 @@ class SubmissionControllerSpec
           val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
             .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid)))
 
-          val state = Gen.oneOf(readyGen, uploadFailedGen, validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
+          val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
