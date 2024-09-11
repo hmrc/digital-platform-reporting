@@ -18,7 +18,11 @@ package models.submission
 
 import play.api.libs.json.{Json, OFormat}
 
-final case class UploadSuccessRequest(dprsId: String, downloadUrl: String)
+final case class UploadSuccessRequest(
+                                       dprsId: String,
+                                       downloadUrl: String,
+                                       platformOperatorId: String
+                                     )
 
 object UploadSuccessRequest {
   

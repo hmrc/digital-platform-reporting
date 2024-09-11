@@ -17,18 +17,19 @@
 package services
 
 import connectors.DownloadConnector
-import org.apache.pekko.stream.scaladsl.{Source, StreamConverters}
+import org.apache.pekko.stream.scaladsl.StreamConverters
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.when
-import org.scalatest.OptionValues
+import org.mockito.Mockito
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.inject.bind
+import play.api.inject.guice.GuiceApplicationBuilder
 import services.ValidationService.ValidationError
 import uk.gov.hmrc.http.StringContextOps
 
@@ -40,48 +41,83 @@ class ValidationServiceSpec
     with GuiceOneAppPerSuite
     with ScalaFutures
     with MockitoSugar
-    with OptionValues {
+    with OptionValues
+    with BeforeAndAfterEach {
 
   private val mockDownloadConnector = mock[DownloadConnector]
 
   override def fakeApplication(): Application =
     new GuiceApplicationBuilder()
       .configure(
-        "validation.schema-path" -> "test-schema.xsd"
+        "validation.schema-path" -> "schemas/DPIXML_v1.08.xsd"
       )
       .overrides(
         bind[DownloadConnector].toInstance(mockDownloadConnector)
       )
       .build()
 
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    Mockito.reset(mockDownloadConnector)
+  }
+
   private val validationService = app.injector.instanceOf[ValidationService]
 
   "validateXml" - {
 
+    val downloadUrl = url"http://example.com/test.xml"
+    val poid = "platformOperatorId"
+
     "must return None when the given file is valid" in {
 
-      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/valid-test.xml"))
+      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSample.xml"))
 
       when(mockDownloadConnector.download(any()))
         .thenReturn(Future.successful(source))
 
-      val result = validationService.validateXml(url"http://example.com/valid-test.xml").futureValue
+      val result = validationService.validateXml(downloadUrl, poid).futureValue
       result mustBe None
+
+      verify(mockDownloadConnector).download(downloadUrl)
     }
 
     "must return an error when the given file fails schema validation" in {
 
-      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/invalid-test.xml"))
+      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/InvalidSubmissionSample.xml"))
 
       when(mockDownloadConnector.download(any()))
         .thenReturn(Future.successful(source))
 
-      val result = validationService.validateXml(url"http://example.com/invalid-test.xml").futureValue.value
+      val result = validationService.validateXml(downloadUrl, poid).futureValue.value
       result mustEqual ValidationError("error.schema")
+
+      verify(mockDownloadConnector).download(downloadUrl)
     }
 
-    "must return an error when the given file does not match the POID of the submission" ignore {
+    "must return an error when the given file does not match the POID of the submission" in {
 
+      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSample.xml"))
+
+      when(mockDownloadConnector.download(any()))
+        .thenReturn(Future.successful(source))
+
+      val result = validationService.validateXml(downloadUrl, "a-different-poid").futureValue.value
+      result mustEqual ValidationError("error.poid.incorrect")
+
+      verify(mockDownloadConnector).download(downloadUrl)
+    }
+
+    "must return an error when the given file does not contain a POID" in {
+
+      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/MissingPoIdSample.xml"))
+
+      when(mockDownloadConnector.download(any()))
+        .thenReturn(Future.successful(source))
+
+      val result = validationService.validateXml(downloadUrl, poid).futureValue.value
+      result mustEqual ValidationError("error.poid.missing")
+
+      verify(mockDownloadConnector).download(downloadUrl)
     }
   }
 }
