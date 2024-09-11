@@ -15,6 +15,6 @@ POST        /submission/:id/submit                  controllers.SubmissionContro
 
 POST        /platform-operator                  controllers.PlatformOperatorController.create()
 PUT         /platform-operator                  controllers.PlatformOperatorController.update()
-POST        /platform-operator/:operatorId      controllers.PlatformOperatorController.delete(operatorId: String)
+DELETE      /platform-operator/:operatorId      controllers.PlatformOperatorController.delete(operatorId: String)
 GET         /platform-operator                  controllers.PlatformOperatorController.get()
 GET         /platform-operator/:operatorId      controllers.PlatformOperatorController.getOne(operatorId: String)
