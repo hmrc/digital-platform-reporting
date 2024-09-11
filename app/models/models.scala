@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
-package models.submission
+package models
 
-import models.urlFormat
-import play.api.libs.json.{Json, OFormat, Reads, Writes}
+import play.api.libs.json.{Format, Reads, Writes}
 
 import java.net.URL
+import scala.util.Try
 
-final case class UploadSuccessRequest(
-                                       dprsId: String,
-                                       downloadUrl: URL,
-                                       platformOperatorId: String
-                                     )
+given urlFormat: Format[URL] = {
 
-object UploadSuccessRequest {
+  val reads = Reads.of[String].flatMap { string =>
+    Try(URL(string))
+      .map(Reads.pure)
+      .getOrElse(Reads.failed("error.expected.url"))
+  }
 
-  given OFormat[UploadSuccessRequest] = Json.format
+  val writes = Writes.of[String].contramap[URL](_.toString)
+
+  Format(reads, writes)
 }

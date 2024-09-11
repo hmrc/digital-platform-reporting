@@ -36,6 +36,7 @@ class SubmissionController @Inject() (
                                        clock: Clock,
                                        submissionRepository: SubmissionRepository,
                                        auth: AuthAction,
+                                       validationService: ValidationService
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def start(id: Option[String]): Action[AnyContent] =
@@ -113,15 +114,24 @@ class SubmissionController @Inject() (
     submissionRepository.get(request.body.dprsId, id).flatMap {
       _.map { submission =>
         if (submission.state.isInstanceOf[Uploading.type]) {
-          // TODO validation
 
-          val updatedSubmission = submission.copy(
-            state = Validated,
-            updated = clock.instant()
-          )
+          validationService.validateXml(request.body.downloadUrl, request.body.platformOperatorId).flatMap { maybeError =>
 
-          submissionRepository.save(updatedSubmission).map { _ =>
-            Ok(Json.toJson(updatedSubmission))
+            val updatedSubmission = maybeError.map { error =>
+              submission.copy(
+                state = UploadFailed(error.reason),
+                updated = clock.instant()
+              )
+            }.getOrElse {
+              submission.copy(
+                state = Validated,
+                updated = clock.instant()
+              )
+            }
+
+            submissionRepository.save(updatedSubmission).map { _ =>
+              Ok(Json.toJson(updatedSubmission))
+            }
           }
         } else {
           Future.successful(Conflict)
