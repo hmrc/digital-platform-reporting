@@ -22,7 +22,7 @@ import models.submission.{Submission, UploadFailedRequest, UploadSuccessRequest}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.SubmissionRepository
-import services.UuidService
+import services.{UuidService, ValidationService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.Clock
@@ -35,7 +35,8 @@ class SubmissionController @Inject() (
                                        uuidService: UuidService,
                                        clock: Clock,
                                        submissionRepository: SubmissionRepository,
-                                       auth: AuthAction
+                                       auth: AuthAction,
+                                       validationService: ValidationService
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def start(id: Option[String]): Action[AnyContent] =
@@ -112,16 +113,25 @@ class SubmissionController @Inject() (
   def uploadSuccess(id: String): Action[UploadSuccessRequest] = Action.async(parse.json[UploadSuccessRequest]) { implicit request =>
     submissionRepository.get(request.body.dprsId, id).flatMap {
       _.map { submission =>
-        if (submission.state.isInstanceOf[Uploading.type]) {
-          // TODO validation
+        if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[Uploading.type] || submission.state.isInstanceOf[UploadFailed]) {
 
-          val updatedSubmission = submission.copy(
-            state = Validated,
-            updated = clock.instant()
-          )
+          validationService.validateXml(request.body.downloadUrl, request.body.platformOperatorId).flatMap { maybeError =>
 
-          submissionRepository.save(updatedSubmission).map { _ =>
-            Ok(Json.toJson(updatedSubmission))
+            val updatedSubmission = maybeError.map { error =>
+              submission.copy(
+                state = UploadFailed(error.reason),
+                updated = clock.instant()
+              )
+            }.getOrElse {
+              submission.copy(
+                state = Validated,
+                updated = clock.instant()
+              )
+            }
+
+            submissionRepository.save(updatedSubmission).map { _ =>
+              Ok(Json.toJson(updatedSubmission))
+            }
           }
         } else {
           Future.successful(Conflict)

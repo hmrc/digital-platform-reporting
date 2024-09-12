@@ -37,8 +37,10 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import repository.SubmissionRepository
-import services.UuidService
+import services.ValidationService.ValidationError
+import services.{UuidService, ValidationService}
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
+import uk.gov.hmrc.http.StringContextOps
 
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneOffset}
@@ -59,6 +61,7 @@ class SubmissionControllerSpec
   private val mockSubmissionRepository = mock[SubmissionRepository]
   private val mockUuidService = mock[UuidService]
   private val mockAuthConnector = mock[AuthConnector]
+  private val mockValidationService = mock[ValidationService]
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
@@ -66,13 +69,14 @@ class SubmissionControllerSpec
       bind[SubmissionRepository].toInstance(mockSubmissionRepository),
       bind[Clock].toInstance(clock),
       bind[UuidService].toInstance(mockUuidService),
-      bind[AuthConnector].toInstance(mockAuthConnector)
+      bind[AuthConnector].toInstance(mockAuthConnector),
+      bind[ValidationService].toInstance(mockValidationService)
     )
     .build()
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset(mockSubmissionRepository, mockAuthConnector)
+    Mockito.reset(mockSubmissionRepository, mockAuthConnector, mockValidationService)
   }
 
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
@@ -345,12 +349,47 @@ class SubmissionControllerSpec
 
   "uploadSuccess" - {
 
+    val downloadUrl = url"http://example.com/test.xml"
+    val poid = "platformOperatorId"
+
     "when there is a matching submission" - {
 
-      "when the matching submission is in an Uploading state" - {
+      "when the matching submission is in an Uploading, Ready, or UploadFailed state" - {
 
         "when the submission fails validation" - {
-          // TODO add validation
+
+          "must set the state of the submission to UpdateFailed and return OK" in {
+
+            val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
+              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid)))
+
+            val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
+            val existingSubmission = Submission(
+              _id = uuid,
+              dprsId = dprsId,
+              state = state,
+              created = now.minus(1, ChronoUnit.DAYS),
+              updated = now.minus(1, ChronoUnit.DAYS)
+            )
+
+            val expectedSubmission = existingSubmission.copy(
+              state = UploadFailed("error"),
+              updated = now
+            )
+
+            when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
+            when(mockValidationService.validateXml(any(), any())).thenReturn(Future.successful(Some(ValidationError("error"))))
+            when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+
+            val result = route(app, request).value
+
+            status(result) mustEqual OK
+            contentAsJson(result) mustEqual Json.toJson(expectedSubmission)
+
+            verify(mockSubmissionRepository).get(dprsId, uuid)
+            verify(mockSubmissionRepository).save(expectedSubmission)
+            verify(mockValidationService).validateXml(downloadUrl, poid)
+          }
         }
 
         "when the submission passes validation" - {
@@ -358,12 +397,13 @@ class SubmissionControllerSpec
           "must set the state of the submission to Validated and return OK" in {
 
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-              .withBody(Json.toJson(UploadSuccessRequest(dprsId)))
+              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid)))
 
+            val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
               _id = uuid,
               dprsId = dprsId,
-              state = Uploading,
+              state = state,
               created = now.minus(1, ChronoUnit.DAYS),
               updated = now.minus(1, ChronoUnit.DAYS)
             )
@@ -374,6 +414,7 @@ class SubmissionControllerSpec
             )
 
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
+            when(mockValidationService.validateXml(any(), any())).thenReturn(Future.successful(None))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
@@ -383,6 +424,7 @@ class SubmissionControllerSpec
 
             verify(mockSubmissionRepository).get(dprsId, uuid)
             verify(mockSubmissionRepository).save(expectedSubmission)
+            verify(mockValidationService).validateXml(downloadUrl, poid)
           }
         }
       }
@@ -392,9 +434,9 @@ class SubmissionControllerSpec
         "must return CONFLICT" in {
 
           val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-            .withBody(Json.toJson(UploadSuccessRequest(dprsId)))
+            .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid)))
 
-          val state = Gen.oneOf(readyGen, uploadFailedGen, validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
+          val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
@@ -421,7 +463,7 @@ class SubmissionControllerSpec
       "must return NOT_FOUND" in {
 
         val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-          .withBody(Json.toJson(UploadSuccessRequest(dprsId)))
+          .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid)))
 
         when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
         when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
