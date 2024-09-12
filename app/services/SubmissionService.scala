@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-package models.submission
+package services
 
-import models.urlFormat
-import play.api.libs.json.{Json, OFormat, Reads, Writes}
+import models.submission.Submission
+import org.apache.pekko.Done
+import uk.gov.hmrc.http.HeaderCarrier
 
-import java.net.URL
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.Future
 
-final case class UploadSuccessRequest(
-                                       dprsId: String,
-                                       downloadUrl: URL,
-                                       platformOperatorId: String,
-                                       fileName: String,
-                                       size: Long
-                                     )
+@Singleton
+class SubmissionService @Inject() () {
 
-object UploadSuccessRequest {
-
-  given OFormat[UploadSuccessRequest] = Json.format
+  def submit(submission: Submission)(using HeaderCarrier): Future[Done] = ???
 }

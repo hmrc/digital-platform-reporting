@@ -29,6 +29,7 @@ import org.slf4j.MDC
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
+import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
@@ -89,7 +90,7 @@ class SubmissionRepositorySpec
     }
 
     "must update a submission in mongo when a there is a matching submission" in {
-      insert(submission.copy(state = Validated)).futureValue
+      insert(submission.copy(state = Validated(url"http://example.com", "poid", "fileName", 1337))).futureValue
       repository.save(submission).futureValue
       findAll().futureValue must contain only submission
     }

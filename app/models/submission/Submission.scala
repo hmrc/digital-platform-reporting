@@ -19,7 +19,9 @@ package models.submission
 import play.api.libs.json.{Json, JsonConfiguration, OFormat, OWrites, Reads}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
+import java.net.URL
 import java.time.Instant
+import models.urlFormat
 
 final case class Submission(
                              _id: String,
@@ -38,7 +40,7 @@ object Submission {
     case object Ready extends State
     case object Uploading extends State
     final case class UploadFailed(reason: String) extends State
-    case object Validated extends State
+    final case class Validated(downloadUrl: URL, platformOperatorId: String, fileName: String, size: Long) extends State
     case object Submitted extends State
     case object Approved extends State
     final case class Rejected(reason: String) extends State
@@ -49,7 +51,7 @@ object Submission {
     private implicit lazy val readyFormat: OFormat[Ready.type] = singletonOFormat(Ready)
     private implicit lazy val uploadFailedFormat: OFormat[UploadFailed] = Json.format
     private implicit lazy val uploadingFormat: OFormat[Uploading.type] = singletonOFormat(Uploading)
-    private implicit lazy val validatedFormat: OFormat[Validated.type] = singletonOFormat(Validated)
+    private implicit lazy val validatedFormat: OFormat[Validated] = Json.format
     private implicit lazy val submittedFormat: OFormat[Submitted.type] = singletonOFormat(Submitted)
     private implicit lazy val approvedFormat: OFormat[Approved.type] = singletonOFormat(Approved)
     private implicit lazy val rejectedFormat: OFormat[Rejected] = Json.format
