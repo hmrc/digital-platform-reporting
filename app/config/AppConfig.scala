@@ -41,4 +41,7 @@ class AppConfig @Inject()(configuration: Configuration) {
   
   val ViewPlatformOperatorsBaseUrl: String = configuration.get[Service]("microservice.services.view-platform-operator").baseUrl
   val ViewPlatformOperatorBearerToken: String = configuration.get[String]("microservice.services.view-platform-operator.bearer-token")
+
+  val SubmissionBaseUrl: String = configuration.get[Service]("microservice.services.report-submission").baseUrl
+  val SubmissionBearerToken: String = configuration.get[String]("microservice.services.report-submission.bearer-token")
 }
