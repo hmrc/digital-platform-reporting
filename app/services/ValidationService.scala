@@ -70,7 +70,6 @@ class ValidationService @Inject() (
           case _ =>
             None
         }
-
       } catch { case _: SAXParseException =>
         Some(ValidationError("error.schema"))
       }

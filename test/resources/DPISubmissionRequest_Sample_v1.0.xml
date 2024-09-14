@@ -412,8 +412,8 @@
     <isManual>true</isManual>
     <isGBUser>true</isGBUser>
     <primaryContact>
-      <phoneNumber></phoneNumber>
-      <mobileNumber></mobileNumber>
+      <phoneNumber>0</phoneNumber>
+      <mobileNumber>0</mobileNumber>
       <emailAddress>a</emailAddress>
       <individualDetails>
         <firstName>a</firstName>
@@ -422,8 +422,8 @@
       </individualDetails>
     </primaryContact>
     <secondaryContact>
-      <phoneNumber></phoneNumber>
-      <mobileNumber></mobileNumber>
+      <phoneNumber>0</phoneNumber>
+      <mobileNumber>0</mobileNumber>
       <emailAddress>a</emailAddress>
       <organisationDetails>
         <organisationName>a</organisationName>

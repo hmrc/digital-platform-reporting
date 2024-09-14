@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<DPISubmissionRequest xmlns:cadx="http://www.hmrc.gsi.gov.uk/dpi/cadx" xmlns:dpi="urn:oecd:ties:dpi:v1">
+  <requestCommon>
+    <receiptDate>1990-02-01</receiptDate>
+    <regime>DPI</regime>
+    <conversationID>submissionId</conversationID>
+    <schemaVersion>1</schemaVersion>
+  </requestCommon>
+</DPISubmissionRequest>
