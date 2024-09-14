@@ -17,31 +17,19 @@
 package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
-import models.registration.Address
-import models.registration.requests.*
-import models.registration.responses.*
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.util.ByteString
 import org.mockito.Mockito
-import org.mockito.Mockito.when
+import org.scalatest.EitherValues
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.{BeforeAndAfterEach, EitherValues}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
-import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.Json
-import services.UuidService
-import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
+import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.http.test.WireMockSupport
-import utils.ContactDetailsBuilder.aContactDetails
-
-import java.time.temporal.ChronoUnit
-import java.time.{Clock, Instant, ZoneId}
-import java.util.UUID
 
 class DownloadConnectorSpec extends AnyFreeSpec
   with Matchers

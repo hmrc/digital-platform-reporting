@@ -44,7 +44,7 @@ class SubmissionController @Inject() (
       id.map { id =>
         submissionRepository.get(request.dprsId, id).flatMap {
           _.map { submission =>
-            if (submission.state == Validated) {
+            if (submission.state.isInstanceOf[Validated]) {
 
               val updatedSubmission = submission.copy(
                 state = Ready,
@@ -124,7 +124,12 @@ class SubmissionController @Inject() (
               )
             }.getOrElse {
               submission.copy(
-                state = Validated,
+                state = Validated(
+                  downloadUrl = request.body.downloadUrl,
+                  platformOperatorId = request.body.platformOperatorId,
+                  fileName = request.body.fileName,
+                  size = request.body.size
+                ),
                 updated = clock.instant()
               )
             }
@@ -168,7 +173,7 @@ class SubmissionController @Inject() (
   def submit(id: String): Action[AnyContent] = auth.async { implicit request =>
     submissionRepository.get(request.dprsId, id).flatMap {
       _.map { submission =>
-        if (submission.state.isInstanceOf[Validated.type]) {
+        if (submission.state.isInstanceOf[Validated]) {
 
           val updatedSubmission = submission.copy(
             state = Submitted,
