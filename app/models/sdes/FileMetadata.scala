@@ -16,12 +16,15 @@
 
 package models.sdes
 
+import models.urlFormat
 import play.api.libs.json.{Format, Json}
+
+import java.net.URL
 
 final case class FileMetadata(
                                recipientOrSender: String,
                                name: String,
-                               location: String,
+                               location: URL,
                                checksum: FileChecksum,
                                size: Long,
                                properties: List[String]

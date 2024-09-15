@@ -26,6 +26,7 @@ import java.net.URL
 final case class SdesSubmissionWorkItem(
                                          submissionId: String,
                                          downloadUrl: URL,
+                                         fileName: String,
                                          checksum: String,
                                          size: Long,
                                          subscriptionInfo: SubscriptionInfo
