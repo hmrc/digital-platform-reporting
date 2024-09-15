@@ -23,9 +23,9 @@ import play.api.libs.functional.syntax.*
 import java.time.Instant
 
 final case class NotificationDetails(notificationType: NotificationType,
-                                     isActiveSeller: Boolean,
-                                     isDueDiligence: Boolean,
-                                     firstPeriod: String,
+                                     isActiveSeller: Option[Boolean],
+                                     isDueDiligence: Option[Boolean],
+                                     firstPeriod: Int,
                                      receivedDateTime: Instant)
 
 object NotificationDetails {
@@ -34,9 +34,9 @@ object NotificationDetails {
 
   lazy val downstreamReads: Reads[NotificationDetails] = (
     (__ \ "NotificationType").read[NotificationType] and
-    (__ \ "IsActiveSeller").read[Boolean] and
-    (__ \ "IsDueDiligence").read[Boolean] and
-    (__ \ "FirstNotifiedReportingPeriod").read[String] and
+    (__ \ "IsActiveSeller").readNullable[Boolean] and
+    (__ \ "IsDueDiligence").readNullable[Boolean] and
+    (__ \ "FirstNotifiedReportingPeriod").read[Int] and
     (__ \ "ReceivedDateTime").read[Instant]
   )(NotificationDetails.apply _)
 }

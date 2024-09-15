@@ -62,9 +62,9 @@ class UpdatePlatformOperatorRequestSpec extends AnyFreeSpec with Matchers {
         ),
         notification = Some(Notification(
           notificationType = NotificationType.Epo,
-          isActiveSeller = true,
-          isDueDiligence = false,
-          firstPeriod = "2024"
+          isActiveSeller = Some(true),
+          isDueDiligence = Some(false),
+          firstPeriod = 2024
         ))
       )
 
@@ -105,7 +105,7 @@ class UpdatePlatformOperatorRequestSpec extends AnyFreeSpec with Matchers {
               "NotificationType" -> "EPO",
               "IsActiveSeller" -> true,
               "IsDueDiligence" -> false,
-              "FirstNotifiedReportingPeriod" -> "2024"
+              "FirstNotifiedReportingPeriod" -> 2024
             )
           )
         )
