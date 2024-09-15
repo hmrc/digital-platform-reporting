@@ -16,15 +16,19 @@
 
 package config
 
-import com.google.inject.AbstractModule
+import connectors.SdesCircuitBreakerProvider
+import connectors.SdesConnector.SdesCircuitBreaker
+import play.api.inject.Binding
+import play.api.{Configuration, Environment}
 
 import java.time.Clock
 
-class Module extends AbstractModule {
+class Module extends play.api.inject.Module {
 
-  override def configure(): Unit = {
-
-    bind(classOf[AppConfig]).asEagerSingleton()
-    bind(classOf[Clock]).toInstance(Clock.systemUTC())
-  }
+  override def bindings(environment: Environment, configuration: Configuration): collection.Seq[Binding[_]] =
+    Seq(
+      bind[AppConfig].toSelf.eagerly(),
+      bind[Clock].toInstance(Clock.systemUTC()),
+      bind[SdesCircuitBreaker].toProvider[SdesCircuitBreakerProvider]
+    )
 }
