@@ -29,7 +29,7 @@ import play.api.http.Status.{INTERNAL_SERVER_ERROR, NO_CONTENT}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.Helpers.running
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 import uk.gov.hmrc.http.test.WireMockSupport
 
 import scala.concurrent.Promise
@@ -59,7 +59,7 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
       FileMetadata(
         "tax-fraud-reporting",
         "file1.dat",
-        s"http://localhost:8464/object-store/object/tax-fraud-reporting/file1.dat",
+        url"http://localhost:8464/object-store/object/tax-fraud-reporting/file1.dat",
         FileChecksum("md5", value = "hashValue"),
         2000,
         List()

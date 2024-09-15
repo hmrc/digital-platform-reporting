@@ -17,14 +17,14 @@
 package services
 
 import connectors.SdesConnector
-import models.sdes.{FileAudit, FileChecksum, FileMetadata, FileNotifyRequest, SdesSubmissionWorkItem}
+import models.sdes.*
 import models.submission.Submission.State.Validated
 import models.subscription.responses.SubscriptionInfo
 import org.apache.pekko.Done
 import play.api.Configuration
 import repository.SdesSubmissionWorkItemRepository
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.mongo.workitem.{ProcessingStatus, WorkItem}
+import uk.gov.hmrc.mongo.workitem.ProcessingStatus
 
 import java.time.{Clock, Duration}
 import javax.inject.{Inject, Singleton}

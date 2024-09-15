@@ -62,6 +62,12 @@ class SubmissionRepository @Inject() (
       )
     ).limit(1).headOption()
   }
+
+  def getById(id: String): Future[Option[Submission]] = Mdc.preservingMdc {
+    collection.find(
+      filter = Filters.eq("_id", id)
+    ).limit(1).headOption()
+  }
 }
 
 object SubmissionRepository {
