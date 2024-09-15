@@ -128,6 +128,7 @@ class SubmissionController @Inject() (
                   downloadUrl = request.body.downloadUrl,
                   platformOperatorId = request.body.platformOperatorId,
                   fileName = request.body.fileName,
+                  checksum = request.body.checksum,
                   size = request.body.size
                 ),
                 updated = clock.instant()

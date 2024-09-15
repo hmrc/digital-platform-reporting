@@ -127,6 +127,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
         downloadUrl = url"http://example.com",
         platformOperatorId = "poid",
         fileName = "test.xml",
+        checksum = "checksum",
         size = 1337
       ),
       created = created,
@@ -141,6 +142,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
         "downloadUrl" -> "http://example.com",
         "platformOperatorId" -> "poid",
         "fileName" -> "test.xml",
+        "checksum" -> "checksum",
         "size" -> 1337
       ),
       "created" -> created,

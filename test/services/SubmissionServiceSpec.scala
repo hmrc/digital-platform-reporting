@@ -114,6 +114,7 @@ class SubmissionServiceSpec
                   downloadUrl = url"http://example.com",
                   platformOperatorId = "poid",
                   fileName = fileName,
+                  checksum = "checksum",
                   size = 1337
                 ),
                 created = now,
@@ -182,6 +183,7 @@ class SubmissionServiceSpec
                   downloadUrl = url"http://example.com",
                   platformOperatorId = "poid",
                   fileName = fileName,
+                  checksum = "checksum",
                   size = 1337
                 ),
                 created = now,
@@ -247,6 +249,7 @@ class SubmissionServiceSpec
                 downloadUrl = url"http://example.com",
                 platformOperatorId = "poid",
                 fileName = fileName,
+                checksum = "checksum",
                 size = 1337
               ),
               created = now,

@@ -83,7 +83,7 @@ class SubmissionControllerSpec
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
   private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
-  private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", "test.xml", 1337))
+  private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", "test.xml", "checksum", 1337L))
   private val submittedGen: Gen[Submitted.type] = Gen.const(Submitted)
   private val approvedGen: Gen[Approved.type] = Gen.const(Approved)
   private val rejectedGen: Gen[Rejected] = Gen.asciiPrintableStr.map(Rejected.apply)
@@ -141,7 +141,7 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            state = Validated(url"http://example.com", "poid", "test.xml", 1337),
+            state = Validated(url"http://example.com", "poid", "test.xml", "checksum", 1337L),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
           )
@@ -353,6 +353,7 @@ class SubmissionControllerSpec
     val downloadUrl = url"http://example.com/test.xml"
     val poid = "platformOperatorId"
     val fileName = "test.xml"
+    val checksum = "checksum"
     val size = 1337L
 
     "when there is a matching submission" - {
@@ -364,7 +365,7 @@ class SubmissionControllerSpec
           "must set the state of the submission to UpdateFailed and return OK" in {
 
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, size)))
+              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, checksum, size)))
 
             val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
@@ -400,7 +401,7 @@ class SubmissionControllerSpec
           "must set the state of the submission to Validated and return OK" in {
 
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, size)))
+              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, checksum, size)))
 
             val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
@@ -412,7 +413,7 @@ class SubmissionControllerSpec
             )
 
             val expectedSubmission = existingSubmission.copy(
-              state = Validated(downloadUrl, poid, fileName, size),
+              state = Validated(downloadUrl, poid, fileName, checksum, size),
               updated = now
             )
 
@@ -437,7 +438,7 @@ class SubmissionControllerSpec
         "must return CONFLICT" in {
 
           val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-            .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, size)))
+            .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, checksum, size)))
 
           val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
@@ -466,7 +467,7 @@ class SubmissionControllerSpec
       "must return NOT_FOUND" in {
 
         val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-          .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, size)))
+          .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, checksum, size)))
 
         when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
         when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
@@ -590,7 +591,7 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            state = Validated(url"http://example.com", "poid", "test.xml", 1337),
+            state = Validated(url"http://example.com", "poid", "test.xml", "checksum", 1337L),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
           )

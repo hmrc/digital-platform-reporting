@@ -16,15 +16,18 @@
 
 package models.sdes
 
+import models.urlFormat
 import models.subscription.responses.SubscriptionInfo
 import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
+import java.net.URL
+
 final case class SdesSubmissionWorkItem(
                                          submissionId: String,
-                                         fileLocation: String,
-                                         checkSum: String,
-                                         fileSize: Long,
+                                         downloadUrl: URL,
+                                         checksum: String,
+                                         size: Long,
                                          subscriptionInfo: SubscriptionInfo
                                        )
 
