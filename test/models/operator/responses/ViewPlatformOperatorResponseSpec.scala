@@ -115,16 +115,14 @@ class ViewPlatformOperatorResponseSpec extends AnyFreeSpec with Matchers {
                 "NotificationsList" -> Json.arr(
                   Json.obj(
                     "NotificationType" -> "EPO",
-                    "IsActiveSeller" -> true,
-                    "IsDueDiligence" -> false,
-                    "FirstNotifiedReportingPeriod" -> "2024",
+                    "FirstNotifiedReportingPeriod" -> 2024,
                     "ReceivedDateTime" -> "2024-01-02T03:05:05.678Z"
                   ),
                   Json.obj(
                     "NotificationType" -> "RPO",
                     "IsActiveSeller" -> true,
                     "IsDueDiligence" -> false,
-                    "FirstNotifiedReportingPeriod" -> "2024",
+                    "FirstNotifiedReportingPeriod" -> 2024,
                     "ReceivedDateTime" -> "2024-01-03T03:05:05.678Z"
                   )
                 ),
@@ -163,8 +161,8 @@ class ViewPlatformOperatorResponseSpec extends AnyFreeSpec with Matchers {
           secondaryContactDetails = Some(ContactDetails(Some("secondaryPhoneNumber"), "secondaryContactName", "secondaryEmail")),
           addressDetails = AddressDetails("line1", Some("line2"), Some("line3"), Some("line4"), Some("postCode"), Some("GB")),
           notifications = Seq(
-            NotificationDetails(NotificationType.Epo, true, false, "2024", expectedNotification1Instant),
-            NotificationDetails(NotificationType.Rpo, true, false, "2024", expectedNotification2Instant)
+            NotificationDetails(NotificationType.Epo, None, None, 2024, expectedNotification1Instant),
+            NotificationDetails(NotificationType.Rpo, Some(true), Some(false), 2024, expectedNotification2Instant)
           )
         )
       ))

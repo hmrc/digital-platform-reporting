@@ -20,9 +20,9 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
 final case class Notification(notificationType: NotificationType,
-                              isActiveSeller: Boolean,
-                              isDueDiligence: Boolean,
-                              firstPeriod: String)
+                              isActiveSeller: Option[Boolean],
+                              isDueDiligence: Option[Boolean],
+                              firstPeriod: Int)
 
 object Notification {
   
@@ -30,8 +30,8 @@ object Notification {
   
   lazy val downstreamWrites: OWrites[Notification] = (
     (__ \ "NotificationType").write[NotificationType] and
-    (__ \ "IsActiveSeller").write[Boolean] and
-    (__ \ "IsDueDiligence").write[Boolean] and
-    (__ \ "FirstNotifiedReportingPeriod").write[String]
+    (__ \ "IsActiveSeller").writeNullable[Boolean] and
+    (__ \ "IsDueDiligence").writeNullable[Boolean] and
+    (__ \ "FirstNotifiedReportingPeriod").write[Int]
   )(o => Tuple.fromProductTyped(o))
 }
