@@ -28,7 +28,6 @@ object TinType extends PlayEnum[TinType] {
   case object Utr extends TinType("UTR")
   case object Vrn extends TinType("VRN")
   case object Empref extends TinType("EMPREF")
-  case object Brocs extends TinType("BROCS")
   case object Chrn extends TinType("CHRN")
   case object Other extends TinType("OTHER")
 }
