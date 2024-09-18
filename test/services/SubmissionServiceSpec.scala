@@ -28,7 +28,7 @@ import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito.{verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.{BeforeAndAfterEach, OptionValues}
@@ -57,7 +57,8 @@ class SubmissionServiceSpec
     with MockitoSugar
     with BeforeAndAfterEach
     with ScalaFutures
-    with OptionValues {
+    with OptionValues
+    with IntegrationPatience {
 
   private val now = Instant.now()
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
