@@ -39,12 +39,12 @@ class SdesConnector @Inject() (
                                 httpClient: HttpClientV2,
                                 configuration: Configuration,
                                 sdesCircuitBreaker: SdesCircuitBreaker
-                              )(implicit ec: ExecutionContext) extends Logging {
+                              )(using ExecutionContext) extends Logging {
 
   private val service: Service = configuration.get[Service]("microservice.services.sdes")
   private val clientId: String = configuration.get[String]("sdes.client-id")
 
-  def notify(request: FileNotifyRequest)(implicit hc: HeaderCarrier): Future[Done] = sdesCircuitBreaker.breaker.withCircuitBreaker {
+  def notify(request: FileNotifyRequest)(using HeaderCarrier): Future[Done] = sdesCircuitBreaker.breaker.withCircuitBreaker {
     httpClient
       .post(url"$service/notification/fileready")
       .withBody(Json.toJson(request))

@@ -34,5 +34,8 @@ final case class SdesSubmissionWorkItem(
 
 object SdesSubmissionWorkItem extends MongoJavatimeFormats.Implicits {
 
-  given mongoFormat: OFormat[SdesSubmissionWorkItem] = Json.format
+  given mongoFormat: OFormat[SdesSubmissionWorkItem] = {
+    given OFormat[SubscriptionInfo] = SubscriptionInfo.mongoFormat
+    Json.format
+  }
 }

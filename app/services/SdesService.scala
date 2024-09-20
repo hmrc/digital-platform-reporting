@@ -38,7 +38,7 @@ class SdesService @Inject()(
                              configuration: Configuration
                            )(using ExecutionContext) {
 
-  private val retryTimeout: Duration = configuration.get[Duration]("sdes.work-item.retry-timeout")
+  private val retryTimeout: Duration = configuration.get[Duration]("sdes.submission.retry-after")
   private val informationType: String = configuration.get[String]("sdes.information-type")
   private val recipientOrSender: String = configuration.get[String]("sdes.recipient-or-sender")
 

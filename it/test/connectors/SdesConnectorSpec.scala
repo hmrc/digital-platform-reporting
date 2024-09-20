@@ -78,7 +78,7 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
           .willReturn(aResponse().withStatus(NO_CONTENT))
       )
 
-      connector.notify(request)(hc).futureValue
+      connector.notify(request)(using hc).futureValue
     }
 
     "must return a failed future when SDES responds with anything else" in {
@@ -92,7 +92,7 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
           .willReturn(aResponse().withBody("body").withStatus(INTERNAL_SERVER_ERROR))
       )
 
-      val exception = connector.notify(request)(hc).failed.futureValue
+      val exception = connector.notify(request)(using hc).failed.futureValue
       exception mustEqual SdesConnector.UnexpectedResponseException(500, "body")
     }
 
@@ -106,7 +106,7 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
           .willReturn(aResponse().withFault(Fault.RANDOM_DATA_THEN_CLOSE))
       )
 
-      connector.notify(request)(hc).failed.futureValue
+      connector.notify(request)(using hc).failed.futureValue
     }
 
     "must call the correct endpoint when there is an extra path part configured" in {
@@ -130,7 +130,7 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
             .willReturn(aResponse().withStatus(NO_CONTENT))
         )
 
-        connector.notify(request)(hc).futureValue
+        connector.notify(request)(using hc).futureValue
       }
     }
 
@@ -152,10 +152,10 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
       circuitBreaker.onOpen(onOpen.success(System.currentTimeMillis()))
 
       circuitBreaker.isOpen mustBe false
-      connector.notify(request)(hc).failed.futureValue
+      connector.notify(request)(using hc).failed.futureValue
       onOpen.future.futureValue
       circuitBreaker.isOpen mustBe true
-      connector.notify(request)(hc).failed.futureValue
+      connector.notify(request)(using hc).failed.futureValue
 
       wireMockServer.verify(1, postRequestedFor(urlMatching(url)))
     }

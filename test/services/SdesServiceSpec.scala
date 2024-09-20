@@ -70,7 +70,7 @@ class SdesServiceSpec
       .configure(
         "sdes.information-type" -> "information-type",
         "sdes.recipient-or-sender" -> "recipient-or-sender",
-        "sdes.work-item.retry-timeout" -> "30m"
+        "sdes.submission.retry-after" -> "30m"
       )
       .overrides(
         bind[SdesSubmissionWorkItemRepository].toInstance(mockSdesSubmissionWorkItemRepository),

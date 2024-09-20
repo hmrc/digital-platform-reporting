@@ -40,5 +40,5 @@ class SdesSubmissionWorkItemRepository @Inject()(
     Instant.now()
 
   override val inProgressRetryAfter: Duration =
-    configuration.get[Duration]("queue.retryAfter")
+    configuration.get[Duration]("sdes.submission.retry-after")
 }
