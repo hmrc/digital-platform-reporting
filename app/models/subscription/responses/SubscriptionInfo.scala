@@ -19,6 +19,7 @@ package models.subscription.responses
 import models.subscription.Contact
 import play.api.libs.functional.syntax.*
 import play.api.libs.json.*
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 final case class SubscriptionInfo(id: String,
                                   gbUser: Boolean,
@@ -27,10 +28,15 @@ final case class SubscriptionInfo(id: String,
                                   secondaryContact: Option[Contact])
 
 object SubscriptionInfo {
+
+  lazy val mongoFormat: OFormat[SubscriptionInfo] = {
+    import MongoJavatimeFormats.Implicits.*
+    Json.format
+  }
   
-  implicit lazy val writes: OWrites[SubscriptionInfo] = Json.writes
+  given writes: OWrites[SubscriptionInfo] = Json.writes
   
-  implicit lazy val reads: Reads[SubscriptionInfo] =
+  given reads: Reads[SubscriptionInfo] =
     (
       (__ \ "success" \ "customer" \ "id").read[String] and
       (__ \ "success" \ "customer" \ "gbUser").read[Boolean] and

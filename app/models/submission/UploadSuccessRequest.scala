@@ -26,6 +26,7 @@ final case class UploadSuccessRequest(
                                        downloadUrl: URL,
                                        platformOperatorId: String,
                                        fileName: String,
+                                       checksum: String,
                                        size: Long
                                      )
 

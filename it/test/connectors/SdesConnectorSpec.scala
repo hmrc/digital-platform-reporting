@@ -29,7 +29,7 @@ import play.api.http.Status.{INTERNAL_SERVER_ERROR, NO_CONTENT}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.Helpers.running
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 import uk.gov.hmrc.http.test.WireMockSupport
 
 import scala.concurrent.Promise
@@ -59,7 +59,7 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
       FileMetadata(
         "tax-fraud-reporting",
         "file1.dat",
-        s"http://localhost:8464/object-store/object/tax-fraud-reporting/file1.dat",
+        url"http://localhost:8464/object-store/object/tax-fraud-reporting/file1.dat",
         FileChecksum("md5", value = "hashValue"),
         2000,
         List()
@@ -78,7 +78,7 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
           .willReturn(aResponse().withStatus(NO_CONTENT))
       )
 
-      connector.notify(request)(hc).futureValue
+      connector.notify(request)(using hc).futureValue
     }
 
     "must return a failed future when SDES responds with anything else" in {
@@ -92,7 +92,7 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
           .willReturn(aResponse().withBody("body").withStatus(INTERNAL_SERVER_ERROR))
       )
 
-      val exception = connector.notify(request)(hc).failed.futureValue
+      val exception = connector.notify(request)(using hc).failed.futureValue
       exception mustEqual SdesConnector.UnexpectedResponseException(500, "body")
     }
 
@@ -106,7 +106,7 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
           .willReturn(aResponse().withFault(Fault.RANDOM_DATA_THEN_CLOSE))
       )
 
-      connector.notify(request)(hc).failed.futureValue
+      connector.notify(request)(using hc).failed.futureValue
     }
 
     "must call the correct endpoint when there is an extra path part configured" in {
@@ -130,7 +130,7 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
             .willReturn(aResponse().withStatus(NO_CONTENT))
         )
 
-        connector.notify(request)(hc).futureValue
+        connector.notify(request)(using hc).futureValue
       }
     }
 
@@ -152,10 +152,10 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
       circuitBreaker.onOpen(onOpen.success(System.currentTimeMillis()))
 
       circuitBreaker.isOpen mustBe false
-      connector.notify(request)(hc).failed.futureValue
+      connector.notify(request)(using hc).failed.futureValue
       onOpen.future.futureValue
       circuitBreaker.isOpen mustBe true
-      connector.notify(request)(hc).failed.futureValue
+      connector.notify(request)(using hc).failed.futureValue
 
       wireMockServer.verify(1, postRequestedFor(urlMatching(url)))
     }

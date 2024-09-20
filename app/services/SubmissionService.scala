@@ -25,6 +25,7 @@ import org.apache.pekko.Done
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
+import play.api.Configuration
 import services.SubmissionService.InvalidSubmissionStateException
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.DateTimeFormats
@@ -39,23 +40,35 @@ class SubmissionService @Inject() (
                                     subscriptionConnector: SubscriptionConnector,
                                     submissionConnector: SubmissionConnector,
                                     downloadConnector: DownloadConnector,
-                                    clock: Clock
+                                    clock: Clock,
+                                    configuration: Configuration,
+                                    sdesService: SdesService
                                   )(using Materializer, ExecutionContext) {
+
+  private val sdesSubmissionThreshold: Long = configuration.get[Long]("sdes.size-threshold")
 
   def submit(submission: Submission)(using HeaderCarrier): Future[Done] =
     submission.state match {
       case state: Validated =>
-        for {
-          subscription      <- subscriptionConnector.get(submission.dprsId)
-          source            <- downloadConnector.download(state.downloadUrl)
-          bytes             <- source.runWith(Sink.fold(ByteString.empty)(_ ++ _))
-          submissionBody    = addEnvelope(bytes, submission._id, state, subscription)
-          submissionSource  = createSubmissionSource(submissionBody)
-          _                 <- submissionConnector.submit(submission._id, submissionSource)
-        } yield Done
+        subscriptionConnector.get(submission.dprsId).flatMap { subscription =>
+          if (state.size <= sdesSubmissionThreshold) {
+            submitDirect(submission, state, subscription)
+          } else {
+            sdesService.enqueueSubmission(submission._id, state, subscription)
+          }
+        }
       case _ =>
         Future.failed(InvalidSubmissionStateException(submission._id))
     }
+
+  private def submitDirect(submission: Submission, state: Validated, subscription: SubscriptionInfo)(using HeaderCarrier): Future[Done] =
+    for {
+      source <- downloadConnector.download(state.downloadUrl)
+      bytes <- source.runWith(Sink.fold(ByteString.empty)(_ ++ _))
+      submissionBody = addEnvelope(bytes, submission._id, state, subscription)
+      submissionSource = createSubmissionSource(submissionBody)
+      _ <- submissionConnector.submit(submission._id, submissionSource)
+    } yield Done
 
   private def createSubmissionSource(body: Elem): Source[ByteString, _] =
     Source.single(ByteString.fromString(scala.xml.Utility.trim(body).toString))
@@ -82,7 +95,7 @@ class SubmissionService @Inject() (
       <receiptDate>{DateTimeFormats.ISO8601Formatter.format(clock.instant())}</receiptDate>
       <regime>DPI</regime>
       <conversationID>{submissionId}</conversationID>
-      <schemaVersion>1.0</schemaVersion>
+      <schemaVersion>1.0.0</schemaVersion>
     </requestCommon>
 
   private def requestDetail(body: ByteString): Elem =

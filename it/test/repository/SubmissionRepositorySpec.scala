@@ -90,7 +90,7 @@ class SubmissionRepositorySpec
     }
 
     "must update a submission in mongo when a there is a matching submission" in {
-      insert(submission.copy(state = Validated(url"http://example.com", "poid", "fileName", 1337))).futureValue
+      insert(submission.copy(state = Validated(url"http://example.com", "poid", "fileName", "checksum", 1337L))).futureValue
       repository.save(submission).futureValue
       findAll().futureValue must contain only submission
     }
@@ -120,6 +120,20 @@ class SubmissionRepositorySpec
     }
 
     mustPreserveMdc(repository.get("dprsId", "id"))
+  }
+
+  "getById" - {
+
+    "must retrieve the right submission from mongo" in {
+      insert(submission).futureValue
+      repository.getById("id").futureValue.value mustEqual submission
+    }
+
+    "must return None when the requested submission does not exist" in {
+      repository.getById("id").futureValue mustBe None
+    }
+
+    mustPreserveMdc(repository.getById("id"))
   }
 
   private def mustPreserveMdc[A](f: => Future[A])(implicit pos: Position): Unit =

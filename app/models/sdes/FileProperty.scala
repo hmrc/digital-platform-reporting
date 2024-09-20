@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,11 @@
 
 package models.sdes
 
-import models.urlFormat
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{Json, OFormat}
 
-import java.net.URL
+final case class FileProperty(name: String, value: String)
 
-final case class FileMetadata(
-                               recipientOrSender: String,
-                               name: String,
-                               location: URL,
-                               checksum: FileChecksum,
-                               size: Long,
-                               properties: List[FileProperty]
-                             )
+object FileProperty {
 
-object FileMetadata {
-  given Format[FileMetadata] = Json.format
+  given OFormat[FileProperty] = Json.format
 }
