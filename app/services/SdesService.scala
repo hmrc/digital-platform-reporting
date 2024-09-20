@@ -19,12 +19,14 @@ package services
 import connectors.SdesConnector
 import models.sdes.*
 import models.submission.Submission.State.Validated
+import models.subscription.{Contact, IndividualContact, OrganisationContact}
 import models.subscription.responses.SubscriptionInfo
 import org.apache.pekko.Done
 import play.api.Configuration
 import repository.SdesSubmissionWorkItemRepository
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.workitem.ProcessingStatus
+import utils.DateTimeFormats
 
 import java.time.{Clock, Duration}
 import javax.inject.{Inject, Singleton}
@@ -69,7 +71,7 @@ class SdesService @Inject()(
             location = workItem.item.downloadUrl,
             checksum = FileChecksum("SHA256", workItem.item.checksum),
             size = workItem.item.size,
-            properties = List.empty // TODO need to add metadata here when we have the schema for that
+            properties = requestCommon(workItem.item) ++ additionalDetail(workItem.item)
           ),
           audit = FileAudit(workItem.item.submissionId)
         )
@@ -85,6 +87,53 @@ class SdesService @Inject()(
       }.getOrElse(Future.successful(false))
     }
   }
+
+  private def requestCommon(workItem: SdesSubmissionWorkItem): List[FileProperty] =
+    List(
+      FileProperty("/requestCommon/conversationID", workItem.submissionId),
+      FileProperty("/requestCommon/receiptDate", DateTimeFormats.ISO8601Formatter.format(clock.instant())),
+      FileProperty("/requestCommon/regime", "DPI"),
+      FileProperty("/requestCommon/schemaVersion", "1.0.0")
+    )
+
+  private def additionalDetail(workItem: SdesSubmissionWorkItem): List[FileProperty] = {
+
+//    FileNotifyRequest(information-type,FileMetadata(recipient-or-sender,test.xml,http://example.com/test.xml,FileChecksum(SHA256,checksum),1337,List(FileProperty(/requestCommon/conversationId,submissionId), FileProperty(/requestCommon/receiptDate,2024-09-20T10:15:00Z), FileProperty(/requestCommon/regime,DPI), FileProperty(/requestCommon/schemaVersion,1.0.0), FileProperty(/requestAdditionalDetail/fileName,test.xml), FileProperty(/requestAdditionalDetail/subscriptionID,subscriptionId), FileProperty(/requestAdditionalDetail/tradingName,tradingName), FileProperty(/requestAdditionalDetail/isGBUser,true), FileProperty(/requestAdditionalDetail/primaryContact/emailAddress,individual email), FileProperty(/requestAdditionalDetail/primaryContact/phoneNumber,0777777), FileProperty(/requestAdditionalDetail/primaryContact/individualDetails/firstName,first), FileProperty(/requestAdditionalDetail/primaryContact/individualDetails/lastName,last), FileProperty(/requestAdditionalDetail/secondaryContact/emailAddress,org email), FileProperty(/requestAdditionalDetail/secondaryContact/phoneNumber,0787777), FileProperty(/requestAdditionalDetail/secondaryContact/organisationDetails/organisationName,org name))),FileAudit(submissionId)),
+//    FileNotifyRequest(information-type,FileMetadata(recipient-or-sender,test.xml,http://example.com/test.xml,FileChecksum(SHA256,checksum),1337,List(FileProperty(/requestCommon/conversationID,submissionId), FileProperty(/requestCommon/receiptDate,2024-09-20T10:15:00Z), FileProperty(/requestCommon/regime,DPI), FileProperty(/requestCommon/schemaVersion,1.0.0), FileProperty(/requestAdditionalDetail/fileName,test.xml), FileProperty(/requestAdditionalDetail/subscriptionID,subscriptionId), FileProperty(/requestAdditionalDetail/tradingName,tradingName), FileProperty(/requestAdditionalDetail/isGBUser,true), FileProperty(/requestAdditionalDetail/primaryContact/emailAddress,individual email), FileProperty(/requestAdditionalDetail/primaryContact/phoneNumber,0777777), FileProperty(/requestAdditionalDetail/primaryContact/individualDetails/firstName,first), FileProperty(/requestAdditionalDetail/primaryContact/individualDetails/lastName,last), FileProperty(/requestAdditionalDetail/secondaryContact/emailAddress,org email), FileProperty(/requestAdditionalDetail/secondaryContact/phoneNumber,0787777), FileProperty(/requestAdditionalDetail/secondaryContact/organisationDetails/organisationName,org name))),FileAudit(submissionId)),
+
+
+
+    val primaryContact = contactDetail(workItem.subscriptionInfo.primaryContact).map { property =>
+      property.copy(name = s"/requestAdditionalDetail/primaryContact/${property.name}")
+    }
+
+    val secondaryContact = workItem.subscriptionInfo.secondaryContact.flatMap(contactDetail).map { property =>
+      property.copy(name = s"/requestAdditionalDetail/secondaryContact/${property.name}")
+    }
+
+    List(
+      Some(FileProperty("/requestAdditionalDetail/fileName", workItem.fileName)),
+      Some(FileProperty("/requestAdditionalDetail/subscriptionID", workItem.subscriptionInfo.id)),
+      workItem.subscriptionInfo.tradingName.map(FileProperty("/requestAdditionalDetail/tradingName", _)),
+      Some(FileProperty("/requestAdditionalDetail/isGBUser", workItem.subscriptionInfo.gbUser.toString)),
+    ).flatten ++ primaryContact ++ secondaryContact
+  }
+
+  private def contactDetail(contact: Contact): List[FileProperty] =
+    List(
+      Some(FileProperty("emailAddress", contact.email)),
+      contact.phone.map(FileProperty("phoneNumber", _))
+    ).flatten ++ (contact match {
+      case individual: IndividualContact =>
+        List(
+          FileProperty("individualDetails/firstName", individual.individual.firstName),
+          FileProperty("individualDetails/lastName", individual.individual.lastName)
+        )
+      case organisation: OrganisationContact =>
+        List(
+          FileProperty("organisationDetails/organisationName", organisation.organisation.name),
+        )
+    })
 
   def processAllSubmissions(): Future[Done] =
     processNextSubmission().flatMap {

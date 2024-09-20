@@ -17,7 +17,7 @@
 package services
 
 import connectors.SdesConnector
-import models.sdes.{FileAudit, FileChecksum, FileMetadata, FileNotifyRequest, SdesSubmissionWorkItem}
+import models.sdes.*
 import models.submission.Submission.State.Validated
 import models.subscription.responses.SubscriptionInfo
 import models.subscription.{Individual, IndividualContact, Organisation, OrganisationContact}
@@ -26,10 +26,10 @@ import org.bson.types.ObjectId
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{never, times, verify, when}
-import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
@@ -39,6 +39,7 @@ import repository.SdesSubmissionWorkItemRepository
 import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.mongo.workitem.ProcessingStatus.ToDo
 import uk.gov.hmrc.mongo.workitem.{ProcessingStatus, WorkItem}
+import utils.DateTimeFormats.ISO8601Formatter
 
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneOffset}
@@ -50,7 +51,8 @@ class SdesServiceSpec
     with ScalaFutures
     with GuiceOneAppPerSuite
     with BeforeAndAfterEach
-    with MockitoSugar {
+    with MockitoSugar
+    with OptionValues {
 
   private val now = Instant.now()
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
@@ -176,77 +178,193 @@ class SdesServiceSpec
 
       val submissionId = "submissionId"
       val subscriptionId = "subscriptionId"
+      val tradingName = "tradingName"
       val downloadUrl = url"http://example.com/test.xml"
       val fileName = "test.xml"
       val checksum = "checksum"
       val size = 1337L
 
-      val individualContact = IndividualContact(Individual("first", "last"), "individual email", Some("0777777"))
-      val organisationContact = OrganisationContact(Organisation("org name"), "org email", Some("0787777"))
-      val subscription = SubscriptionInfo(
-        id = subscriptionId,
-        gbUser = true,
-        tradingName = Some("tradingName"),
-        primaryContact = individualContact,
-        secondaryContact = Some(organisationContact)
-      )
+      "when all optional data is supplied" - {
 
-      val workItem = WorkItem(
-        id = ObjectId(),
-        receivedAt = now.minus(1, ChronoUnit.HOURS),
-        updatedAt = now.minus(1, ChronoUnit.HOURS),
-        availableAt = now.minus(1, ChronoUnit.HOURS),
-        status = ToDo,
-        failureCount = 0,
-        item = SdesSubmissionWorkItem(
-          submissionId = submissionId,
-          downloadUrl = downloadUrl,
-          checksum = checksum,
-          fileName = fileName,
-          size = size,
-          subscriptionInfo = subscription
+        val individualContact = IndividualContact(Individual("first", "last"), "individual email", Some("0777777"))
+        val organisationContact = OrganisationContact(Organisation("org name"), "org email", Some("0787777"))
+        val subscription = SubscriptionInfo(
+          id = subscriptionId,
+          gbUser = true,
+          tradingName = Some(tradingName),
+          primaryContact = individualContact,
+          secondaryContact = Some(organisationContact)
         )
-      )
 
-      val expectedNotificationRequest = FileNotifyRequest(
-        informationType = "information-type",
-        file = FileMetadata(
-          recipientOrSender = "recipient-or-sender",
-          name = fileName,
-          location = downloadUrl,
-          checksum = FileChecksum("SHA256", checksum),
-          size = size,
-          properties = List.empty // TODO need to add metadata here when we have the schema for that
-        ),
-        audit = FileAudit(
-          correlationID = submissionId
+        val workItem = WorkItem(
+          id = ObjectId(),
+          receivedAt = now.minus(1, ChronoUnit.HOURS),
+          updatedAt = now.minus(1, ChronoUnit.HOURS),
+          availableAt = now.minus(1, ChronoUnit.HOURS),
+          status = ToDo,
+          failureCount = 0,
+          item = SdesSubmissionWorkItem(
+            submissionId = submissionId,
+            downloadUrl = downloadUrl,
+            checksum = checksum,
+            fileName = fileName,
+            size = size,
+            subscriptionInfo = subscription
+          )
         )
-      )
 
-      "must submit the work item to SDES and return true" in {
+        val expectedNotificationRequest = FileNotifyRequest(
+          informationType = "information-type",
+          file = FileMetadata(
+            recipientOrSender = "recipient-or-sender",
+            name = fileName,
+            location = downloadUrl,
+            checksum = FileChecksum("SHA256", checksum),
+            size = size,
+            properties = List(
+              FileProperty("/requestCommon/conversationID", submissionId),
+              FileProperty("/requestCommon/receiptDate", ISO8601Formatter.format(now)),
+              FileProperty("/requestCommon/regime", "DPI"),
+              FileProperty("/requestCommon/schemaVersion", "1.0.0"),
+              FileProperty("/requestAdditionalDetail/fileName", fileName),
+              FileProperty("/requestAdditionalDetail/subscriptionID", subscriptionId),
+              FileProperty("/requestAdditionalDetail/tradingName", tradingName),
+              FileProperty("/requestAdditionalDetail/isGBUser", "true"),
+              FileProperty("/requestAdditionalDetail/primaryContact/emailAddress", individualContact.email),
+              FileProperty("/requestAdditionalDetail/primaryContact/phoneNumber", individualContact.phone.value),
+              FileProperty("/requestAdditionalDetail/primaryContact/individualDetails/firstName", individualContact.individual.firstName),
+              FileProperty("/requestAdditionalDetail/primaryContact/individualDetails/lastName", individualContact.individual.lastName),
+              FileProperty("/requestAdditionalDetail/secondaryContact/emailAddress", organisationContact.email),
+              FileProperty("/requestAdditionalDetail/secondaryContact/phoneNumber", organisationContact.phone.value),
+              FileProperty("/requestAdditionalDetail/secondaryContact/organisationDetails/organisationName", organisationContact.organisation.name)
+            )
+          ),
+          audit = FileAudit(
+            correlationID = submissionId
+          )
+        )
 
-        when(mockSdesSubmissionWorkItemRepository.pullOutstanding(any(), any())).thenReturn(Future.successful(Some(workItem)))
-        when(mockSdesConnector.notify(any())(using any())).thenReturn(Future.successful(Done))
-        when(mockSdesSubmissionWorkItemRepository.complete(any(), any())).thenReturn(Future.successful(true))
+        "must submit the work item to SDES and return true" in {
 
-        sdesService.processNextSubmission().futureValue mustBe true
+          when(mockSdesSubmissionWorkItemRepository.pullOutstanding(any(), any())).thenReturn(Future.successful(Some(workItem)))
+          when(mockSdesConnector.notify(any())(using any())).thenReturn(Future.successful(Done))
+          when(mockSdesSubmissionWorkItemRepository.complete(any(), any())).thenReturn(Future.successful(true))
 
-        verify(mockSdesSubmissionWorkItemRepository).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
-        verify(mockSdesConnector).notify(eqTo(expectedNotificationRequest))(using any())
-        verify(mockSdesSubmissionWorkItemRepository).complete(workItem.id, ProcessingStatus.Succeeded)
+          sdesService.processNextSubmission().futureValue mustBe true
+
+          verify(mockSdesSubmissionWorkItemRepository).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
+          verify(mockSdesConnector).notify(eqTo(expectedNotificationRequest))(using any())
+          verify(mockSdesSubmissionWorkItemRepository).complete(workItem.id, ProcessingStatus.Succeeded)
+        }
       }
 
-      "must mark the work item as failed and fail when the SDES connector fails" in {
+      "when minimal data is supplied" - {
 
-        when(mockSdesSubmissionWorkItemRepository.pullOutstanding(any(), any())).thenReturn(Future.successful(Some(workItem)))
-        when(mockSdesConnector.notify(any())(using any())).thenReturn(Future.failed(new RuntimeException()))
-        when(mockSdesSubmissionWorkItemRepository.markAs(any(), any(), any())).thenReturn(Future.successful(true))
+        val organisationContact = OrganisationContact(Organisation("org name"), "org email", None)
+        val subscription = SubscriptionInfo(
+          id = subscriptionId,
+          gbUser = false,
+          tradingName = None,
+          primaryContact = organisationContact,
+          secondaryContact = None
+        )
 
-        sdesService.processNextSubmission().failed.futureValue
+        val workItem = WorkItem(
+          id = ObjectId(),
+          receivedAt = now.minus(1, ChronoUnit.HOURS),
+          updatedAt = now.minus(1, ChronoUnit.HOURS),
+          availableAt = now.minus(1, ChronoUnit.HOURS),
+          status = ToDo,
+          failureCount = 0,
+          item = SdesSubmissionWorkItem(
+            submissionId = submissionId,
+            downloadUrl = downloadUrl,
+            checksum = checksum,
+            fileName = fileName,
+            size = size,
+            subscriptionInfo = subscription
+          )
+        )
 
-        verify(mockSdesSubmissionWorkItemRepository).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
-        verify(mockSdesConnector).notify(eqTo(expectedNotificationRequest))(using any())
-        verify(mockSdesSubmissionWorkItemRepository).markAs(workItem.id, ProcessingStatus.Failed)
+        val expectedNotificationRequest = FileNotifyRequest(
+          informationType = "information-type",
+          file = FileMetadata(
+            recipientOrSender = "recipient-or-sender",
+            name = fileName,
+            location = downloadUrl,
+            checksum = FileChecksum("SHA256", checksum),
+            size = size,
+            properties = List(
+              FileProperty("/requestCommon/conversationID", submissionId),
+              FileProperty("/requestCommon/receiptDate", ISO8601Formatter.format(now)),
+              FileProperty("/requestCommon/regime", "DPI"),
+              FileProperty("/requestCommon/schemaVersion", "1.0.0"),
+              FileProperty("/requestAdditionalDetail/fileName", fileName),
+              FileProperty("/requestAdditionalDetail/subscriptionID", subscriptionId),
+              FileProperty("/requestAdditionalDetail/isGBUser", "false"),
+              FileProperty("/requestAdditionalDetail/primaryContact/emailAddress", organisationContact.email),
+              FileProperty("/requestAdditionalDetail/primaryContact/organisationDetails/organisationName", organisationContact.organisation.name)
+            )
+          ),
+          audit = FileAudit(
+            correlationID = submissionId
+          )
+        )
+
+        "must submit the work item to SDES and return true" in {
+
+          when(mockSdesSubmissionWorkItemRepository.pullOutstanding(any(), any())).thenReturn(Future.successful(Some(workItem)))
+          when(mockSdesConnector.notify(any())(using any())).thenReturn(Future.successful(Done))
+          when(mockSdesSubmissionWorkItemRepository.complete(any(), any())).thenReturn(Future.successful(true))
+
+          sdesService.processNextSubmission().futureValue mustBe true
+
+          verify(mockSdesSubmissionWorkItemRepository).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
+          verify(mockSdesConnector).notify(eqTo(expectedNotificationRequest))(using any())
+          verify(mockSdesSubmissionWorkItemRepository).complete(workItem.id, ProcessingStatus.Succeeded)
+        }
+      }
+
+      "when the SDES connector fails" - {
+
+        "must mark the work item as failed and fail" in {
+
+          val organisationContact = OrganisationContact(Organisation("org name"), "org email", None)
+          val subscription = SubscriptionInfo(
+            id = subscriptionId,
+            gbUser = false,
+            tradingName = None,
+            primaryContact = organisationContact,
+            secondaryContact = None
+          )
+
+          val workItem = WorkItem(
+            id = ObjectId(),
+            receivedAt = now.minus(1, ChronoUnit.HOURS),
+            updatedAt = now.minus(1, ChronoUnit.HOURS),
+            availableAt = now.minus(1, ChronoUnit.HOURS),
+            status = ToDo,
+            failureCount = 0,
+            item = SdesSubmissionWorkItem(
+              submissionId = submissionId,
+              downloadUrl = downloadUrl,
+              checksum = checksum,
+              fileName = fileName,
+              size = size,
+              subscriptionInfo = subscription
+            )
+          )
+
+          when(mockSdesSubmissionWorkItemRepository.pullOutstanding(any(), any())).thenReturn(Future.successful(Some(workItem)))
+          when(mockSdesConnector.notify(any())(using any())).thenReturn(Future.failed(new RuntimeException()))
+          when(mockSdesSubmissionWorkItemRepository.markAs(any(), any(), any())).thenReturn(Future.successful(true))
+
+          sdesService.processNextSubmission().failed.futureValue
+
+          verify(mockSdesSubmissionWorkItemRepository).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
+          verify(mockSdesConnector).notify(any())(using any())
+          verify(mockSdesSubmissionWorkItemRepository).markAs(workItem.id, ProcessingStatus.Failed)
+        }
       }
     }
 
@@ -271,6 +389,7 @@ class SdesServiceSpec
     val submissionId = "submissionId"
     val subscriptionId = "subscriptionId"
     val downloadUrl = url"http://example.com/test.xml"
+    val tradingName = "tradingName"
     val fileName = "test.xml"
     val checksum = "checksum"
     val size = 1337L
@@ -310,7 +429,23 @@ class SdesServiceSpec
         location = downloadUrl,
         checksum = FileChecksum("SHA256", checksum),
         size = size,
-        properties = List.empty // TODO need to add metadata here when we have the schema for that
+        properties = List(
+          FileProperty("/requestCommon/conversationID", submissionId),
+          FileProperty("/requestCommon/receiptDate", ISO8601Formatter.format(now)),
+          FileProperty("/requestCommon/regime", "DPI"),
+          FileProperty("/requestCommon/schemaVersion", "1.0.0"),
+          FileProperty("/requestAdditionalDetail/fileName", fileName),
+          FileProperty("/requestAdditionalDetail/subscriptionID", subscriptionId),
+          FileProperty("/requestAdditionalDetail/tradingName", tradingName),
+          FileProperty("/requestAdditionalDetail/isGBUser", "true"),
+          FileProperty("/requestAdditionalDetail/primaryContact/emailAddress", individualContact.email),
+          FileProperty("/requestAdditionalDetail/primaryContact/phoneNumber", individualContact.phone.value),
+          FileProperty("/requestAdditionalDetail/primaryContact/individualDetails/firstName", individualContact.individual.firstName),
+          FileProperty("/requestAdditionalDetail/primaryContact/individualDetails/lastName", individualContact.individual.lastName),
+          FileProperty("/requestAdditionalDetail/secondaryContact/emailAddress", organisationContact.email),
+          FileProperty("/requestAdditionalDetail/secondaryContact/phoneNumber", organisationContact.phone.value),
+          FileProperty("/requestAdditionalDetail/secondaryContact/organisationDetails/organisationName", organisationContact.organisation.name)
+        )
       ),
       audit = FileAudit(
         correlationID = submissionId

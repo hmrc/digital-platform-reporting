@@ -153,7 +153,7 @@ class SubmissionServiceSpec
 
               (document \ "requestCommon" \ "receiptDate").text mustEqual DateTimeFormats.ISO8601Formatter.format(now)
               (document \ "requestCommon" \ "conversationID").text mustEqual submissionId
-              (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0"
+              (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0.0"
 
               (document \ "requestAdditionalDetail" \ "fileName").text mustEqual fileName
               (document \ "requestAdditionalDetail" \ "subscriptionID").text mustEqual subscription.id
@@ -221,7 +221,7 @@ class SubmissionServiceSpec
 
               (document \ "requestCommon" \ "receiptDate").text mustEqual DateTimeFormats.ISO8601Formatter.format(now)
               (document \ "requestCommon" \ "conversationID").text mustEqual submissionId
-              (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0"
+              (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0.0"
 
               (document \ "requestAdditionalDetail" \ "fileName").text mustEqual fileName
               (document \ "requestAdditionalDetail" \ "subscriptionID").text mustEqual subscription.id
@@ -288,7 +288,7 @@ class SubmissionServiceSpec
 
             (document \ "requestCommon" \ "receiptDate").text mustEqual DateTimeFormats.ISO8601Formatter.format(now)
             (document \ "requestCommon" \ "conversationID").text mustEqual submissionId
-            (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0"
+            (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0.0"
 
             (document \ "requestAdditionalDetail" \ "fileName").text mustEqual fileName
             (document \ "requestAdditionalDetail" \ "subscriptionID").text mustEqual subscription.id

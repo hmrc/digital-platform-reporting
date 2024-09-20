@@ -82,7 +82,7 @@ class SubmissionService @Inject() (
       <receiptDate>{DateTimeFormats.ISO8601Formatter.format(clock.instant())}</receiptDate>
       <regime>DPI</regime>
       <conversationID>{submissionId}</conversationID>
-      <schemaVersion>1.0</schemaVersion>
+      <schemaVersion>1.0.0</schemaVersion>
     </requestCommon>
 
   private def requestDetail(body: ByteString): Elem =
