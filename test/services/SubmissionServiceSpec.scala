@@ -26,7 +26,7 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
-import org.mockito.Mockito.{verify, when}
+import org.mockito.Mockito.{never, verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
@@ -65,13 +65,18 @@ class SubmissionServiceSpec
   private val mockSubmissionConnector: SubmissionConnector = mock[SubmissionConnector]
   private val mockSubscriptionConnector: SubscriptionConnector = mock[SubscriptionConnector]
   private val mockDownloadConnector: DownloadConnector = mock[DownloadConnector]
+  private val mockSdesService: SdesService = mock[SdesService]
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
+      .configure(
+        "sdes.size-threshold" -> 3_000_000L
+      )
       .overrides(
         bind[SubmissionConnector].toInstance(mockSubmissionConnector),
         bind[SubscriptionConnector].toInstance(mockSubscriptionConnector),
         bind[DownloadConnector].toInstance(mockDownloadConnector),
+        bind[SdesService].toInstance(mockSdesService),
         bind[Clock].toInstance(clock)
       )
       .build()
@@ -85,7 +90,8 @@ class SubmissionServiceSpec
     Mockito.reset(
       mockSubmissionConnector,
       mockSubscriptionConnector,
-      mockDownloadConnector
+      mockDownloadConnector,
+      mockSdesService
     )
   }
 
@@ -99,7 +105,7 @@ class SubmissionServiceSpec
 
     "when the submission is in a validated state" - {
 
-      "when the submission is less than 3mb" - {
+      "when the submission is less than the SDES submission threshold" - {
 
         "must add the relevant XML envelope and submit" - {
 
@@ -115,7 +121,7 @@ class SubmissionServiceSpec
                   platformOperatorId = "poid",
                   fileName = fileName,
                   checksum = "checksum",
-                  size = 1337
+                  size = 3_000_000L
                 ),
                 created = now,
                 updated = now
@@ -135,6 +141,7 @@ class SubmissionServiceSpec
               val fileSource = Source.single(ByteString.fromString(innerContent))
 
               when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+              when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.failed(new RuntimeException()))
               when(mockDownloadConnector.download(any())).thenReturn(Future.successful(fileSource))
               when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.successful(Done))
 
@@ -145,6 +152,7 @@ class SubmissionServiceSpec
 
               verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
               verify(mockSubmissionConnector).submit(eqTo(submissionId), requestBodyCaptor.capture())(using any())
+              verify(mockSdesService, never()).enqueueSubmission(any(), any(), any())
 
               val result = requestBodyCaptor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
               val document = validate(result)
@@ -203,6 +211,7 @@ class SubmissionServiceSpec
               val fileSource = Source.single(ByteString.fromString(innerContent))
 
               when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+              when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.failed(new RuntimeException()))
               when(mockDownloadConnector.download(any())).thenReturn(Future.successful(fileSource))
               when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.successful(Done))
 
@@ -213,6 +222,7 @@ class SubmissionServiceSpec
 
               verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
               verify(mockSubmissionConnector).submit(eqTo(submissionId), requestBodyCaptor.capture())(using any())
+              verify(mockSdesService, never()).enqueueSubmission(any(), any(), any())
 
               val result = requestBodyCaptor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
               val document = validate(result)
@@ -270,6 +280,7 @@ class SubmissionServiceSpec
             val fileSource = Source.single(ByteString.fromString(innerContent))
 
             when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+            when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.failed(new RuntimeException()))
             when(mockDownloadConnector.download(any())).thenReturn(Future.successful(fileSource))
             when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.successful(Done))
 
@@ -280,6 +291,7 @@ class SubmissionServiceSpec
 
             verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
             verify(mockSubmissionConnector).submit(eqTo(submissionId), requestBodyCaptor.capture())(using any())
+            verify(mockSdesService, never()).enqueueSubmission(any(), any(), any())
 
             val result = requestBodyCaptor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
             val document = validate(result)
@@ -311,8 +323,46 @@ class SubmissionServiceSpec
         }
       }
 
-      "when the submission is larger than 3mb" ignore {
+      "when the submission is larger than the SDES submission threshold" - {
 
+        "must enqueue the submission to be sent to SDES" in {
+
+          val submission = Submission(
+            _id = submissionId,
+            dprsId = dprsId,
+            state = Validated(
+              downloadUrl = url"http://example.com",
+              platformOperatorId = "poid",
+              fileName = fileName,
+              checksum = "checksum",
+              size = 3_000_001L
+            ),
+            created = now,
+            updated = now
+          )
+          
+          val individualContact = IndividualContact(Individual("first", "last"), "individual email", Some("0777777"))
+          val organisationContact = OrganisationContact(Organisation("org name"), "org email", Some("0787777"))
+          val subscription = SubscriptionInfo(
+            id = subscriptionId,
+            gbUser = true,
+            tradingName = Some("tradingName"),
+            primaryContact = individualContact,
+            secondaryContact = Some(organisationContact)
+          )
+
+          when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+          when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.successful(Done))
+          when(mockDownloadConnector.download(any())).thenReturn(Future.failed(new RuntimeException()))
+          when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.failed(new RuntimeException()))
+
+          submissionService.submit(submission)(using hc).futureValue
+
+          verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+          verify(mockSdesService).enqueueSubmission(submissionId, submission.state.asInstanceOf[Validated], subscription)
+          verify(mockDownloadConnector, never()).download(any())
+          verify(mockSubmissionConnector, never()).submit(any(), any())(using any())
+        }
       }
     }
 
