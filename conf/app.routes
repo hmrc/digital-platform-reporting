@@ -13,6 +13,7 @@ POST        /submission/:id/upload-success          controllers.SubmissionContro
 POST        /submission/:id/upload-failed           controllers.SubmissionController.uploadFailed(id: String)
 POST        /submission/:id/submit                  controllers.SubmissionController.submit(id: String)
 POST        /sdes/submission/callback               controllers.SdesSubmissionCallbackController.callback()
+POST        /cadx/submission/callback               controllers.SubmissionResultCallbackController.callback()
 
 POST        /platform-operator                  controllers.PlatformOperatorController.create()
 PUT         /platform-operator                  controllers.PlatformOperatorController.update()
