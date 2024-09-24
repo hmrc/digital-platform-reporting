@@ -70,14 +70,14 @@ class CadxValidationErrorRepositorySpec
   private val fileError: CadxValidationError.FileError = CadxValidationError.FileError(
     submissionId = submissionId,
     code = "1",
-    detail = "some detail",
+    detail = Some("some detail"),
     created = created
   )
 
   private val rowError: CadxValidationError.RowError = CadxValidationError.RowError(
     submissionId = submissionId,
     code = "2",
-    detail = "some more detail",
+    detail = Some("some more detail"),
     docRef = "docRef",
     created = created
   )

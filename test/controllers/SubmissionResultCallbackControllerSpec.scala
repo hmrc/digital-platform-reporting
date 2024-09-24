@@ -17,7 +17,7 @@
 package controllers
 
 import generated.{AEOI, Accepted, BREResponse_Type, ErrorDetail_Type, FileError_Type, Generated_BREResponse_TypeFormat, GenericStatusMessage_Type, RecordError_Type, Rejected, RequestCommon_Type, RequestDetail_Type, ValidationErrors_Type, ValidationResult_Type}
-import models.submission.Submission
+import models.submission.{CadxValidationError, Submission}
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Ready, Submitted}
 import org.apache.pekko.Done
@@ -36,7 +36,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import repository.SubmissionRepository
+import repository.{CadxValidationErrorRepository, SubmissionRepository}
 import utils.DateTimeFormats
 
 import java.time.temporal.ChronoUnit
@@ -56,6 +56,7 @@ class SubmissionResultCallbackControllerSpec
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
 
   private val mockSubmissionRepository = mock[SubmissionRepository]
+  private val mockCadxValidationErrorRepository = mock[CadxValidationErrorRepository]
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
     .configure(
@@ -63,6 +64,7 @@ class SubmissionResultCallbackControllerSpec
     )
     .overrides(
       bind[SubmissionRepository].toInstance(mockSubmissionRepository),
+      bind[CadxValidationErrorRepository].toInstance(mockCadxValidationErrorRepository),
       bind[Clock].toInstance(clock)
     )
     .build()
@@ -180,10 +182,26 @@ class SubmissionResultCallbackControllerSpec
 
             val expectedSubmission = submission.copy(state = State.Rejected("reason"), updated = now)
 
+            val expectedFileError: CadxValidationError.FileError = CadxValidationError.FileError(
+              submissionId = submission._id,
+              code = "001",
+              detail = Some("detail"),
+              created = now
+            )
+
+            val expectedRowError1: CadxValidationError.RowError = CadxValidationError.RowError(
+              submissionId = submission._id,
+              code = "002",
+              detail = Some("detail 2"),
+              docRef = "1",
+              created = now
+            )
+
+            val expectedRowError2 = expectedRowError1.copy(docRef = "2")
+
             when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
-
-            // TODO add failures to repository
+            when(mockCadxValidationErrorRepository.save(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
 
@@ -191,6 +209,9 @@ class SubmissionResultCallbackControllerSpec
 
             verify(mockSubmissionRepository).getById(conversationId)
             verify(mockSubmissionRepository).save(expectedSubmission)
+            verify(mockCadxValidationErrorRepository).save(expectedFileError)
+            verify(mockCadxValidationErrorRepository).save(expectedRowError1)
+            verify(mockCadxValidationErrorRepository).save(expectedRowError2)
           }
         }
       }

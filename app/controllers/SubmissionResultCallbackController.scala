@@ -16,18 +16,19 @@
 
 package controllers
 
+import cats.implicits.given
 import cats.data.{EitherT, OptionT}
-import generated.{BREResponse_Type, Generated_BREResponse_TypeFormat}
+import generated.{BREResponse_Type, Generated_BREResponse_TypeFormat, ValidationErrors_Type}
 import logging.Logging
-import models.submission.Submission
+import models.submission.{CadxValidationError, Submission}
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Rejected, Submitted}
 import org.apache.pekko.Done
 import play.api.mvc.{Action, ControllerComponents, Request, Result}
-import repository.SubmissionRepository
+import repository.{CadxValidationErrorRepository, SubmissionRepository}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import java.time.Clock
+import java.time.{Clock, Instant}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.NodeSeq
@@ -36,6 +37,7 @@ import scala.xml.NodeSeq
 class SubmissionResultCallbackController @Inject() (
                                                      cc: ControllerComponents,
                                                      submissionRepository: SubmissionRepository,
+                                                     cadxValidationErrorRepository: CadxValidationErrorRepository,
                                                      clock: Clock
                                                    )(using ExecutionContext) extends BackendController(cc) with Logging {
 
@@ -72,13 +74,39 @@ class SubmissionResultCallbackController @Inject() (
       .filter(_.state.isInstanceOf[Submitted.type]).toRight(NotFound)
 
   private def handleBreResponse(breResponse: BREResponse_Type, submission: Submission): EitherT[Future, Result, Done] = {
-
-    val state = if (breResponse.requestDetail.GenericStatusMessage.ValidationResult.Status == generated.Accepted) {
-      Approved
+    val now = clock.instant()
+    if (breResponse.requestDetail.GenericStatusMessage.ValidationResult.Status == generated.Accepted) {
+      EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Approved, updated = now)))
     } else {
-      Rejected("reason")
+      for {
+        _ <- EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Rejected("reason"), updated = now)))
+        _ <- saveErrors(submission._id, breResponse.requestDetail.GenericStatusMessage.ValidationErrors, now)
+      } yield Done
+    }
+  }
+
+  private def saveErrors(submissionId: String, validationErrors: ValidationErrors_Type, timestamp: Instant): EitherT[Future, Result, Done] = {
+
+    val fileErrors = validationErrors.FileError.map { error =>
+      CadxValidationError.FileError(
+        submissionId = submissionId,
+        code = error.Code,
+        detail = error.Details.map(_.value),
+        created = timestamp
+      )
     }
 
-    EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = state, updated = clock.instant())))
+    val rowErrors = for {
+      error  <- validationErrors.RecordError
+      docRef <- error.DocRefIDInError
+    } yield CadxValidationError.RowError(
+      submissionId = submissionId,
+      code = error.Code,
+      detail = error.Details.map(_.value),
+      docRef = docRef,
+      created = timestamp
+    )
+
+    EitherT.right((fileErrors ++ rowErrors).traverse(cadxValidationErrorRepository.save).as(Done))
   }
 }

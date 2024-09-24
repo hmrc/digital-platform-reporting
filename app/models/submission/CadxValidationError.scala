@@ -22,8 +22,8 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import java.time.Instant
 
 enum CadxValidationError {
-  case FileError(submissionId: String, code: String, detail: String, created: Instant)
-  case RowError(submissionId: String, code: String, detail: String, docRef: String, created: Instant)
+  case FileError(submissionId: String, code: String, detail: Option[String], created: Instant)
+  case RowError(submissionId: String, code: String, detail: Option[String], docRef: String, created: Instant)
 }
 
 object CadxValidationError {
