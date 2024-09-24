@@ -17,7 +17,7 @@
 package controllers
 
 import models.sdes.{NotificationCallback, NotificationType}
-import models.submission.Submission
+import models.submission.{CadxValidationError, Submission}
 import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.any
@@ -36,10 +36,11 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import repository.SubmissionRepository
+import repository.{CadxValidationErrorRepository, SubmissionRepository}
 import services.SdesService
 import uk.gov.hmrc.http.StringContextOps
 
+import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneOffset}
 import scala.concurrent.Future
 
@@ -57,11 +58,13 @@ class SdesSubmissionCallbackControllerSpec
 
   private val mockSdesService = mock[SdesService]
   private val mockSubmissionRepository = mock[SubmissionRepository]
+  private val mockCadxValidationErrorRepository = mock[CadxValidationErrorRepository]
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
     .overrides(
       bind[SdesService].toInstance(mockSdesService),
       bind[SubmissionRepository].toInstance(mockSubmissionRepository),
+      bind[CadxValidationErrorRepository].toInstance(mockCadxValidationErrorRepository),
       bind[Clock].toInstance(clock)
     )
     .build()
@@ -76,7 +79,7 @@ class SdesSubmissionCallbackControllerSpec
   private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", "test.xml", "checksum", 1337L))
   private val approvedGen: Gen[Approved.type] = Gen.const(Approved)
-  private val rejectedGen: Gen[Rejected] = Gen.asciiPrintableStr.map(Rejected.apply)
+  private val rejectedGen: Gen[Rejected.type] = Gen.const(Rejected)
 
   "callback" - {
 
@@ -97,21 +100,27 @@ class SdesSubmissionCallbackControllerSpec
           _id = submissionId,
           dprsId = "dprsId",
           state = Submitted,
-          created = now,
-          updated = now
+          created = now.minus(1, ChronoUnit.DAYS),
+          updated = now.minus(1, ChronoUnit.DAYS)
         )
 
-        "must update the submission state to rejected and return OK" in {
+        "must update the submission state to rejected, save the rejected reason and return OK" in {
 
           val request = FakeRequest(routes.SdesSubmissionCallbackController.callback())
             .withBody(Json.toJson(notificationCallback))
 
           val expectedSubmission = submission.copy(
-            state = Rejected("reason")
+            state = Rejected,
+            updated = now
+          )
+
+          val expectedValidationError = CadxValidationError.FileError(
+            submissionId = submissionId, code = "MDTP1", detail = None, created = now
           )
 
           when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
           when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+          when(mockCadxValidationErrorRepository.save(any())).thenReturn(Future.successful(Done))
 
           val result = route(app, request).value
 
@@ -119,6 +128,7 @@ class SdesSubmissionCallbackControllerSpec
 
           verify(mockSubmissionRepository).getById(submissionId)
           verify(mockSubmissionRepository).save(expectedSubmission)
+          verify(mockCadxValidationErrorRepository).save(expectedValidationError)
         }
       }
 

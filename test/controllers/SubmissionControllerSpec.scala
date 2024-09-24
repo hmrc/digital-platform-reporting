@@ -86,7 +86,7 @@ class SubmissionControllerSpec
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", "test.xml", "checksum", 1337L))
   private val submittedGen: Gen[Submitted.type] = Gen.const(Submitted)
   private val approvedGen: Gen[Approved.type] = Gen.const(Approved)
-  private val rejectedGen: Gen[Rejected] = Gen.asciiPrintableStr.map(Rejected.apply)
+  private val rejectedGen: Gen[Rejected.type] = Gen.const(Rejected)
 
   private val dprsId = "dprsId"
   private val uuid = UUID.randomUUID().toString
