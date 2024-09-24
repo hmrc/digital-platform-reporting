@@ -19,18 +19,22 @@ package controllers
 import cats.data.OptionT
 import logging.Logging
 import models.sdes.{NotificationCallback, NotificationType}
+import models.submission.CadxValidationError
 import models.submission.Submission.State.{Rejected, Submitted}
 import play.api.mvc.{Action, ControllerComponents}
-import repository.SubmissionRepository
+import repository.{CadxValidationErrorRepository, SubmissionRepository}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import java.time.Clock
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SdesSubmissionCallbackController @Inject()(
                                                   cc: ControllerComponents,
-                                                  submissionRepository: SubmissionRepository
+                                                  submissionRepository: SubmissionRepository,
+                                                  cadxValidationErrorRepository: CadxValidationErrorRepository,
+                                                  clock: Clock
                                                 )(using ExecutionContext) extends BackendController(cc) with Logging {
 
   def callback(): Action[NotificationCallback] = Action.async(parse.json[NotificationCallback]) { implicit request =>
@@ -38,12 +42,20 @@ class SdesSubmissionCallbackController @Inject()(
       OptionT(submissionRepository.getById(request.body.correlationID))
         .filter(_.state.isInstanceOf[Submitted.type])
         .semiflatMap { submission =>
-          val updatedSubmission = submission.copy(
-            state = Rejected // TODO save a CadxValidationError for this case using a code that's not taken
+
+          val timestamp = clock.instant()
+
+          val error = CadxValidationError.FileError(
+            submissionId = submission._id,
+            code = "MDTP1",
+            detail = None,
+            created = timestamp
           )
-          submissionRepository.save(updatedSubmission).map { _ =>
-            Ok
-          }
+
+          for {
+            _ <- submissionRepository.save(submission.copy(state = Rejected, updated = timestamp))
+            _ <- cadxValidationErrorRepository.save(error)
+          } yield Ok
         }.getOrElse(Ok)
     } else {
       logger.info(s"SDES callback received for submission: ${request.body.correlationID}, with status: ${request.body.notification}")
