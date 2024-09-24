@@ -33,7 +33,7 @@ import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
-import java.time.Instant
+import java.time.{Instant, Year}
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
@@ -90,7 +90,7 @@ class SubmissionRepositorySpec
     }
 
     "must update a submission in mongo when a there is a matching submission" in {
-      insert(submission.copy(state = Validated(url"http://example.com", "poid", "fileName", "checksum", 1337L))).futureValue
+      insert(submission.copy(state = Validated(url"http://example.com", "poid", Year.of(2024), "fileName", "checksum", 1337L))).futureValue
       repository.save(submission).futureValue
       findAll().futureValue must contain only submission
     }

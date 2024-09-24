@@ -25,7 +25,7 @@ import repository.SubmissionRepository
 import services.{UuidService, ValidationService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import java.time.Clock
+import java.time.{Clock, Year}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -127,6 +127,7 @@ class SubmissionController @Inject() (
                 state = Validated(
                   downloadUrl = request.body.downloadUrl,
                   platformOperatorId = request.body.platformOperatorId,
+                  reportingPeriod = Year.of(2024), // TODO take this from the XML
                   fileName = request.body.fileName,
                   checksum = request.body.checksum,
                   size = request.body.size

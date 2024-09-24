@@ -22,7 +22,7 @@ import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.StringContextOps
 
-import java.time.Instant
+import java.time.{Instant, Year}
 import java.time.temporal.ChronoUnit
 
 class SubmissionSpec extends AnyFreeSpec with Matchers {
@@ -126,6 +126,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       state = Validated(
         downloadUrl = url"http://example.com",
         platformOperatorId = "poid",
+        reportingPeriod = Year.of(2024),
         fileName = "test.xml",
         checksum = "checksum",
         size = 1337
@@ -141,6 +142,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
         "type" -> "Validated",
         "downloadUrl" -> "http://example.com",
         "platformOperatorId" -> "poid",
+        "reportingPeriod" -> 2024,
         "fileName" -> "test.xml",
         "checksum" -> "checksum",
         "size" -> 1337
