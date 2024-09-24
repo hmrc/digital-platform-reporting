@@ -22,17 +22,20 @@ import org.apache.pekko.stream.scaladsl.StreamConverters
 import org.xml.sax.Attributes
 import org.xml.sax.helpers.DefaultHandler
 import play.api.{Configuration, Environment}
-import services.ValidatingSaxHandler.platformOperatorPath
+import services.ValidatingSaxHandler.{platformOperatorPath, reportingPeriodPath}
 import services.ValidationService.ValidationError
 
 import java.net.URL
 import java.nio.file.Paths
+import java.time.Year
+import java.time.format.DateTimeFormatter
 import javax.inject.{Inject, Singleton}
 import javax.xml.XMLConstants
 import javax.xml.parsers.SAXParserFactory
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.SchemaFactory
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 import scala.xml.SAXParseException
 
 @Singleton
@@ -54,24 +57,21 @@ class ValidationService @Inject() (
   parserFactory.setNamespaceAware(true)
   parserFactory.setSchema(schema)
 
-  def validateXml(downloadUrl: URL, platformOperatorId: String): Future[Option[ValidationError]] = {
+  def validateXml(downloadUrl: URL, platformOperatorId: String): Future[Either[ValidationError, Year]] = {
     val parser = parserFactory.newSAXParser()
     // TODO use blocking execution context
     downloadConnector.download(downloadUrl).map { source =>
       val inputStream = source.runWith(StreamConverters.asInputStream())
       try {
-        val handler = new ValidatingSaxHandler
+        val handler = new ValidatingSaxHandler(platformOperatorId)
         parser.parse(inputStream, handler)
-        handler.getPlatformOperatorId match {
-          case None =>
-            Some(ValidationError("error.poid.missing"))
-          case Some(poid) if poid != platformOperatorId =>
-            Some(ValidationError("error.poid.incorrect"))
-          case _ =>
-            None
-        }
+
+        for {
+          _               <- handler.getPlatformOperatorId
+          reportingPeriod <- handler.getReportingPeriod
+        } yield reportingPeriod
       } catch { case _: SAXParseException =>
-        Some(ValidationError("error.schema"))
+        Left(ValidationError("error.schema"))
       }
     }
   }
@@ -82,7 +82,7 @@ object ValidationService {
   final case class ValidationError(reason: String)
 }
 
-final class ValidatingSaxHandler extends DefaultHandler {
+final class ValidatingSaxHandler(platformOperatorId: String) extends DefaultHandler {
 
   override def warning(e: SAXParseException): Unit = throw e
   override def error(e: SAXParseException): Unit = throw e
@@ -90,6 +90,7 @@ final class ValidatingSaxHandler extends DefaultHandler {
 
   private var path: List[String] = Nil
   private val platformOperatorBuilder = new java.lang.StringBuilder()
+  private val reportingPeriodBuilder = new java.lang.StringBuilder()
 
   override def startElement(uri: String, localName: String, qName: String, attributes: Attributes): Unit =
     path = localName :: path
@@ -98,19 +99,31 @@ final class ValidatingSaxHandler extends DefaultHandler {
     path = path.tail
 
   override def characters(ch: Array[Char], start: Int, length: Int): Unit =
-    if (path == platformOperatorPath) {
-      platformOperatorBuilder.append(ch, start, length)
+    path match {
+      case `platformOperatorPath` =>
+        platformOperatorBuilder.append(ch, start, length)
+      case `reportingPeriodPath` =>
+        reportingPeriodBuilder.append(ch, start, length)
+      case _ => ()
     }
 
-  def getPlatformOperatorId: Option[String] =
+  def getPlatformOperatorId: Either[ValidationError, String] =
     if (platformOperatorBuilder.length == 0) {
-      None
+      Left(ValidationError("error.poid.missing"))
+    } else if (platformOperatorBuilder.toString != platformOperatorId) {
+      Left(ValidationError("error.poid.incorrect"))
     } else {
-      Some(platformOperatorBuilder.toString)
+      Right(platformOperatorBuilder.toString)
     }
+
+  def getReportingPeriod: Either[ValidationError, Year] =
+    Try(Year.from(DateTimeFormatter.ISO_DATE.parse(reportingPeriodBuilder.toString)))
+      .toEither
+      .left.map(_ => ValidationError("error.reporting-period.invalid"))
 }
 
 object ValidatingSaxHandler {
 
   private val platformOperatorPath: List[String] = List("SendingEntityIN", "MessageSpec", "DPI_OECD")
+  private val reportingPeriodPath: List[String] = List("ReportingPeriod", "MessageSpec", "DPI_OECD")
 }

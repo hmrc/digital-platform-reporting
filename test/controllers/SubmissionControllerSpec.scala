@@ -382,7 +382,7 @@ class SubmissionControllerSpec
             )
 
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockValidationService.validateXml(any(), any())).thenReturn(Future.successful(Some(ValidationError("error"))))
+            when(mockValidationService.validateXml(any(), any())).thenReturn(Future.successful(Left(ValidationError("error"))))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
@@ -418,7 +418,7 @@ class SubmissionControllerSpec
             )
 
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockValidationService.validateXml(any(), any())).thenReturn(Future.successful(None))
+            when(mockValidationService.validateXml(any(), any())).thenReturn(Future.successful(Right(Year.of(2024))))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value

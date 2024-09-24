@@ -115,26 +115,26 @@ class SubmissionController @Inject() (
       _.map { submission =>
         if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[Uploading.type] || submission.state.isInstanceOf[UploadFailed]) {
 
-          validationService.validateXml(request.body.downloadUrl, request.body.platformOperatorId).flatMap { maybeError =>
+          validationService.validateXml(request.body.downloadUrl, request.body.platformOperatorId).flatMap { maybeReportingPeriod =>
 
-            val updatedSubmission = maybeError.map { error =>
+            val updatedSubmission = maybeReportingPeriod.left.map { error =>
               submission.copy(
                 state = UploadFailed(error.reason),
                 updated = clock.instant()
               )
-            }.getOrElse {
+            }.map { reportingPeriod =>
               submission.copy(
                 state = Validated(
                   downloadUrl = request.body.downloadUrl,
                   platformOperatorId = request.body.platformOperatorId,
-                  reportingPeriod = Year.of(2024), // TODO take this from the XML
+                  reportingPeriod = reportingPeriod,
                   fileName = request.body.fileName,
                   checksum = request.body.checksum,
                   size = request.body.size
                 ),
                 updated = clock.instant()
               )
-            }
+            }.merge
 
             submissionRepository.save(updatedSubmission).map { _ =>
               Ok(Json.toJson(updatedSubmission))
