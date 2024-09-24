@@ -180,7 +180,7 @@ class SubmissionResultCallbackControllerSpec
               )
               .withBody(scalaxb.toXML(requestBody, "BREResponse", generated.defaultScope))
 
-            val expectedSubmission = submission.copy(state = State.Rejected("reason"), updated = now)
+            val expectedSubmission = submission.copy(state = State.Rejected, updated = now)
 
             val expectedFileError: CadxValidationError.FileError = CadxValidationError.FileError(
               submissionId = submission._id,
@@ -237,7 +237,7 @@ class SubmissionResultCallbackControllerSpec
             )
             .withBody(scalaxb.toXML(approvedRequest, "BREResponse", generated.defaultScope))
 
-          val expectedSubmission = submission.copy(state = State.Rejected("reason"), updated = now)
+          val expectedSubmission = submission.copy(state = State.Rejected, updated = now)
 
           when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
           when(mockSubmissionRepository.save(any())).thenReturn(Future.failed(new RuntimeException()))

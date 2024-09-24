@@ -79,7 +79,7 @@ class SubmissionResultCallbackController @Inject() (
       EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Approved, updated = now)))
     } else {
       for {
-        _ <- EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Rejected("reason"), updated = now)))
+        _ <- EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Rejected, updated = now)))
         _ <- saveErrors(submission._id, breResponse.requestDetail.GenericStatusMessage.ValidationErrors, now)
       } yield Done
     }

@@ -43,7 +43,7 @@ object Submission {
     final case class Validated(downloadUrl: URL, platformOperatorId: String, fileName: String, checksum: String, size: Long) extends State
     case object Submitted extends State
     case object Approved extends State
-    final case class Rejected(reason: String) extends State
+    case object Rejected extends State
 
     private def singletonOFormat[A](a: A): OFormat[A] =
       OFormat(Reads.pure(a), OWrites[A](_ => Json.obj()))
@@ -54,7 +54,7 @@ object Submission {
     private implicit lazy val validatedFormat: OFormat[Validated] = Json.format
     private implicit lazy val submittedFormat: OFormat[Submitted.type] = singletonOFormat(Submitted)
     private implicit lazy val approvedFormat: OFormat[Approved.type] = singletonOFormat(Approved)
-    private implicit lazy val rejectedFormat: OFormat[Rejected] = Json.format
+    private implicit lazy val rejectedFormat: OFormat[Rejected.type] = singletonOFormat(Rejected)
 
     private implicit val jsonConfig: JsonConfiguration = JsonConfiguration(
       discriminator = "type",

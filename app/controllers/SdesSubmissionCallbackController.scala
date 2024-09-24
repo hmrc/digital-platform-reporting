@@ -39,7 +39,7 @@ class SdesSubmissionCallbackController @Inject()(
         .filter(_.state.isInstanceOf[Submitted.type])
         .semiflatMap { submission =>
           val updatedSubmission = submission.copy(
-            state = Rejected(request.body.failureReason.getOrElse("Unknown")) // TODO do something better than this when we know what shape the rejected errors will be in
+            state = Rejected // TODO save a CadxValidationError for this case using a code that's not taken
           )
           submissionRepository.save(updatedSubmission).map { _ =>
             Ok

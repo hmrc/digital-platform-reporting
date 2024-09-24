@@ -76,7 +76,7 @@ class SdesSubmissionCallbackControllerSpec
   private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", "test.xml", "checksum", 1337L))
   private val approvedGen: Gen[Approved.type] = Gen.const(Approved)
-  private val rejectedGen: Gen[Rejected] = Gen.asciiPrintableStr.map(Rejected.apply)
+  private val rejectedGen: Gen[Rejected.type] = Gen.const(Rejected)
 
   "callback" - {
 
@@ -107,7 +107,7 @@ class SdesSubmissionCallbackControllerSpec
             .withBody(Json.toJson(notificationCallback))
 
           val expectedSubmission = submission.copy(
-            state = Rejected("reason")
+            state = Rejected
           )
 
           when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
