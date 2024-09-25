@@ -42,7 +42,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 import utils.DateTimeFormats
 
 import java.nio.file.Paths
-import java.time.{Clock, Instant, ZoneOffset}
+import java.time.{Clock, Instant, Year, ZoneOffset}
 import javax.xml.XMLConstants
 import javax.xml.parsers.SAXParserFactory
 import javax.xml.transform.stream.StreamSource
@@ -119,6 +119,7 @@ class SubmissionServiceSpec
                 state = Validated(
                   downloadUrl = url"http://example.com",
                   platformOperatorId = "poid",
+                  reportingPeriod = Year.of(2024),
                   fileName = fileName,
                   checksum = "checksum",
                   size = 3_000_000L
@@ -190,6 +191,7 @@ class SubmissionServiceSpec
                 state = Validated(
                   downloadUrl = url"http://example.com",
                   platformOperatorId = "poid",
+                  reportingPeriod = Year.of(2024),
                   fileName = fileName,
                   checksum = "checksum",
                   size = 1337
@@ -258,6 +260,7 @@ class SubmissionServiceSpec
               state = Validated(
                 downloadUrl = url"http://example.com",
                 platformOperatorId = "poid",
+                reportingPeriod = Year.of(2024),
                 fileName = fileName,
                 checksum = "checksum",
                 size = 1337
@@ -333,6 +336,7 @@ class SubmissionServiceSpec
             state = Validated(
               downloadUrl = url"http://example.com",
               platformOperatorId = "poid",
+              reportingPeriod = Year.of(2024),
               fileName = fileName,
               checksum = "checksum",
               size = 3_000_001L

@@ -24,7 +24,7 @@ import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.{BeforeAndAfterEach, OptionValues}
+import org.scalatest.{BeforeAndAfterEach, EitherValues, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
@@ -33,6 +33,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import services.ValidationService.ValidationError
 import uk.gov.hmrc.http.StringContextOps
 
+import java.time.Year
 import scala.concurrent.Future
 
 class ValidationServiceSpec
@@ -43,7 +44,8 @@ class ValidationServiceSpec
     with MockitoSugar
     with OptionValues
     with BeforeAndAfterEach
-    with IntegrationPatience {
+    with IntegrationPatience
+    with EitherValues {
 
   private val mockDownloadConnector = mock[DownloadConnector]
 
@@ -69,7 +71,7 @@ class ValidationServiceSpec
     val downloadUrl = url"http://example.com/test.xml"
     val poid = "platformOperatorId"
 
-    "must return None when the given file is valid" in {
+    "must return the reporting period when the given file is valid" in {
 
       val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSample.xml"))
 
@@ -77,7 +79,7 @@ class ValidationServiceSpec
         .thenReturn(Future.successful(source))
 
       val result = validationService.validateXml(downloadUrl, poid).futureValue
-      result mustBe None
+      result.value mustBe Year.of(1957)
 
       verify(mockDownloadConnector).download(downloadUrl)
     }
@@ -89,8 +91,8 @@ class ValidationServiceSpec
       when(mockDownloadConnector.download(any()))
         .thenReturn(Future.successful(source))
 
-      val result = validationService.validateXml(downloadUrl, poid).futureValue.value
-      result mustEqual ValidationError("error.schema")
+      val result = validationService.validateXml(downloadUrl, poid).futureValue
+      result.left.value mustEqual ValidationError("error.schema")
 
       verify(mockDownloadConnector).download(downloadUrl)
     }
@@ -102,8 +104,8 @@ class ValidationServiceSpec
       when(mockDownloadConnector.download(any()))
         .thenReturn(Future.successful(source))
 
-      val result = validationService.validateXml(downloadUrl, "a-different-poid").futureValue.value
-      result mustEqual ValidationError("error.poid.incorrect")
+      val result = validationService.validateXml(downloadUrl, "a-different-poid").futureValue
+      result.left.value mustEqual ValidationError("error.poid.incorrect")
 
       verify(mockDownloadConnector).download(downloadUrl)
     }
@@ -115,8 +117,8 @@ class ValidationServiceSpec
       when(mockDownloadConnector.download(any()))
         .thenReturn(Future.successful(source))
 
-      val result = validationService.validateXml(downloadUrl, poid).futureValue.value
-      result mustEqual ValidationError("error.poid.missing")
+      val result = validationService.validateXml(downloadUrl, poid).futureValue
+      result.left.value mustEqual ValidationError("error.poid.missing")
 
       verify(mockDownloadConnector).download(downloadUrl)
     }

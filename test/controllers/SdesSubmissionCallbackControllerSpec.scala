@@ -41,7 +41,7 @@ import services.SdesService
 import uk.gov.hmrc.http.StringContextOps
 
 import java.time.temporal.ChronoUnit
-import java.time.{Clock, Instant, ZoneOffset}
+import java.time.{Clock, Instant, Year, ZoneOffset}
 import scala.concurrent.Future
 
 class SdesSubmissionCallbackControllerSpec
@@ -77,7 +77,7 @@ class SdesSubmissionCallbackControllerSpec
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
   private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
-  private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", "test.xml", "checksum", 1337L))
+  private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", Year.of(2024), "test.xml", "checksum", 1337L))
   private val approvedGen: Gen[Approved.type] = Gen.const(Approved)
   private val rejectedGen: Gen[Rejected.type] = Gen.const(Rejected)
 

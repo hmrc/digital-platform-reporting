@@ -19,6 +19,7 @@ package models
 import play.api.libs.json.{Format, Reads, Writes}
 
 import java.net.URL
+import java.time.Year
 import scala.util.Try
 
 given urlFormat: Format[URL] = {
@@ -30,6 +31,19 @@ given urlFormat: Format[URL] = {
   }
 
   val writes = Writes.of[String].contramap[URL](_.toString)
+
+  Format(reads, writes)
+}
+
+given yearFormat: Format[Year] = {
+
+  val reads = Reads.of[Int].flatMap { number =>
+    Try(Year.of(number))
+      .map(Reads.pure)
+      .getOrElse(Reads.failed("error.invalid"))
+  }
+
+  val writes = Writes.of[Int].contramap[Year](_.getValue)
 
   Format(reads, writes)
 }

@@ -42,7 +42,7 @@ import uk.gov.hmrc.mongo.workitem.{ProcessingStatus, WorkItem}
 import utils.DateTimeFormats.ISO8601Formatter
 
 import java.time.temporal.ChronoUnit
-import java.time.{Clock, Instant, ZoneOffset}
+import java.time.{Clock, Instant, Year, ZoneOffset}
 import scala.concurrent.Future
 
 class SdesServiceSpec
@@ -95,6 +95,7 @@ class SdesServiceSpec
     val state = Validated(
       downloadUrl = downloadUrl,
       platformOperatorId = "poid",
+      reportingPeriod = Year.of(2024),
       fileName = fileName,
       checksum = checksum,
       size = size

@@ -43,7 +43,7 @@ import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enr
 import uk.gov.hmrc.http.StringContextOps
 
 import java.time.temporal.ChronoUnit
-import java.time.{Clock, Instant, ZoneOffset}
+import java.time.{Clock, Instant, Year, ZoneOffset}
 import java.util.UUID
 import scala.concurrent.Future
 
@@ -83,7 +83,7 @@ class SubmissionControllerSpec
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
   private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
-  private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", "test.xml", "checksum", 1337L))
+  private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", Year.of(2024), "test.xml", "checksum", 1337L))
   private val submittedGen: Gen[Submitted.type] = Gen.const(Submitted)
   private val approvedGen: Gen[Approved.type] = Gen.const(Approved)
   private val rejectedGen: Gen[Rejected.type] = Gen.const(Rejected)
@@ -141,7 +141,7 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            state = Validated(url"http://example.com", "poid", "test.xml", "checksum", 1337L),
+            state = Validated(url"http://example.com", "poid", Year.of(2024), "test.xml", "checksum", 1337L),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
           )
@@ -382,7 +382,7 @@ class SubmissionControllerSpec
             )
 
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockValidationService.validateXml(any(), any())).thenReturn(Future.successful(Some(ValidationError("error"))))
+            when(mockValidationService.validateXml(any(), any())).thenReturn(Future.successful(Left(ValidationError("error"))))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
@@ -413,12 +413,12 @@ class SubmissionControllerSpec
             )
 
             val expectedSubmission = existingSubmission.copy(
-              state = Validated(downloadUrl, poid, fileName, checksum, size),
+              state = Validated(downloadUrl, poid, Year.of(2024), fileName, checksum, size),
               updated = now
             )
 
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockValidationService.validateXml(any(), any())).thenReturn(Future.successful(None))
+            when(mockValidationService.validateXml(any(), any())).thenReturn(Future.successful(Right(Year.of(2024))))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
@@ -591,7 +591,7 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            state = Validated(url"http://example.com", "poid", "test.xml", "checksum", 1337L),
+            state = Validated(url"http://example.com", "poid", Year.of(2024), "test.xml", "checksum", 1337L),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
           )
