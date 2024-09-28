@@ -17,6 +17,7 @@
 package controllers
 
 import connectors.RegistrationConnector
+import controllers.actions.AuthWithoutEnrolmentAction
 import models.registration.requests.*
 import models.registration.responses.*
 import play.api.libs.json.Json
@@ -32,11 +33,12 @@ class RegistrationController @Inject()(
                                         cc: ControllerComponents,
                                         connector: RegistrationConnector,
                                         uuidService: UuidService,
-                                        clock: Clock
+                                        clock: Clock,
+                                        authWithoutEnrolment: AuthWithoutEnrolmentAction
                                       )(implicit ec: ExecutionContext)
     extends BackendController(cc) {
   
-  def register(): Action[RequestDetail] = Action(parse.json[RequestDetail]).async {
+  def register(): Action[RequestDetail] = authWithoutEnrolment(parse.json[RequestDetail]).async {
     implicit request =>
       
       val requestCommon = RequestCommon(clock.instant(), uuidService.generate().replace("-", ""))

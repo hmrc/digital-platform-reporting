@@ -17,6 +17,7 @@
 package controllers
 
 import connectors.RegistrationConnector
+import controllers.actions.{FakeAuthWithoutEnrolmentAction, AuthWithoutEnrolmentAction}
 import models.registration.Address
 import models.registration.requests.*
 import models.registration.responses.*
@@ -64,7 +65,8 @@ class RegistrationControllerSpec
       .overrides(
         bind[Clock].toInstance(stubClock),
         bind[RegistrationConnector].toInstance(mockConnector),
-        bind[UuidService].toInstance(mockUuidService)
+        bind[UuidService].toInstance(mockUuidService),
+        bind[AuthWithoutEnrolmentAction].toInstance(new FakeAuthWithoutEnrolmentAction)
       )
       .build()
 
