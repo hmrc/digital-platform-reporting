@@ -22,7 +22,7 @@ import models.submission.{Submission, UploadFailedRequest, UploadSuccessRequest}
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
-import org.mockito.Mockito.{never, times, verify, when}
+import org.mockito.Mockito.{times, verify, when}
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
@@ -71,7 +71,8 @@ class SubmissionControllerSpec
       bind[Clock].toInstance(clock),
       bind[UuidService].toInstance(mockUuidService),
       bind[AuthConnector].toInstance(mockAuthConnector),
-      bind[ValidationService].toInstance(mockValidationService)
+      bind[ValidationService].toInstance(mockValidationService),
+      bind[SubmissionService].toInstance(mockSubmissionService)
     )
     .build()
 
@@ -612,6 +613,7 @@ class SubmissionControllerSpec
           contentAsJson(result) mustEqual Json.toJson(expectedSubmission)
 
           verify(mockSubmissionRepository).get(dprsId, uuid)
+          verify(mockSubmissionService).submit(eqTo(existingSubmission))(using any())
           verify(mockSubmissionRepository).save(expectedSubmission)
         }
       }

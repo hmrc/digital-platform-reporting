@@ -22,10 +22,10 @@ import models.submission.{Submission, UploadFailedRequest, UploadSuccessRequest}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.SubmissionRepository
-import services.{UuidService, ValidationService}
+import services.{SubmissionService, UuidService, ValidationService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import java.time.{Clock, Year}
+import java.time.Clock
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -36,7 +36,8 @@ class SubmissionController @Inject() (
                                        clock: Clock,
                                        submissionRepository: SubmissionRepository,
                                        auth: AuthAction,
-                                       validationService: ValidationService
+                                       validationService: ValidationService,
+                                       submissionService: SubmissionService
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def start(id: Option[String]): Action[AnyContent] =
@@ -182,9 +183,10 @@ class SubmissionController @Inject() (
             updated = clock.instant()
           )
 
-          submissionRepository.save(updatedSubmission).map { _ =>
-            Ok(Json.toJson(updatedSubmission))
-          }
+          for {
+            _ <- submissionService.submit(submission)
+            _ <- submissionRepository.save(updatedSubmission)
+          } yield Ok(Json.toJson(updatedSubmission))
         } else {
           Future.successful(Conflict)
         }

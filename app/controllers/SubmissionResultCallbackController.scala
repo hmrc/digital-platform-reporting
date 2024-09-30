@@ -16,14 +16,15 @@
 
 package controllers
 
-import cats.implicits.given
 import cats.data.{EitherT, OptionT}
+import cats.implicits.given
 import generated.{BREResponse_Type, Generated_BREResponse_TypeFormat, ValidationErrors_Type}
 import logging.Logging
-import models.submission.{CadxValidationError, Submission}
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Rejected, Submitted}
+import models.submission.{CadxValidationError, Submission}
 import org.apache.pekko.Done
+import play.api.Configuration
 import play.api.mvc.{Action, ControllerComponents, Request, Result}
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -38,12 +39,17 @@ class SubmissionResultCallbackController @Inject() (
                                                      cc: ControllerComponents,
                                                      submissionRepository: SubmissionRepository,
                                                      cadxValidationErrorRepository: CadxValidationErrorRepository,
-                                                     clock: Clock
+                                                     clock: Clock,
+                                                     configuration: Configuration
                                                    )(using ExecutionContext) extends BackendController(cc) with Logging {
+
+  private val expectedBearerToken: String = configuration.get[String]("cadx.incoming-bearer-token")
+  private val expectedAuthHeader: String = s"Bearer $expectedBearerToken"
 
   def callback(): Action[NodeSeq] = Action.async(parse.xml) { implicit request =>
 
     val result = for {
+      _               <- checkAuth
       correlationId   <- validateCorrelationId
       conversationId  <- validateConversationId
       breResponse     <- parseBody(correlationId)
@@ -62,6 +68,9 @@ class SubmissionResultCallbackController @Inject() (
           BadRequest
         }
     }
+
+  private def checkAuth(using request: Request[?]): EitherT[Future, Result, String] =
+    OptionT.fromOption(request.headers.get("AUTHORIZATION").filter(_ == expectedAuthHeader)).toRight(Forbidden)
 
   private def validateCorrelationId(using request: Request[?]): EitherT[Future, Result, String] =
     EitherT.fromEither(request.headers.get("X-CORRELATION-ID").toRight(BadRequest))
