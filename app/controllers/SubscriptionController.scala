@@ -17,7 +17,7 @@
 package controllers
 
 import connectors.SubscriptionConnector
-import controllers.actions.AuthAction
+import controllers.actions.{AuthAction, AuthWithoutEnrolmentAction}
 import models.subscription.requests.SubscriptionRequest
 import models.subscription.responses.{AlreadySubscribedResponse, SubscribedResponse, UnexpectedResponse}
 import play.api.libs.json.Json
@@ -29,11 +29,12 @@ import scala.concurrent.ExecutionContext
 
 class SubscriptionController @Inject()(cc: ControllerComponents,
                                        connector: SubscriptionConnector,
-                                       authenticate: AuthAction)
+                                       authenticate: AuthAction,
+                                       authWithoutEnrolmentAction: AuthWithoutEnrolmentAction)
                                       (implicit ec: ExecutionContext)
   extends BackendController(cc) {
 
-  def subscribe(): Action[SubscriptionRequest] = Action(parse.json[SubscriptionRequest]).async {
+  def subscribe(): Action[SubscriptionRequest] = authWithoutEnrolmentAction(parse.json[SubscriptionRequest]).async {
     implicit request =>
       connector
         .subscribe(request.body)
@@ -44,7 +45,7 @@ class SubscriptionController @Inject()(cc: ControllerComponents,
         }
   }
 
-  def updateSubscription(): Action[SubscriptionRequest] = Action(parse.json[SubscriptionRequest]).async {
+  def updateSubscription(): Action[SubscriptionRequest] = authenticate(parse.json[SubscriptionRequest]).async {
     implicit request =>
       connector
         .updateSubscription(request.body)

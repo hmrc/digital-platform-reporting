@@ -17,7 +17,7 @@
 package controllers
 
 import connectors.SubscriptionConnector
-import controllers.actions.{AuthAction, FakeAuthAction}
+import controllers.actions.{AuthAction, FakeAuthAction, FakeAuthWithoutEnrolmentAction, AuthWithoutEnrolmentAction}
 import models.subscription.*
 import models.subscription.requests.*
 import models.subscription.responses.*
@@ -60,7 +60,10 @@ class SubscriptionControllerSpec
     "must return OK and the response detail" - {
       "when a subscription call was successful" in {
         val app = new GuiceApplicationBuilder()
-          .overrides(bind[SubscriptionConnector].toInstance(mockConnector))
+          .overrides(
+            bind[SubscriptionConnector].toInstance(mockConnector),
+            bind[AuthWithoutEnrolmentAction].toInstance(new FakeAuthWithoutEnrolmentAction)
+          )
           .build()
 
         val individual = IndividualContact(Individual("first", "last"), "email", None)
@@ -93,7 +96,10 @@ class SubscriptionControllerSpec
 
     "must return CONFLICT when the server returns duplicate submission" in {
       val app = new GuiceApplicationBuilder()
-        .overrides(bind[SubscriptionConnector].toInstance(mockConnector))
+        .overrides(
+          bind[SubscriptionConnector].toInstance(mockConnector),
+          bind[AuthWithoutEnrolmentAction].toInstance(new FakeAuthWithoutEnrolmentAction)
+        )
         .build()
       val individual = IndividualContact(Individual("first", "last"), "email", None)
       val subscriptionRequest = SubscriptionRequest("userId", true, None, individual, None)
@@ -123,7 +129,10 @@ class SubscriptionControllerSpec
 
     "must return INTERNAL_SERVER_ERROR when the server returns an unexpected error" in {
       val app = new GuiceApplicationBuilder()
-        .overrides(bind[SubscriptionConnector].toInstance(mockConnector))
+        .overrides(
+          bind[SubscriptionConnector].toInstance(mockConnector),
+          bind[AuthWithoutEnrolmentAction].toInstance(new FakeAuthWithoutEnrolmentAction)
+        )
         .build()
       val individual = IndividualContact(Individual("first", "last"), "email", None)
       val subscriptionRequest = SubscriptionRequest("userId", true, None, individual, None)
@@ -154,7 +163,10 @@ class SubscriptionControllerSpec
     "must fail" - {
       "when a request to the backend fails" in {
         val app = new GuiceApplicationBuilder()
-          .overrides(bind[SubscriptionConnector].toInstance(mockConnector))
+          .overrides(
+            bind[SubscriptionConnector].toInstance(mockConnector),
+            bind[AuthWithoutEnrolmentAction].toInstance(new FakeAuthWithoutEnrolmentAction)
+          )
           .build()
 
         when(mockConnector.subscribe(any())(any())).thenReturn(Future.failed(new Exception("foo")))
@@ -185,7 +197,10 @@ class SubscriptionControllerSpec
     "must return OK" - {
       "when an update subscription call was successful" in {
         val app = new GuiceApplicationBuilder()
-          .overrides(bind[SubscriptionConnector].toInstance(mockConnector))
+          .overrides(
+            bind[SubscriptionConnector].toInstance(mockConnector),
+            bind[AuthAction].toInstance(new FakeAuthAction)
+          )
           .build()
         val individual = IndividualContact(Individual("first", "last"), "email", None)
         val subscriptionRequest = SubscriptionRequest("userId", true, None, individual, None)
@@ -218,7 +233,10 @@ class SubscriptionControllerSpec
     "must fail" - {
       "when a request to the backend fails" in {
         val app = new GuiceApplicationBuilder()
-          .overrides(bind[SubscriptionConnector].toInstance(mockConnector))
+          .overrides(
+            bind[SubscriptionConnector].toInstance(mockConnector),
+            bind[AuthAction].toInstance(new FakeAuthAction)
+          )
           .build()
 
         when(mockConnector.updateSubscription(any())(any())).thenReturn(Future.failed(new Exception("foo")))
