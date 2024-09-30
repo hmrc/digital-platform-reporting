@@ -46,7 +46,6 @@ class SubmissionResultCallbackController @Inject() (
   private val expectedBearerToken: String = configuration.get[String]("cadx.incoming-bearer-token")
   private val expectedAuthHeader: String = s"Bearer $expectedBearerToken"
 
-  // TODO add authorisation
   def callback(): Action[NodeSeq] = Action.async(parse.xml) { implicit request =>
 
     val result = for {
