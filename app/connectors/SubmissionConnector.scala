@@ -23,11 +23,11 @@ import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import play.api.http.HeaderNames
 import play.api.http.Status.NO_CONTENT
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
-import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 import play.api.libs.ws.{BodyWritable, SourceBody}
 import services.UuidService
+import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
 import utils.DateTimeFormats.RFC7231Formatter
 
 import java.time.Clock
@@ -42,10 +42,10 @@ class SubmissionConnector @Inject() (
                                       uuidService: UuidService
                                     )(using ExecutionContext) {
 
-  private given BodyWritable[Source[ByteString, _]] =
+  private given BodyWritable[Source[ByteString, ?]] =
     BodyWritable(SourceBody.apply, "application/xml")
 
-  def submit(submissionId: String, requestBody: Source[ByteString, _])(using HeaderCarrier): Future[Done] = {
+  def submit(submissionId: String, requestBody: Source[ByteString, ?])(using HeaderCarrier): Future[Done] = {
 
     val correlationId = uuidService.generate()
 

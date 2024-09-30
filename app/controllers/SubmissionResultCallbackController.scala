@@ -16,13 +16,13 @@
 
 package controllers
 
-import cats.implicits.given
 import cats.data.{EitherT, OptionT}
+import cats.implicits.given
 import generated.{BREResponse_Type, Generated_BREResponse_TypeFormat, ValidationErrors_Type}
 import logging.Logging
-import models.submission.{CadxValidationError, Submission}
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Rejected, Submitted}
+import models.submission.{CadxValidationError, Submission}
 import org.apache.pekko.Done
 import play.api.mvc.{Action, ControllerComponents, Request, Result}
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
@@ -41,6 +41,7 @@ class SubmissionResultCallbackController @Inject() (
                                                      clock: Clock
                                                    )(using ExecutionContext) extends BackendController(cc) with Logging {
 
+  // TODO add authorisation
   def callback(): Action[NodeSeq] = Action.async(parse.xml) { implicit request =>
 
     val result = for {
