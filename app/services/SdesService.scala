@@ -69,7 +69,7 @@ class SdesService @Inject()(
             recipientOrSender = recipientOrSender,
             name = workItem.item.fileName,
             location = workItem.item.downloadUrl,
-            checksum = FileChecksum("SHA256", workItem.item.checksum),
+            checksum = FileChecksum("SHA-256", workItem.item.checksum),
             size = workItem.item.size,
             properties = requestCommon(workItem.item) ++ additionalDetail(workItem.item)
           ),

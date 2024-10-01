@@ -220,7 +220,7 @@ class SdesServiceSpec
             recipientOrSender = "recipient-or-sender",
             name = fileName,
             location = downloadUrl,
-            checksum = FileChecksum("SHA256", checksum),
+            checksum = FileChecksum("SHA-256", checksum),
             size = size,
             properties = List(
               FileProperty("/requestCommon/conversationID", submissionId),
@@ -293,7 +293,7 @@ class SdesServiceSpec
             recipientOrSender = "recipient-or-sender",
             name = fileName,
             location = downloadUrl,
-            checksum = FileChecksum("SHA256", checksum),
+            checksum = FileChecksum("SHA-256", checksum),
             size = size,
             properties = List(
               FileProperty("/requestCommon/conversationID", submissionId),
@@ -428,7 +428,7 @@ class SdesServiceSpec
         recipientOrSender = "recipient-or-sender",
         name = fileName,
         location = downloadUrl,
-        checksum = FileChecksum("SHA256", checksum),
+        checksum = FileChecksum("SHA-256", checksum),
         size = size,
         properties = List(
           FileProperty("/requestCommon/conversationID", submissionId),
