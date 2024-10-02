@@ -85,7 +85,7 @@ class SubmissionControllerSpec
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
   private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", Year.of(2024), "test.xml", "checksum", 1337L))
-  private val submittedGen: Gen[Submitted.type] = Gen.const(Submitted)
+  private val submittedGen: Gen[Submitted] = Gen.asciiPrintableStr.map(Submitted.apply)
   private val approvedGen: Gen[Approved.type] = Gen.const(Approved)
   private val rejectedGen: Gen[Rejected.type] = Gen.const(Rejected)
 
@@ -598,7 +598,7 @@ class SubmissionControllerSpec
           )
 
           val expectedSubmission = existingSubmission.copy(
-            state = Submitted,
+            state = Submitted("test.xml"),
             updated = now
           )
 

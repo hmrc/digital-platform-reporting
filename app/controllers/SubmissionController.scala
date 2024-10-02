@@ -176,19 +176,20 @@ class SubmissionController @Inject() (
   def submit(id: String): Action[AnyContent] = auth.async { implicit request =>
     submissionRepository.get(request.dprsId, id).flatMap {
       _.map { submission =>
-        if (submission.state.isInstanceOf[Validated]) {
+        submission.state match {
+          case state: Validated =>
 
-          val updatedSubmission = submission.copy(
-            state = Submitted,
-            updated = clock.instant()
-          )
+            val updatedSubmission = submission.copy(
+              state = Submitted(state.fileName),
+              updated = clock.instant()
+            )
 
-          for {
-            _ <- submissionService.submit(submission)
-            _ <- submissionRepository.save(updatedSubmission)
-          } yield Ok(Json.toJson(updatedSubmission))
-        } else {
-          Future.successful(Conflict)
+            for {
+              _ <- submissionService.submit(submission)
+              _ <- submissionRepository.save(updatedSubmission)
+            } yield Ok(Json.toJson(updatedSubmission))
+          case _ =>
+            Future.successful(Conflict)
         }
       }.getOrElse {
         Future.successful(NotFound)

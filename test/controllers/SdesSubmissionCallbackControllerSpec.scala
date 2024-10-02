@@ -99,7 +99,7 @@ class SdesSubmissionCallbackControllerSpec
         val submission = Submission(
           _id = submissionId,
           dprsId = "dprsId",
-          state = Submitted,
+          state = Submitted("test.xml"),
           created = now.minus(1, ChronoUnit.DAYS),
           updated = now.minus(1, ChronoUnit.DAYS)
         )

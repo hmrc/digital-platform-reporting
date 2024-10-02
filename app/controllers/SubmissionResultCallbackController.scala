@@ -80,7 +80,7 @@ class SubmissionResultCallbackController @Inject() (
 
   private def getSubmission(submissionId: String): EitherT[Future, Result, Submission] =
     OptionT(submissionRepository.getById(submissionId))
-      .filter(_.state.isInstanceOf[Submitted.type]).toRight(NotFound)
+      .filter(_.state.isInstanceOf[Submitted]).toRight(NotFound)
 
   private def handleBreResponse(breResponse: BREResponse_Type, submission: Submission): EitherT[Future, Result, Done] = {
     val now = clock.instant()

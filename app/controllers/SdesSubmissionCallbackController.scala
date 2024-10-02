@@ -40,7 +40,7 @@ class SdesSubmissionCallbackController @Inject()(
   def callback(): Action[NotificationCallback] = Action.async(parse.json[NotificationCallback]) { implicit request =>
     if (request.body.notification == NotificationType.FileProcessingFailure) {
       OptionT(submissionRepository.getById(request.body.correlationID))
-        .filter(_.state.isInstanceOf[Submitted.type])
+        .filter(_.state.isInstanceOf[Submitted])
         .semiflatMap { submission =>
 
           val timestamp = clock.instant()

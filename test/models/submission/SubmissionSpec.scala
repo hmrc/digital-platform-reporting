@@ -165,7 +165,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
     val submission = Submission(
       _id = "id",
       dprsId = "dprsId",
-      state = Submitted,
+      state = Submitted("test.xml"),
       created = created,
       updated = updated
     )
@@ -174,7 +174,8 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       "_id" -> "id",
       "dprsId" -> "dprsId",
       "state" -> Json.obj(
-        "type" -> "Submitted"
+        "type" -> "Submitted",
+        "fileName" -> "test.xml"
       ),
       "created" -> created,
       "updated" -> updated

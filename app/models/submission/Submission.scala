@@ -41,7 +41,7 @@ object Submission {
     case object Uploading extends State
     final case class UploadFailed(reason: String) extends State
     final case class Validated(downloadUrl: URL, platformOperatorId: String, reportingPeriod: Year, fileName: String, checksum: String, size: Long) extends State
-    case object Submitted extends State
+    final case class Submitted(fileName: String) extends State
     case object Approved extends State
     case object Rejected extends State
 
@@ -52,7 +52,7 @@ object Submission {
     private implicit lazy val uploadFailedFormat: OFormat[UploadFailed] = Json.format
     private implicit lazy val uploadingFormat: OFormat[Uploading.type] = singletonOFormat(Uploading)
     private implicit lazy val validatedFormat: OFormat[Validated] = Json.format
-    private implicit lazy val submittedFormat: OFormat[Submitted.type] = singletonOFormat(Submitted)
+    private implicit lazy val submittedFormat: OFormat[Submitted] = Json.format
     private implicit lazy val approvedFormat: OFormat[Approved.type] = singletonOFormat(Approved)
     private implicit lazy val rejectedFormat: OFormat[Rejected.type] = singletonOFormat(Rejected)
 
