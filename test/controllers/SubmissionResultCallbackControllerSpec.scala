@@ -110,7 +110,7 @@ class SubmissionResultCallbackControllerSpec
           val submission = Submission(
             _id = conversationId,
             dprsId = dprsId,
-            state = Submitted,
+            state = Submitted("test.xml"),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
           )
