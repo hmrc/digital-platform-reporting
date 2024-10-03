@@ -44,4 +44,7 @@ class AppConfig @Inject()(configuration: Configuration) {
 
   val SubmissionBaseUrl: String = configuration.get[Service]("microservice.services.report-submission").baseUrl
   val SubmissionBearerToken: String = configuration.get[String]("microservice.services.report-submission.bearer-token")
+
+  val DeliveredSubmissionsBaseUrl: String = configuration.get[Service]("microservice.services.view-submissions").baseUrl
+  val DeliveredSubmissionsBearerToken: String = configuration.get[String]("microservice.services.view-submissions.bearer-token")  
 }
