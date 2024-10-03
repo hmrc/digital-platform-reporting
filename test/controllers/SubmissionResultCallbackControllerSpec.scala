@@ -21,7 +21,7 @@ import models.submission.{CadxValidationError, Submission}
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Ready, Submitted}
 import org.apache.pekko.Done
-import org.mockito.ArgumentMatchers.{any, any as now}
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify, when}
 import org.scalatest.concurrent.ScalaFutures
@@ -76,6 +76,8 @@ class SubmissionResultCallbackControllerSpec
 
   private val conversationId = "conversationId"
   private val dprsId = "dprsId"
+  private val operatorId = "operatorId"
+  private val operatorName = "operatorName"
 
   private val approvedRequest = BREResponse_Type(
     requestCommon = RequestCommon_Type(
@@ -110,7 +112,9 @@ class SubmissionResultCallbackControllerSpec
           val submission = Submission(
             _id = conversationId,
             dprsId = dprsId,
-            state = Submitted("test.xml", "operatorId", Year.of(2024)),
+            operatorId = operatorId,
+            operatorName = operatorName,
+            state = Submitted("test.xml", Year.of(2024)),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
           )
@@ -130,7 +134,6 @@ class SubmissionResultCallbackControllerSpec
 
               val expectedSubmission = submission.copy(state = Approved(
                 fileName = "test.xml",
-                platformOperatorId = "operatorId",
                 reportingPeriod = Year.of(2024)
               ), updated = now)
 
@@ -188,7 +191,6 @@ class SubmissionResultCallbackControllerSpec
 
               val expectedSubmission = submission.copy(state = State.Rejected(
                 fileName = "test.xml",
-                platformOperatorId = "operatorId",
                 reportingPeriod = Year.of(2024)
               ), updated = now)
 
@@ -231,6 +233,8 @@ class SubmissionResultCallbackControllerSpec
           val submission = Submission(
             _id = conversationId,
             dprsId = dprsId,
+            operatorId = operatorId,
+            operatorName = operatorName,
             state = Ready,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -249,7 +253,6 @@ class SubmissionResultCallbackControllerSpec
 
             val expectedSubmission = submission.copy(state = State.Rejected(
               fileName = "test.xml",
-              platformOperatorId = "operatorId",
               reportingPeriod = Year.of(2024)
             ), updated = now)
 

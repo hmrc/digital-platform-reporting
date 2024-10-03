@@ -86,10 +86,10 @@ class SubmissionResultCallbackController @Inject() (
     submission.state match {
       case state: Submitted =>
         if (breResponse.requestDetail.GenericStatusMessage.ValidationResult.Status == generated.Accepted) {
-          EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Approved(state.fileName, state.platformOperatorId, state.reportingPeriod), updated = now)))
+          EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Approved(state.fileName, state.reportingPeriod), updated = now)))
         } else {
           for {
-            _ <- EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Rejected(state.fileName, state.platformOperatorId, state.reportingPeriod), updated = now)))
+            _ <- EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Rejected(state.fileName, state.reportingPeriod), updated = now)))
             _ <- saveErrors(submission._id, breResponse.requestDetail.GenericStatusMessage.ValidationErrors, now)
           } yield Done
         }

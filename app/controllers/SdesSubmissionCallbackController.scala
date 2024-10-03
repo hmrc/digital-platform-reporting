@@ -54,7 +54,7 @@ class SdesSubmissionCallbackController @Inject()(
 
               OptionT.liftF {
                 for {
-                  _ <- submissionRepository.save(submission.copy(state = Rejected(state.fileName, state.platformOperatorId, state.reportingPeriod), updated = timestamp))
+                  _ <- submissionRepository.save(submission.copy(state = Rejected(state.fileName, state.reportingPeriod), updated = timestamp))
                   _ <- cadxValidationErrorRepository.save(error)
                 } yield Ok
               }
