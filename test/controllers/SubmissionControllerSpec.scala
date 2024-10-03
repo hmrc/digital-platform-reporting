@@ -353,6 +353,7 @@ class SubmissionControllerSpec
 
     val downloadUrl = url"http://example.com/test.xml"
     val poid = "platformOperatorId"
+    val operatorId = "operatorId"
     val fileName = "test.xml"
     val checksum = "checksum"
     val size = 1337L
@@ -366,7 +367,7 @@ class SubmissionControllerSpec
           "must set the state of the submission to UpdateFailed and return OK" in {
 
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, checksum, size)))
+              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, operatorId, fileName, checksum, size)))
 
             val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
@@ -402,7 +403,7 @@ class SubmissionControllerSpec
           "must set the state of the submission to Validated and return OK" in {
 
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, checksum, size)))
+              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, operatorId, fileName, checksum, size)))
 
             val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
@@ -439,7 +440,7 @@ class SubmissionControllerSpec
         "must return CONFLICT" in {
 
           val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-            .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, checksum, size)))
+            .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, operatorId, fileName, checksum, size)))
 
           val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
@@ -468,7 +469,7 @@ class SubmissionControllerSpec
       "must return NOT_FOUND" in {
 
         val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-          .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, checksum, size)))
+          .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, operatorId, fileName, checksum, size)))
 
         when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
         when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
