@@ -32,6 +32,8 @@ final case class DeliveredSubmission(conversationId: String,
 
 object DeliveredSubmission {
   
+  implicit lazy val writes: OWrites[DeliveredSubmission] = Json.writes
+  
   implicit lazy val reads: Reads[DeliveredSubmission] = (
     (__ \ "conversationId").read[String] and
     (__ \ "fileName").read[String] and

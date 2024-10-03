@@ -32,6 +32,8 @@ final case class DeliveredSubmissionRequest(subscriptionId: String,
 
 object DeliveredSubmissionRequest {
 
+  implicit lazy val reads: Reads[DeliveredSubmissionRequest] = Json.using[Json.WithDefaultValues].reads
+
   implicit lazy val writes: OWrites[DeliveredSubmissionRequest] = {
     
     given OWrites[DeliveredSubmissionRequest] = (

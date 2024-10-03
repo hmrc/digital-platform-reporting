@@ -24,6 +24,8 @@ final case class DeliveredSubmissions(submissions: Seq[DeliveredSubmission],
 
 object DeliveredSubmissions {
 
+  implicit lazy val writes: OWrites[DeliveredSubmissions] = Json.writes
+  
   implicit lazy val reads: Reads[DeliveredSubmissions] = (
     (__ \ "submissionsListResponse" \ "responseDetails" \ "submissionsList").read[Seq[DeliveredSubmission]] and
     (__ \ "submissionsListResponse" \ "responseCommon" \ "resultsCount").read[Int]

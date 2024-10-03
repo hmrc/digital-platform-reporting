@@ -18,10 +18,67 @@ package models.submission
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
-import play.api.libs.json.Json
+import play.api.libs.json.*
 
 class DeliveredSubmissionRequestSpec extends AnyFreeSpec with Matchers {
 
+  ".reads" - {
+    
+    "must read json with all details" in {
+
+      val json = Json.obj(
+        "subscriptionId" -> "dprsId",
+        "assumedReporting" -> true,
+        "pageNumber" -> 2,
+        "sortBy" -> "PONAME",
+        "sortOrder" -> "ASC",
+        "reportingPeriod" -> 2025,
+        "operatorId" -> "operatorId",
+        "fileName" -> "file.xml",
+        "statuses" -> Json.arr(
+          JsString("REJECTED"),
+          JsString("SUCCESS")
+        )
+      )
+
+      val expectedRequest = DeliveredSubmissionRequest(
+        subscriptionId = "dprsId",
+        assumedReporting = true,
+        pageNumber = 2,
+        sortBy = DeliveredSubmissionSortBy.PlatformOperator,
+        sortOrder = SortOrder.Ascending,
+        reportingPeriod = Some(2025),
+        operatorId = Some("operatorId"),
+        fileName = Some("file.xml"),
+        statuses = Seq(DeliveredSubmissionStatus.Rejected, DeliveredSubmissionStatus.Success)
+      )
+
+      json.as[DeliveredSubmissionRequest] mustEqual expectedRequest
+    }
+    
+    "must read json details missing, using defaults instead" in {
+      
+      val json = Json.obj(
+        "subscriptionId" -> "dprsId",
+        "assumedReporting" -> true
+      )
+      
+      val expectedRequest = DeliveredSubmissionRequest(
+        subscriptionId = "dprsId",
+        assumedReporting = true,
+        pageNumber = 1,
+        sortBy = DeliveredSubmissionSortBy.SubmissionDate,
+        sortOrder = SortOrder.Descending,
+        reportingPeriod = None,
+        operatorId = None,
+        fileName = None,
+        statuses = Nil
+      )
+      
+      json.as[DeliveredSubmissionRequest] mustEqual expectedRequest
+    }
+  }
+  
   ".writes" - {
 
     "must write the correct json with all details" in {
