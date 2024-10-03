@@ -70,6 +70,8 @@ class SubmissionRepositorySpec
   private val submission = Submission(
     _id = "id",
     dprsId = "dprsId",
+    operatorId = "operatorId",
+    operatorName = "operatorName",
     state = Ready,
     created = created,
     updated = updated
@@ -90,7 +92,7 @@ class SubmissionRepositorySpec
     }
 
     "must update a submission in mongo when a there is a matching submission" in {
-      insert(submission.copy(state = Validated(url"http://example.com", "poid", Year.of(2024), "fileName", "checksum", 1337L))).futureValue
+      insert(submission.copy(state = Validated(url"http://example.com", Year.of(2024), "fileName", "checksum", 1337L))).futureValue
       repository.save(submission).futureValue
       findAll().futureValue must contain only submission
     }

@@ -26,6 +26,8 @@ import models.{urlFormat, yearFormat}
 final case class Submission(
                              _id: String,
                              dprsId: String,
+                             operatorId: String,
+                             operatorName: String,
                              state: Submission.State,
                              created: Instant,
                              updated: Instant
@@ -40,10 +42,10 @@ object Submission {
     case object Ready extends State
     case object Uploading extends State
     final case class UploadFailed(reason: String) extends State
-    final case class Validated(downloadUrl: URL, platformOperatorId: String, reportingPeriod: Year, fileName: String, checksum: String, size: Long) extends State
-    final case class Submitted(fileName: String) extends State
-    case object Approved extends State
-    case object Rejected extends State
+    final case class Validated(downloadUrl: URL, reportingPeriod: Year, fileName: String, checksum: String, size: Long) extends State
+    final case class Submitted(fileName: String, reportingPeriod: Year) extends State
+    final case class Approved(fileName: String, reportingPeriod: Year) extends State
+    final case class Rejected(fileName: String, reportingPeriod: Year) extends State
 
     private def singletonOFormat[A](a: A): OFormat[A] =
       OFormat(Reads.pure(a), OWrites[A](_ => Json.obj()))
@@ -53,8 +55,8 @@ object Submission {
     private implicit lazy val uploadingFormat: OFormat[Uploading.type] = singletonOFormat(Uploading)
     private implicit lazy val validatedFormat: OFormat[Validated] = Json.format
     private implicit lazy val submittedFormat: OFormat[Submitted] = Json.format
-    private implicit lazy val approvedFormat: OFormat[Approved.type] = singletonOFormat(Approved)
-    private implicit lazy val rejectedFormat: OFormat[Rejected.type] = singletonOFormat(Rejected)
+    private implicit lazy val approvedFormat: OFormat[Approved] = Json.format
+    private implicit lazy val rejectedFormat: OFormat[Rejected] = Json.format
 
     private implicit val jsonConfig: JsonConfiguration = JsonConfiguration(
       discriminator = "type",

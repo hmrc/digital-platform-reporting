@@ -116,9 +116,10 @@ class SubmissionServiceSpec
               val submission = Submission(
                 _id = submissionId,
                 dprsId = dprsId,
+                operatorId = "operatorId",
+                operatorName = "operatorName",
                 state = Validated(
                   downloadUrl = url"http://example.com",
-                  platformOperatorId = "poid",
                   reportingPeriod = Year.of(2024),
                   fileName = fileName,
                   checksum = "checksum",
@@ -188,9 +189,10 @@ class SubmissionServiceSpec
               val submission = Submission(
                 _id = submissionId,
                 dprsId = dprsId,
+                operatorId = "operatorId",
+                operatorName = "operatorName",
                 state = Validated(
                   downloadUrl = url"http://example.com",
-                  platformOperatorId = "poid",
                   reportingPeriod = Year.of(2024),
                   fileName = fileName,
                   checksum = "checksum",
@@ -257,9 +259,10 @@ class SubmissionServiceSpec
             val submission = Submission(
               _id = submissionId,
               dprsId = dprsId,
+              operatorId = "operatorId",
+              operatorName = "operatorName",
               state = Validated(
                 downloadUrl = url"http://example.com",
-                platformOperatorId = "poid",
                 reportingPeriod = Year.of(2024),
                 fileName = fileName,
                 checksum = "checksum",
@@ -333,9 +336,10 @@ class SubmissionServiceSpec
           val submission = Submission(
             _id = submissionId,
             dprsId = dprsId,
+            operatorId = "operatorId",
+            operatorName = "operatorName",
             state = Validated(
               downloadUrl = url"http://example.com",
-              platformOperatorId = "poid",
               reportingPeriod = Year.of(2024),
               fileName = fileName,
               checksum = "checksum",
@@ -377,6 +381,8 @@ class SubmissionServiceSpec
         val submission = Submission(
           _id = "id",
           dprsId = "dprsId",
+          operatorId = "operatorId",
+          operatorName = "operatorName",
           state = Ready,
           created = now,
           updated = now

@@ -77,9 +77,9 @@ class SdesSubmissionCallbackControllerSpec
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
   private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
-  private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", Year.of(2024), "test.xml", "checksum", 1337L))
-  private val approvedGen: Gen[Approved.type] = Gen.const(Approved)
-  private val rejectedGen: Gen[Rejected.type] = Gen.const(Rejected)
+  private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
+  private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
+  private val rejectedGen: Gen[Rejected] = Gen.const(Rejected("test.xml", Year.of(2024)))
 
   "callback" - {
 
@@ -99,7 +99,9 @@ class SdesSubmissionCallbackControllerSpec
         val submission = Submission(
           _id = submissionId,
           dprsId = "dprsId",
-          state = Submitted("test.xml"),
+          operatorId = "operatorId",
+          operatorName = "operatorName",
+          state = Submitted("test.xml", Year.of(2024)),
           created = now.minus(1, ChronoUnit.DAYS),
           updated = now.minus(1, ChronoUnit.DAYS)
         )
@@ -110,7 +112,7 @@ class SdesSubmissionCallbackControllerSpec
             .withBody(Json.toJson(notificationCallback))
 
           val expectedSubmission = submission.copy(
-            state = Rejected,
+            state = Rejected("test.xml", Year.of(2024)),
             updated = now
           )
 
@@ -157,6 +159,8 @@ class SdesSubmissionCallbackControllerSpec
         val submission = Submission(
           _id = submissionId,
           dprsId = "dprsId",
+          operatorId = "operatorId",
+          operatorName = "operatorName",
           state = state,
           created = now,
           updated = now

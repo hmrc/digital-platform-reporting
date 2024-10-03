@@ -94,7 +94,6 @@ class SdesServiceSpec
 
     val state = Validated(
       downloadUrl = downloadUrl,
-      platformOperatorId = "poid",
       reportingPeriod = Year.of(2024),
       fileName = fileName,
       checksum = checksum,

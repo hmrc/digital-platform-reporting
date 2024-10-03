@@ -40,22 +40,27 @@ class SdesSubmissionCallbackController @Inject()(
   def callback(): Action[NotificationCallback] = Action.async(parse.json[NotificationCallback]) { implicit request =>
     if (request.body.notification == NotificationType.FileProcessingFailure) {
       OptionT(submissionRepository.getById(request.body.correlationID))
-        .filter(_.state.isInstanceOf[Submitted])
-        .semiflatMap { submission =>
+        .flatMap { submission =>
+          submission.state match {
+            case state: Submitted =>
+              val timestamp = clock.instant()
 
-          val timestamp = clock.instant()
+              val error = CadxValidationError.FileError(
+                submissionId = submission._id,
+                code = "MDTP1",
+                detail = None,
+                created = timestamp
+              )
 
-          val error = CadxValidationError.FileError(
-            submissionId = submission._id,
-            code = "MDTP1",
-            detail = None,
-            created = timestamp
-          )
-
-          for {
-            _ <- submissionRepository.save(submission.copy(state = Rejected, updated = timestamp))
-            _ <- cadxValidationErrorRepository.save(error)
-          } yield Ok
+              OptionT.liftF {
+                for {
+                  _ <- submissionRepository.save(submission.copy(state = Rejected(state.fileName, state.reportingPeriod), updated = timestamp))
+                  _ <- cadxValidationErrorRepository.save(error)
+                } yield Ok
+              }
+            case _ =>
+              OptionT.none
+          }
         }.getOrElse(Ok)
     } else {
       logger.info(s"SDES callback received for submission: ${request.body.correlationID}, with status: ${request.body.notification}")

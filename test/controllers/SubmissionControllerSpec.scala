@@ -18,7 +18,7 @@ package controllers
 
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
-import models.submission.{Submission, UploadFailedRequest, UploadSuccessRequest}
+import models.submission.{StartSubmissionRequest, Submission, UploadFailedRequest, UploadSuccessRequest}
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
@@ -84,12 +84,14 @@ class SubmissionControllerSpec
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
   private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
-  private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", Year.of(2024), "test.xml", "checksum", 1337L))
-  private val submittedGen: Gen[Submitted] = Gen.asciiPrintableStr.map(Submitted.apply)
-  private val approvedGen: Gen[Approved.type] = Gen.const(Approved)
-  private val rejectedGen: Gen[Rejected.type] = Gen.const(Rejected)
+  private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
+  private val submittedGen: Gen[Submitted] = Gen.const(Submitted("test.xml", Year.of(2024)))
+  private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
+  private val rejectedGen: Gen[Rejected] = Gen.const(Rejected("test.xml", Year.of(2024)))
 
   private val dprsId = "dprsId"
+  private val operatorId = "operatorId"
+  private val operatorName = "operatorName"
   private val uuid = UUID.randomUUID().toString
 
   private val validEnrolments = Enrolments(Set(
@@ -108,10 +110,13 @@ class SubmissionControllerSpec
       "must create and save a new submission for the given DPRS id and return CREATED with the new submission body included" in {
 
         val request = FakeRequest(routes.SubmissionController.start(None))
+          .withJsonBody(Json.toJson(StartSubmissionRequest("operatorId", "operatorName")))
 
         val expectedSubmission = Submission(
           _id = uuid,
           dprsId = dprsId,
+          operatorId = operatorId,
+          operatorName = operatorName,
           state = Ready,
           created = now,
           updated = now
@@ -138,11 +143,14 @@ class SubmissionControllerSpec
         "must update the existing submission and return OK" in {
 
           val request = FakeRequest(routes.SubmissionController.start(Some(uuid)))
+            .withJsonBody(Json.toJson(StartSubmissionRequest("operatorId", "operatorName")))
 
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            state = Validated(url"http://example.com", "poid", Year.of(2024), "test.xml", "checksum", 1337L),
+            operatorId = operatorId,
+            operatorName = operatorName,
+            state = Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
           )
@@ -172,11 +180,14 @@ class SubmissionControllerSpec
         "must not update the existing submission and return CONFLICT" in {
 
           val request = FakeRequest(routes.SubmissionController.start(Some(uuid)))
+            .withJsonBody(Json.toJson(StartSubmissionRequest("operatorId", "operatorName")))
 
           val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
+            operatorId = operatorId,
+            operatorName = operatorName,
             state = state,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -200,6 +211,7 @@ class SubmissionControllerSpec
         "must return NOT FOUND" in {
 
           val request = FakeRequest(routes.SubmissionController.start(Some(uuid)))
+            .withJsonBody(Json.toJson(StartSubmissionRequest("operatorId", "operatorName")))
 
           when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
           when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
@@ -227,6 +239,8 @@ class SubmissionControllerSpec
         val existingSubmission = Submission(
           _id = uuid,
           dprsId = dprsId,
+          operatorId = operatorId,
+          operatorName = operatorName,
           state = Ready,
           created = now,
           updated = now
@@ -276,6 +290,8 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
+            operatorId = operatorId,
+            operatorName = operatorName,
             state = state,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -310,6 +326,8 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
+            operatorId = operatorId,
+            operatorName = operatorName,
             state = state,
             created = now,
             updated = now
@@ -352,7 +370,7 @@ class SubmissionControllerSpec
   "uploadSuccess" - {
 
     val downloadUrl = url"http://example.com/test.xml"
-    val poid = "platformOperatorId"
+    val operatorId = "operatorId"
     val fileName = "test.xml"
     val checksum = "checksum"
     val size = 1337L
@@ -366,12 +384,14 @@ class SubmissionControllerSpec
           "must set the state of the submission to UpdateFailed and return OK" in {
 
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, checksum, size)))
+              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)))
 
             val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
               _id = uuid,
               dprsId = dprsId,
+              operatorId = operatorId,
+              operatorName = operatorName,
               state = state,
               created = now.minus(1, ChronoUnit.DAYS),
               updated = now.minus(1, ChronoUnit.DAYS)
@@ -393,7 +413,7 @@ class SubmissionControllerSpec
 
             verify(mockSubmissionRepository).get(dprsId, uuid)
             verify(mockSubmissionRepository).save(expectedSubmission)
-            verify(mockValidationService).validateXml(downloadUrl, poid)
+            verify(mockValidationService).validateXml(downloadUrl, operatorId)
           }
         }
 
@@ -402,19 +422,21 @@ class SubmissionControllerSpec
           "must set the state of the submission to Validated and return OK" in {
 
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, checksum, size)))
+              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)))
 
             val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
               _id = uuid,
               dprsId = dprsId,
+              operatorId = operatorId,
+              operatorName = operatorName,
               state = state,
               created = now.minus(1, ChronoUnit.DAYS),
               updated = now.minus(1, ChronoUnit.DAYS)
             )
 
             val expectedSubmission = existingSubmission.copy(
-              state = Validated(downloadUrl, poid, Year.of(2024), fileName, checksum, size),
+              state = Validated(downloadUrl, Year.of(2024), fileName, checksum, size),
               updated = now
             )
 
@@ -429,7 +451,7 @@ class SubmissionControllerSpec
 
             verify(mockSubmissionRepository).get(dprsId, uuid)
             verify(mockSubmissionRepository).save(expectedSubmission)
-            verify(mockValidationService).validateXml(downloadUrl, poid)
+            verify(mockValidationService).validateXml(downloadUrl, operatorId)
           }
         }
       }
@@ -439,12 +461,14 @@ class SubmissionControllerSpec
         "must return CONFLICT" in {
 
           val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-            .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, checksum, size)))
+            .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)))
 
           val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
+            operatorId = operatorId,
+            operatorName = operatorName,
             state = state,
             created = now,
             updated = now
@@ -468,7 +492,7 @@ class SubmissionControllerSpec
       "must return NOT_FOUND" in {
 
         val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-          .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, poid, fileName, checksum, size)))
+          .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)))
 
         when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
         when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
@@ -501,6 +525,8 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
+            operatorId = operatorId,
+            operatorName = operatorName,
             state = state,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -538,6 +564,8 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
+            operatorId = operatorId,
+            operatorName = operatorName,
             state = state,
             created = now,
             updated = now
@@ -592,13 +620,15 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            state = Validated(url"http://example.com", "poid", Year.of(2024), "test.xml", "checksum", 1337L),
+            operatorId = operatorId,
+            operatorName = operatorName,
+            state = Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
           )
 
           val expectedSubmission = existingSubmission.copy(
-            state = Submitted("test.xml"),
+            state = Submitted("test.xml", Year.of(2024)),
             updated = now
           )
 
@@ -628,6 +658,8 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
+            operatorId = operatorId,
+            operatorName = operatorName,
             state = state,
             created = now,
             updated = now

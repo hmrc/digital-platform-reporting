@@ -18,7 +18,7 @@ package controllers
 
 import controllers.actions.AuthAction
 import models.submission.Submission.State.{Ready, Submitted, UploadFailed, Uploading, Validated}
-import models.submission.{Submission, UploadFailedRequest, UploadSuccessRequest}
+import models.submission.{StartSubmissionRequest, Submission, UploadFailedRequest, UploadSuccessRequest}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.SubmissionRepository
@@ -40,8 +40,8 @@ class SubmissionController @Inject() (
                                        submissionService: SubmissionService
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
-  def start(id: Option[String]): Action[AnyContent] =
-    auth.async { implicit request =>
+  def start(id: Option[String]): Action[StartSubmissionRequest] =
+    auth(parse.json[StartSubmissionRequest]).async { implicit request =>
       id.map { id =>
         submissionRepository.get(request.dprsId, id).flatMap {
           _.map { submission =>
@@ -67,6 +67,8 @@ class SubmissionController @Inject() (
         val submission = Submission(
           _id = uuidService.generate(),
           dprsId = request.dprsId,
+          operatorId = request.body.operatorId,
+          operatorName = request.body.operatorName,
           state = Ready,
           created = clock.instant(),
           updated = clock.instant()
@@ -116,7 +118,7 @@ class SubmissionController @Inject() (
       _.map { submission =>
         if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[Uploading.type] || submission.state.isInstanceOf[UploadFailed]) {
 
-          validationService.validateXml(request.body.downloadUrl, request.body.platformOperatorId).flatMap { maybeReportingPeriod =>
+          validationService.validateXml(request.body.downloadUrl, submission.operatorId).flatMap { maybeReportingPeriod =>
 
             val updatedSubmission = maybeReportingPeriod.left.map { error =>
               submission.copy(
@@ -127,7 +129,6 @@ class SubmissionController @Inject() (
               submission.copy(
                 state = Validated(
                   downloadUrl = request.body.downloadUrl,
-                  platformOperatorId = request.body.platformOperatorId,
                   reportingPeriod = reportingPeriod,
                   fileName = request.body.fileName,
                   checksum = request.body.checksum,
@@ -180,7 +181,7 @@ class SubmissionController @Inject() (
           case state: Validated =>
 
             val updatedSubmission = submission.copy(
-              state = Submitted(state.fileName),
+              state = Submitted(state.fileName, state.reportingPeriod),
               updated = clock.instant()
             )
 
