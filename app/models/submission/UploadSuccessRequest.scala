@@ -24,8 +24,6 @@ import java.net.URL
 final case class UploadSuccessRequest(
                                        dprsId: String,
                                        downloadUrl: URL,
-                                       platformOperatorId: String,
-                                       platformOperatorName: String,
                                        fileName: String,
                                        checksum: String,
                                        size: Long
