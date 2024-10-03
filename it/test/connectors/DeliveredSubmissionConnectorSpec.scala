@@ -117,8 +117,8 @@ class DeliveredSubmissionConnectorSpec extends AnyFreeSpec
         ),
         resultsCount = 10
       )
-      
-      val request = DeliveredSubmissionRequest("dprsId", false)
+
+      val request = DeliveredSubmissionRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Ascending, None, None, None, Nil)
 
       wireMockServer.stubFor(
         post(urlMatching(".*/dac6/dprs0503/v1"))
@@ -152,7 +152,7 @@ class DeliveredSubmissionConnectorSpec extends AnyFreeSpec
         )
       )
 
-      val request = DeliveredSubmissionRequest("dprsId", false)
+      val request = DeliveredSubmissionRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Ascending, None, None, None, Nil)
 
       wireMockServer.stubFor(
         post(urlMatching(".*/dac6/dprs0503/v1"))
@@ -179,7 +179,7 @@ class DeliveredSubmissionConnectorSpec extends AnyFreeSpec
       when(mockUuidService.generate())
         .thenReturn(correlationId.toString, conversationId.toString)
 
-      val request = DeliveredSubmissionRequest("dprsId", false)
+      val request = DeliveredSubmissionRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Ascending, None, None, None, Nil)
 
       wireMockServer.stubFor(
         post(urlMatching(".*/dac6/dprs0503/v1"))

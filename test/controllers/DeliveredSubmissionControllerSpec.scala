@@ -80,7 +80,6 @@ class DeliveredSubmissionControllerSpec
       when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(response)))
 
       val requestJson = Json.obj(
-        "subscriptionId" -> "dprsId",
         "assumedReporting" -> true,
         "pageNumber" -> 2,
         "sortBy" -> "PONAME",
@@ -113,7 +112,6 @@ class DeliveredSubmissionControllerSpec
       when(mockConnector.get(any())(any())).thenReturn(Future.successful(None))
 
       val requestJson = Json.obj(
-        "subscriptionId" -> "dprsId",
         "assumedReporting" -> true,
         "pageNumber" -> 2,
         "sortBy" -> "PONAME",

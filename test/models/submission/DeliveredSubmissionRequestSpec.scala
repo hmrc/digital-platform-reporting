@@ -22,63 +22,6 @@ import play.api.libs.json.*
 
 class DeliveredSubmissionRequestSpec extends AnyFreeSpec with Matchers {
 
-  ".reads" - {
-    
-    "must read json with all details" in {
-
-      val json = Json.obj(
-        "subscriptionId" -> "dprsId",
-        "assumedReporting" -> true,
-        "pageNumber" -> 2,
-        "sortBy" -> "PONAME",
-        "sortOrder" -> "ASC",
-        "reportingPeriod" -> 2025,
-        "operatorId" -> "operatorId",
-        "fileName" -> "file.xml",
-        "statuses" -> Json.arr(
-          JsString("REJECTED"),
-          JsString("SUCCESS")
-        )
-      )
-
-      val expectedRequest = DeliveredSubmissionRequest(
-        subscriptionId = "dprsId",
-        assumedReporting = true,
-        pageNumber = 2,
-        sortBy = DeliveredSubmissionSortBy.PlatformOperator,
-        sortOrder = SortOrder.Ascending,
-        reportingPeriod = Some(2025),
-        operatorId = Some("operatorId"),
-        fileName = Some("file.xml"),
-        statuses = Seq(DeliveredSubmissionStatus.Rejected, DeliveredSubmissionStatus.Success)
-      )
-
-      json.as[DeliveredSubmissionRequest] mustEqual expectedRequest
-    }
-    
-    "must read json details missing, using defaults instead" in {
-      
-      val json = Json.obj(
-        "subscriptionId" -> "dprsId",
-        "assumedReporting" -> true
-      )
-      
-      val expectedRequest = DeliveredSubmissionRequest(
-        subscriptionId = "dprsId",
-        assumedReporting = true,
-        pageNumber = 1,
-        sortBy = DeliveredSubmissionSortBy.SubmissionDate,
-        sortOrder = SortOrder.Descending,
-        reportingPeriod = None,
-        operatorId = None,
-        fileName = None,
-        statuses = Nil
-      )
-      
-      json.as[DeliveredSubmissionRequest] mustEqual expectedRequest
-    }
-  }
-  
   ".writes" - {
 
     "must write the correct json with all details" in {
@@ -123,7 +66,14 @@ class DeliveredSubmissionRequestSpec extends AnyFreeSpec with Matchers {
 
       val request = DeliveredSubmissionRequest(
         subscriptionId = "dprsId",
-        assumedReporting = false
+        assumedReporting = false,
+        pageNumber = 2,
+        sortBy = DeliveredSubmissionSortBy.SubmissionDate,
+        sortOrder = SortOrder.Ascending,
+        reportingPeriod = None,
+        operatorId = None,
+        fileName = None,
+        statuses = Nil
       )
 
       val expectedJson = Json.obj(
@@ -136,14 +86,46 @@ class DeliveredSubmissionRequestSpec extends AnyFreeSpec with Matchers {
           "requestDetails" -> Json.obj(
             "subscriptionId" -> "dprsId",
             "isManual" -> false,
-            "pageNumber" -> 1,
+            "pageNumber" -> 2,
             "sortBy" -> "SUBMISSIONDATE",
-            "sortOrder" -> "DSC"
+            "sortOrder" -> "ASC"
           )
         )
       )
 
       Json.toJsObject(request) mustEqual expectedJson
+    }
+  }
+
+  ".apply" - {
+
+    "must create a request from a subscription Id and an inbound request" in {
+
+      val subscriptionId = "dprsId"
+      val inboundRequest = DeliveredSubmissionInboundRequest(
+        assumedReporting = true,
+        pageNumber = 2,
+        sortBy = DeliveredSubmissionSortBy.PlatformOperator,
+        sortOrder = SortOrder.Ascending,
+        reportingPeriod = Some(2025),
+        operatorId = Some("operatorId"),
+        fileName = Some("file.xml"),
+        statuses = Seq(DeliveredSubmissionStatus.Rejected, DeliveredSubmissionStatus.Success)
+      )
+
+      val result = DeliveredSubmissionRequest(subscriptionId, inboundRequest)
+
+      result mustEqual DeliveredSubmissionRequest(
+        subscriptionId = subscriptionId,
+        assumedReporting = true,
+        pageNumber = 2,
+        sortBy = DeliveredSubmissionSortBy.PlatformOperator,
+        sortOrder = SortOrder.Ascending,
+        reportingPeriod = Some(2025),
+        operatorId = Some("operatorId"),
+        fileName = Some("file.xml"),
+        statuses = Seq(DeliveredSubmissionStatus.Rejected, DeliveredSubmissionStatus.Success)
+      )
     }
   }
 }

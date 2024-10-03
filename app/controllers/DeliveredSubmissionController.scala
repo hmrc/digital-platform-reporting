@@ -18,7 +18,7 @@ package controllers
 
 import connectors.DeliveredSubmissionConnector
 import controllers.actions.AuthAction
-import models.submission.DeliveredSubmissionRequest
+import models.submission.{DeliveredSubmissionInboundRequest, DeliveredSubmissionRequest}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -32,9 +32,11 @@ class DeliveredSubmissionController @Inject()(cc: ControllerComponents,
                                              (implicit ec: ExecutionContext)
   extends BackendController(cc) {
 
-  def get(): Action[DeliveredSubmissionRequest] = authenticate(parse.json[DeliveredSubmissionRequest]).async {
+  def get(): Action[DeliveredSubmissionInboundRequest] = authenticate(parse.json[DeliveredSubmissionInboundRequest]).async {
     implicit request =>
-      connector.get(request.body)
+      val outgoingRequest = DeliveredSubmissionRequest(request.dprsId, request.body)
+      
+      connector.get(outgoingRequest)
         .map {
           _.map(response => Ok(Json.toJson(response)))
             .getOrElse(NotFound)

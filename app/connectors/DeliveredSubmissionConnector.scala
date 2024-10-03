@@ -19,7 +19,6 @@ package connectors
 import config.AppConfig
 import connectors.DeliveredSubmissionConnector.GetDeliveredSubmissionsFailure
 import models.submission.{DeliveredSubmissionRequest, DeliveredSubmissions}
-import services.UuidService
 import play.api.http.HeaderNames
 import play.api.http.Status.{OK, UNPROCESSABLE_ENTITY}
 import play.api.libs.json.*

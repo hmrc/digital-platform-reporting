@@ -19,20 +19,31 @@ package models.submission
 import play.api.libs.functional.syntax.*
 import play.api.libs.json.*
 
-
-final case class DeliveredSubmissionRequest(subscriptionId: String,
-                                            assumedReporting: Boolean,
-                                            pageNumber: Int = 1, // TODO: Check if this is 0-based
-                                            sortBy: DeliveredSubmissionSortBy = DeliveredSubmissionSortBy.SubmissionDate,
-                                            sortOrder: SortOrder = SortOrder.Descending,
-                                            reportingPeriod: Option[Int] = None,
-                                            operatorId: Option[String] = None,
-                                            fileName: Option[String] = None,
-                                            statuses: Seq[DeliveredSubmissionStatus] = Nil)
+final case class DeliveredSubmissionRequest (subscriptionId: String,
+                                             assumedReporting: Boolean,
+                                             pageNumber: Int,
+                                             sortBy: DeliveredSubmissionSortBy,
+                                             sortOrder: SortOrder,
+                                             reportingPeriod: Option[Int],
+                                             operatorId: Option[String],
+                                             fileName: Option[String],
+                                             statuses: Seq[DeliveredSubmissionStatus])
 
 object DeliveredSubmissionRequest {
 
-  implicit lazy val reads: Reads[DeliveredSubmissionRequest] = Json.using[Json.WithDefaultValues].reads
+  def apply(subscriptionId: String, inboundRequest: DeliveredSubmissionInboundRequest): DeliveredSubmissionRequest =
+    DeliveredSubmissionRequest(
+      subscriptionId   = subscriptionId,
+      assumedReporting = inboundRequest.assumedReporting,
+      pageNumber       = inboundRequest.pageNumber,
+      sortBy           = inboundRequest.sortBy,
+      sortOrder        = inboundRequest.sortOrder,
+      reportingPeriod  = inboundRequest.reportingPeriod,
+      operatorId       = inboundRequest.operatorId,
+      fileName         = inboundRequest.fileName,
+      statuses         = inboundRequest.statuses
+      
+    )
 
   implicit lazy val writes: OWrites[DeliveredSubmissionRequest] = {
     
