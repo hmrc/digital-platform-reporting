@@ -180,7 +180,7 @@ class SubmissionController @Inject() (
           case state: Validated =>
 
             val updatedSubmission = submission.copy(
-              state = Submitted(state.fileName, state.reportingPeriod),
+              state = Submitted(state.fileName, state.platformOperatorId, state.reportingPeriod),
               updated = clock.instant()
             )
 

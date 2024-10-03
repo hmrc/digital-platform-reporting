@@ -110,7 +110,7 @@ class SubmissionResultCallbackControllerSpec
           val submission = Submission(
             _id = conversationId,
             dprsId = dprsId,
-            state = Submitted("test.xml", Year.of(2024)),
+            state = Submitted("test.xml", "operatorId", Year.of(2024)),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
           )
@@ -130,6 +130,7 @@ class SubmissionResultCallbackControllerSpec
 
               val expectedSubmission = submission.copy(state = Approved(
                 fileName = "test.xml",
+                platformOperatorId = "operatorId",
                 reportingPeriod = Year.of(2024)
               ), updated = now)
 
@@ -185,7 +186,11 @@ class SubmissionResultCallbackControllerSpec
                 )
                 .withBody(scalaxb.toXML(requestBody, "BREResponse", generated.defaultScope))
 
-              val expectedSubmission = submission.copy(state = State.Rejected, updated = now)
+              val expectedSubmission = submission.copy(state = State.Rejected(
+                fileName = "test.xml",
+                platformOperatorId = "operatorId",
+                reportingPeriod = Year.of(2024)
+              ), updated = now)
 
               val expectedFileError: CadxValidationError.FileError = CadxValidationError.FileError(
                 submissionId = submission._id,
@@ -242,7 +247,11 @@ class SubmissionResultCallbackControllerSpec
               )
               .withBody(scalaxb.toXML(approvedRequest, "BREResponse", generated.defaultScope))
 
-            val expectedSubmission = submission.copy(state = State.Rejected, updated = now)
+            val expectedSubmission = submission.copy(state = State.Rejected(
+              fileName = "test.xml",
+              platformOperatorId = "operatorId",
+              reportingPeriod = Year.of(2024)
+            ), updated = now)
 
             when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.failed(new RuntimeException()))

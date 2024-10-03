@@ -85,9 +85,9 @@ class SubmissionControllerSpec
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
   private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", "poid", Year.of(2024), "test.xml", "checksum", 1337L))
-  private val submittedGen: Gen[Submitted] = Gen.const(Submitted("test.xml", Year.of(2024)))
-  private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
-  private val rejectedGen: Gen[Rejected.type] = Gen.const(Rejected)
+  private val submittedGen: Gen[Submitted] = Gen.const(Submitted("test.xml", "operatorId", Year.of(2024)))
+  private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", "operatorId", Year.of(2024)))
+  private val rejectedGen: Gen[Rejected] = Gen.const(Rejected("test.xml", "operatorId", Year.of(2024)))
 
   private val dprsId = "dprsId"
   private val uuid = UUID.randomUUID().toString
@@ -592,13 +592,13 @@ class SubmissionControllerSpec
           val existingSubmission = Submission(
             _id = uuid,
             dprsId = dprsId,
-            state = Validated(url"http://example.com", "poid", Year.of(2024), "test.xml", "checksum", 1337L),
+            state = Validated(url"http://example.com", "operatorId", Year.of(2024), "test.xml", "checksum", 1337L),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
           )
 
           val expectedSubmission = existingSubmission.copy(
-            state = Submitted("test.xml", Year.of(2024)),
+            state = Submitted("test.xml", "operatorId", Year.of(2024)),
             updated = now
           )
 
