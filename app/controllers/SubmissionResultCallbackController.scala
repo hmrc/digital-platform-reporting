@@ -21,7 +21,7 @@ import cats.implicits.given
 import generated.{BREResponse_Type, Generated_BREResponse_TypeFormat, ValidationErrors_Type}
 import logging.Logging
 import models.submission.Submission.State
-import models.submission.Submission.State.{Approved, Rejected, Submitted}
+import models.submission.Submission.State.{Approved, Rejected, Submitted, Validated}
 import models.submission.{CadxValidationError, Submission}
 import org.apache.pekko.Done
 import play.api.Configuration
@@ -79,13 +79,17 @@ class SubmissionResultCallbackController @Inject() (
     EitherT.fromEither(request.headers.get("X-CONVERSATION-ID").toRight(BadRequest))
 
   private def getSubmission(submissionId: String): EitherT[Future, Result, Submission] =
-    OptionT(submissionRepository.getById(submissionId))
-      .filter(_.state.isInstanceOf[Submitted]).toRight(NotFound)
+    OptionT(submissionRepository.getById(submissionId)).toRight(NotFound)
 
   private def handleBreResponse(breResponse: BREResponse_Type, submission: Submission): EitherT[Future, Result, Done] = {
     val now = clock.instant()
     if (breResponse.requestDetail.GenericStatusMessage.ValidationResult.Status == generated.Accepted) {
-      EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Approved, updated = now)))
+      submission.state match {
+        case state: Submitted =>
+          EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Approved(state.fileName, state.reportingPeriod), updated = now)))
+        case _ =>
+          EitherT.left(Future.successful(NotFound))
+      }
     } else {
       for {
         _ <- EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Rejected, updated = now)))
