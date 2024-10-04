@@ -117,7 +117,7 @@ class SdesSubmissionCallbackControllerSpec
           )
 
           val expectedValidationError = CadxValidationError.FileError(
-            submissionId = submissionId, code = "MDTP1", detail = None, created = now
+            submissionId = submissionId, operatorId = "operatorId", code = "MDTP1", detail = None, created = now
           )
 
           when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))

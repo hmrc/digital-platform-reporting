@@ -67,10 +67,12 @@ class CadxValidationErrorRepositorySpec
     app.injector.instanceOf[CadxValidationErrorRepository]
 
   private val submissionId = "submissionId"
+  private val operatorId = "operatorId"
   private val created = Instant.now().truncatedTo(ChronoUnit.MILLIS)
 
   private val fileError: CadxValidationError.FileError = CadxValidationError.FileError(
     submissionId = submissionId,
+    operatorId = operatorId,
     code = "1",
     detail = Some("some detail"),
     created = created
@@ -78,6 +80,7 @@ class CadxValidationErrorRepositorySpec
 
   private val rowError: CadxValidationError.RowError = CadxValidationError.RowError(
     submissionId = submissionId,
+    operatorId = operatorId,
     code = "2",
     detail = Some("some more detail"),
     docRef = "docRef",
@@ -111,10 +114,12 @@ class CadxValidationErrorRepositorySpec
 
       insert(fileError).futureValue
       insert(rowError).futureValue
+      insert(fileError.copy(operatorId = "operatorId2")).futureValue
+      insert(rowError.copy(operatorId = "operatorId3")).futureValue
       insert(fileError.copy(submissionId = "submissionId2")).futureValue
       insert(rowError.copy(submissionId = "submissionId3")).futureValue
 
-      val source = repository.getErrorsForSubmission(submissionId)
+      val source = repository.getErrorsForSubmission(operatorId, submissionId)
       val result = source.runWith(Sink.fold(Seq.empty[CadxValidationError])(_ :+ _)).futureValue
       result must contain only (fileError, rowError)
     }

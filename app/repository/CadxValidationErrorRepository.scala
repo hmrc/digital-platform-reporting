@@ -17,7 +17,7 @@
 package repository
 
 import models.submission.CadxValidationError
-import org.apache.pekko.stream.scaladsl.{JsonFraming, Source}
+import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.{Done, NotUsed}
 import org.mongodb.scala.SingleObservableFuture
 import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions, Indexes}
@@ -45,8 +45,15 @@ class CadxValidationErrorRepository @Inject() (
   def save(validationError: CadxValidationError): Future[Done] =
     collection.insertOne(validationError).toFuture().map(_ => Done)
 
-  def getErrorsForSubmission(submissionId: String): Source[CadxValidationError, NotUsed] =
-    Source.fromPublisher(collection.find(Filters.eq("submissionId", submissionId)))
+  def getErrorsForSubmission(operatorId: String, submissionId: String): Source[CadxValidationError, NotUsed] =
+    Source.fromPublisher {
+      collection.find(
+        Filters.and(
+          Filters.eq("operatorId", operatorId),
+          Filters.eq("submissionId", submissionId)
+        )
+      )
+    }
 }
 
 object CadxValidationErrorRepository {
@@ -60,7 +67,7 @@ object CadxValidationErrorRepository {
           .expireAfter(configuration.get[Duration]("mongodb.cadx-validation-errors.ttl").toMinutes, TimeUnit.MINUTES)
       ),
       IndexModel(
-        Indexes.ascending("submissionId"),
+        Indexes.ascending("operatorId", "submissionId"),
         IndexOptions()
           .name("submissionId_idx")
       )
