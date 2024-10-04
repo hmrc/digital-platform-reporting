@@ -69,7 +69,7 @@ class ValidationServiceSpec
   "validateXml" - {
 
     val downloadUrl = url"http://example.com/test.xml"
-    val poid = "platformOperatorId"
+    val poid = "1"
 
     "must return the reporting period when the given file is valid" in {
 
