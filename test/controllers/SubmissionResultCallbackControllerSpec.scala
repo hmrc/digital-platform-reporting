@@ -196,7 +196,7 @@ class SubmissionResultCallbackControllerSpec
 
               val expectedFileError: CadxValidationError.FileError = CadxValidationError.FileError(
                 submissionId = submission._id,
-                operatorId = operatorId,
+                dprsId = dprsId,
                 code = "001",
                 detail = Some("detail"),
                 created = now
@@ -204,7 +204,7 @@ class SubmissionResultCallbackControllerSpec
 
               val expectedRowError1: CadxValidationError.RowError = CadxValidationError.RowError(
                 submissionId = submission._id,
-                operatorId = operatorId,
+                dprsId = dprsId,
                 code = "002",
                 detail = Some("detail 2"),
                 docRef = "1",

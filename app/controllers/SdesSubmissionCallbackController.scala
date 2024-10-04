@@ -47,7 +47,7 @@ class SdesSubmissionCallbackController @Inject()(
 
               val error = CadxValidationError.FileError(
                 submissionId = submission._id,
-                operatorId = submission.operatorId,
+                dprsId = submission.dprsId,
                 code = "MDTP1",
                 detail = None,
                 created = timestamp

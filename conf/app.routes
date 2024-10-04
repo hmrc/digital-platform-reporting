@@ -12,6 +12,7 @@ POST        /submission/:id/start-upload            controllers.SubmissionContro
 POST        /submission/:id/upload-success          controllers.SubmissionController.uploadSuccess(id: String)
 POST        /submission/:id/upload-failed           controllers.SubmissionController.uploadFailed(id: String)
 POST        /submission/:id/submit                  controllers.SubmissionController.submit(id: String)
+GET         /submission/:id/errors                  controllers.CadxValidationErrorController.getCadxValidationErrors(id: String)
 POST        /sdes/submission/callback               controllers.SdesSubmissionCallbackController.callback()
 POST        /cadx/submission/callback               controllers.SubmissionResultCallbackController.callback()
 

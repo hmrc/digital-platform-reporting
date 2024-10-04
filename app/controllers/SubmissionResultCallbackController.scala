@@ -90,7 +90,7 @@ class SubmissionResultCallbackController @Inject() (
         } else {
           for {
             _ <- EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Rejected(state.fileName, state.reportingPeriod), updated = now)))
-            _ <- saveErrors(submission._id, submission.operatorId, breResponse.requestDetail.GenericStatusMessage.ValidationErrors, now)
+            _ <- saveErrors(submission._id, submission.dprsId, breResponse.requestDetail.GenericStatusMessage.ValidationErrors, now)
           } yield Done
         }
       case _ =>
@@ -98,12 +98,12 @@ class SubmissionResultCallbackController @Inject() (
     }
   }
 
-  private def saveErrors(submissionId: String, operatorId: String, validationErrors: ValidationErrors_Type, timestamp: Instant): EitherT[Future, Result, Done] = {
+  private def saveErrors(submissionId: String, dprsId: String, validationErrors: ValidationErrors_Type, timestamp: Instant): EitherT[Future, Result, Done] = {
 
     val fileErrors = validationErrors.FileError.map { error =>
       CadxValidationError.FileError(
         submissionId = submissionId,
-        operatorId = operatorId,
+        dprsId = dprsId,
         code = error.Code,
         detail = error.Details.map(_.value),
         created = timestamp
@@ -115,7 +115,7 @@ class SubmissionResultCallbackController @Inject() (
       docRef <- error.DocRefIDInError
     } yield CadxValidationError.RowError(
       submissionId = submissionId,
-      operatorId = operatorId,
+      dprsId = dprsId,
       code = error.Code,
       detail = error.Details.map(_.value),
       docRef = docRef,

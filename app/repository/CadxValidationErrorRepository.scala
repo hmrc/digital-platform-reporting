@@ -45,11 +45,11 @@ class CadxValidationErrorRepository @Inject() (
   def save(validationError: CadxValidationError): Future[Done] =
     collection.insertOne(validationError).toFuture().map(_ => Done)
 
-  def getErrorsForSubmission(operatorId: String, submissionId: String): Source[CadxValidationError, NotUsed] =
+  def getErrorsForSubmission(dprsId: String, submissionId: String): Source[CadxValidationError, NotUsed] =
     Source.fromPublisher {
       collection.find(
         Filters.and(
-          Filters.eq("operatorId", operatorId),
+          Filters.eq("dprsId", dprsId),
           Filters.eq("submissionId", submissionId)
         )
       )
@@ -67,7 +67,7 @@ object CadxValidationErrorRepository {
           .expireAfter(configuration.get[Duration]("mongodb.cadx-validation-errors.ttl").toMinutes, TimeUnit.MINUTES)
       ),
       IndexModel(
-        Indexes.ascending("operatorId", "submissionId"),
+        Indexes.ascending("dprsId", "submissionId"),
         IndexOptions()
           .name("submissionId_idx")
       )
