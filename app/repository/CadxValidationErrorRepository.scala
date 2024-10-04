@@ -17,9 +17,9 @@
 package repository
 
 import models.submission.CadxValidationError
-import org.apache.pekko.Done
+import org.apache.pekko.stream.scaladsl.{JsonFraming, Source}
+import org.apache.pekko.{Done, NotUsed}
 import org.mongodb.scala.SingleObservableFuture
-import org.mongodb.scala.ObservableFuture
 import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions, Indexes}
 import play.api.Configuration
 import uk.gov.hmrc.mongo.MongoComponent
@@ -27,8 +27,8 @@ import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class CadxValidationErrorRepository @Inject() (
@@ -45,9 +45,8 @@ class CadxValidationErrorRepository @Inject() (
   def save(validationError: CadxValidationError): Future[Done] =
     collection.insertOne(validationError).toFuture().map(_ => Done)
 
-  // TODO should this include a limit?
-  def getErrorsForSubmission(submissionId: String): Future[Seq[CadxValidationError]] =
-    collection.find(Filters.eq("submissionId", submissionId)).toFuture()
+  def getErrorsForSubmission(submissionId: String): Source[CadxValidationError, NotUsed] =
+    Source.fromPublisher(collection.find(Filters.eq("submissionId", submissionId)))
 }
 
 object CadxValidationErrorRepository {
