@@ -17,8 +17,8 @@
 package models.operator.responses
 
 import models.operator.NotificationType
-import play.api.libs.json.*
 import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
 
 import java.time.Instant
 
@@ -34,9 +34,9 @@ object NotificationDetails {
 
   lazy val downstreamReads: Reads[NotificationDetails] = (
     (__ \ "NotificationType").read[NotificationType] and
-    (__ \ "IsActiveSeller").readNullable[Boolean] and
-    (__ \ "IsDueDiligence").readNullable[Boolean] and
-    (__ \ "FirstNotifiedReportingPeriod").read[Int] and
-    (__ \ "ReceivedDateTime").read[Instant]
-  )(NotificationDetails.apply _)
+      (__ \ "IsActiveSeller").readNullable[Boolean] and
+      (__ \ "IsDueDiligence").readNullable[Boolean] and
+      (__ \ "FirstNotifiedReportingPeriod").read[Int] and
+      (__ \ "ReceivedDateTime").read[Instant]
+    )(NotificationDetails.apply)
 }

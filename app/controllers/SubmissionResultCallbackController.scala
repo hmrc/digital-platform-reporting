@@ -35,13 +35,12 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.NodeSeq
 
 @Singleton
-class SubmissionResultCallbackController @Inject() (
-                                                     cc: ControllerComponents,
-                                                     submissionRepository: SubmissionRepository,
-                                                     cadxValidationErrorRepository: CadxValidationErrorRepository,
-                                                     clock: Clock,
-                                                     configuration: Configuration
-                                                   )(using ExecutionContext) extends BackendController(cc) with Logging {
+class SubmissionResultCallbackController @Inject()(cc: ControllerComponents,
+                                                   submissionRepository: SubmissionRepository,
+                                                   cadxValidationErrorRepository: CadxValidationErrorRepository,
+                                                   clock: Clock,
+                                                   configuration: Configuration)
+                                                  (using ExecutionContext) extends BackendController(cc) with Logging {
 
   private val expectedBearerToken: String = configuration.get[String]("cadx.incoming-bearer-token")
   private val expectedAuthHeader: String = s"Bearer $expectedBearerToken"
@@ -49,12 +48,12 @@ class SubmissionResultCallbackController @Inject() (
   def callback(): Action[NodeSeq] = Action.async(parse.xml) { implicit request =>
 
     val result = for {
-      _               <- checkAuth
-      correlationId   <- validateCorrelationId
-      conversationId  <- validateConversationId
-      breResponse     <- parseBody(correlationId)
-      submission      <- getSubmission(conversationId)
-      _               <- handleBreResponse(breResponse, submission)
+      _ <- checkAuth
+      correlationId <- validateCorrelationId
+      conversationId <- validateConversationId
+      breResponse <- parseBody(correlationId)
+      submission <- getSubmission(conversationId)
+      _ <- handleBreResponse(breResponse, submission)
     } yield NoContent
 
     result.merge
@@ -111,7 +110,7 @@ class SubmissionResultCallbackController @Inject() (
     }
 
     val rowErrors = for {
-      error  <- validationErrors.RecordError
+      error <- validationErrors.RecordError
       docRef <- error.DocRefIDInError
     } yield CadxValidationError.RowError(
       submissionId = submissionId,

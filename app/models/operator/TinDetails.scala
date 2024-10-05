@@ -16,28 +16,26 @@
 
 package models.operator
 
-import play.api.libs.json._
-import play.api.libs.functional.syntax._
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
 
-final case class TinDetails(
-                             tin: String,
-                             tinType: TinType,
-                             issuedBy: String
-                           )
+final case class TinDetails(tin: String,
+                            tinType: TinType,
+                            issuedBy: String)
 
 object TinDetails {
 
   lazy val defaultFormat: OFormat[TinDetails] = Json.format
-  
+
   lazy val downstreamWrites: OWrites[TinDetails] = (
     (__ \ "TIN").write[String] and
-    (__ \ "TINType").write[TinType] and
-    (__ \ "IssuedBy").write[String]
-  )(o => Tuple.fromProductTyped(o))
-  
+      (__ \ "TINType").write[TinType] and
+      (__ \ "IssuedBy").write[String]
+    )(o => Tuple.fromProductTyped(o))
+
   lazy val downstreamReads: Reads[TinDetails] = (
     (__ \ "TIN").read[String] and
-    (__ \ "TINType").read[TinType] and
-    (__ \ "IssuedBy").read[String]
-  )(TinDetails.apply _)
+      (__ \ "TINType").read[TinType] and
+      (__ \ "IssuedBy").read[String]
+    )(TinDetails.apply)
 }

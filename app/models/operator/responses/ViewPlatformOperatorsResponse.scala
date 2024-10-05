@@ -21,18 +21,18 @@ import play.api.libs.json.*
 case class ViewPlatformOperatorsResponse(platformOperators: Seq[PlatformOperator])
 
 object ViewPlatformOperatorsResponse {
-  
+
   lazy val defaultWrites: OWrites[ViewPlatformOperatorsResponse] = {
-    
+
     given OWrites[PlatformOperator] = PlatformOperator.defaultWrites
-    
+
     Json.writes
   }
-  
+
   lazy val downstreamReads: Reads[ViewPlatformOperatorsResponse] = {
-    
+
     given Reads[PlatformOperator] = PlatformOperator.downstreamReads
-    
-    (__ \ "ViewPODetails" \ "ResponseDetails" \ "PlatformOperatorDetails").read[Seq[PlatformOperator]].map(ViewPlatformOperatorsResponse.apply _)
+
+    (__ \ "ViewPODetails" \ "ResponseDetails" \ "PlatformOperatorDetails").read[Seq[PlatformOperator]].map(ViewPlatformOperatorsResponse.apply)
   }
 }

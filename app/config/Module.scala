@@ -26,7 +26,7 @@ import java.time.Clock
 
 class Module extends play.api.inject.Module {
 
-  override def bindings(environment: Environment, configuration: Configuration): collection.Seq[Binding[_]] =
+  override def bindings(environment: Environment, configuration: Configuration): collection.Seq[Binding[?]] =
     Seq(
       bind[AppConfig].toSelf.eagerly(),
       bind[Clock].toInstance(Clock.systemUTC()),
