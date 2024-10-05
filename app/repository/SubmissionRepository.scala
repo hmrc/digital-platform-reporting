@@ -18,7 +18,7 @@ package repository
 
 import models.submission.Submission
 import org.apache.pekko.Done
-import org.mongodb.scala.SingleObservableFuture
+import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import org.mongodb.scala.model.*
 import play.api.Configuration
 import uk.gov.hmrc.mongo.MongoComponent
@@ -62,6 +62,12 @@ class SubmissionRepository @Inject() (
       )
     ).limit(1).headOption()
   }
+  
+  def getBySubscriptionId(dprsId: String): Future[Seq[Submission]] = Mdc.preservingMdc {
+    collection.find(
+      filter = Filters.eq("dprsId", dprsId)
+    ).toFuture()
+  }
 
   def getById(id: String): Future[Option[Submission]] = Mdc.preservingMdc {
     collection.find(
@@ -80,5 +86,10 @@ object SubmissionRepository {
           .name("updated_ttl_idx")
           .expireAfter(configuration.get[Duration]("mongodb.submission.ttl").toMinutes, TimeUnit.MINUTES)
       ),
+      IndexModel(
+        Indexes.ascending("dprsId"),
+        IndexOptions()
+          .name("dprs_id_idx")
+      )
     )
 }

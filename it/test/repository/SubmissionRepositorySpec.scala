@@ -116,12 +116,29 @@ class SubmissionRepositorySpec
       repository.get("dprsId", "id2").futureValue mustBe None
     }
 
-    "must return None when the id matches but the dprsId doesn not" in {
+    "must return None when the id matches but the dprsId does not" in {
       insert(submission).futureValue
       repository.get("dprsId2", "id").futureValue mustBe None
     }
+  }
+  
+  "getBySubscriptionId" - {
 
-    mustPreserveMdc(repository.get("dprsId", "id"))
+    "must retrieve the right submissions from mongo" in {
+      val submission2 = submission.copy(_id = "id2")
+      val submission3 = submission.copy(_id = "id3", dprsId = "dprsId2")
+      insert(submission).futureValue
+      insert(submission2).futureValue
+      insert(submission3).futureValue
+      repository.getBySubscriptionId("dprsId").futureValue mustEqual Seq(submission, submission2)
+    }
+
+    "must return None when no submissions exist" in {
+      insert(submission).futureValue
+      repository.getBySubscriptionId("dprsId2").futureValue mustBe Nil
+    }
+
+    mustPreserveMdc(repository.getBySubscriptionId("dprsId"))
   }
 
   "getById" - {
