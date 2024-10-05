@@ -18,6 +18,8 @@ package repository
 
 import models.submission.{CadxValidationError, Submission}
 import models.submission.Submission.State.{Ready, Validated}
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.Sink
 import org.mongodb.scala.model.Indexes
 import org.scalactic.source.Position
 import org.scalatest.concurrent.IntegrationPatience
@@ -65,10 +67,12 @@ class CadxValidationErrorRepositorySpec
     app.injector.instanceOf[CadxValidationErrorRepository]
 
   private val submissionId = "submissionId"
+  private val dprsId = "operatorId"
   private val created = Instant.now().truncatedTo(ChronoUnit.MILLIS)
 
   private val fileError: CadxValidationError.FileError = CadxValidationError.FileError(
     submissionId = submissionId,
+    dprsId = dprsId,
     code = "1",
     detail = Some("some detail"),
     created = created
@@ -76,6 +80,7 @@ class CadxValidationErrorRepositorySpec
 
   private val rowError: CadxValidationError.RowError = CadxValidationError.RowError(
     submissionId = submissionId,
+    dprsId = dprsId,
     code = "2",
     detail = Some("some more detail"),
     docRef = "docRef",
@@ -105,13 +110,17 @@ class CadxValidationErrorRepositorySpec
 
     "must return all errors for the given submission id" in {
 
+      given Materializer = app.materializer
+
       insert(fileError).futureValue
       insert(rowError).futureValue
+      insert(fileError.copy(dprsId = "dprsId2")).futureValue
+      insert(rowError.copy(dprsId = "dprsId3")).futureValue
       insert(fileError.copy(submissionId = "submissionId2")).futureValue
       insert(rowError.copy(submissionId = "submissionId3")).futureValue
 
-      val result = repository.getErrorsForSubmission(submissionId).futureValue
-
+      val source = repository.getErrorsForSubmission(dprsId, submissionId)
+      val result = source.runWith(Sink.fold(Seq.empty[CadxValidationError])(_ :+ _)).futureValue
       result must contain only (fileError, rowError)
     }
   }
