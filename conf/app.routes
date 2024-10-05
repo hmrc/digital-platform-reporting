@@ -22,5 +22,3 @@ PUT         /platform-operator                  controllers.PlatformOperatorCont
 DELETE      /platform-operator/:operatorId      controllers.PlatformOperatorController.delete(operatorId: String)
 GET         /platform-operator                  controllers.PlatformOperatorController.get()
 GET         /platform-operator/:operatorId      controllers.PlatformOperatorController.getOne(operatorId: String)
-
-POST        /delivered-submissions              controllers.DeliveredSubmissionController.get()
