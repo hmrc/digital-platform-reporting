@@ -16,40 +16,16 @@
 
 package models.submission
 
-import java.time.Instant
 import play.api.libs.json.{Json, OWrites}
 
-final case class SubmissionSummary(submissionId: String,
-                                   fileName: String,
-                                   operatorId: String,
-                                   operatorName: String,
-                                   reportingPeriod: String,
-                                   submissionDateTime: Instant,
-                                   status: DeliveredSubmissionStatus)
+final case class SubmissionSummary(deliveredSubmissions: Seq[DeliveredSubmission],
+                                   localSubmissions: Seq[Submission]) {
+  
+  lazy val isEmpty: Boolean = deliveredSubmissions.isEmpty && localSubmissions.isEmpty
+  lazy val nonEmpty: Boolean = !isEmpty
+}
 
 object SubmissionSummary {
   
   implicit lazy val writes: OWrites[SubmissionSummary] = Json.writes
-  
-  def apply(deliveredSubmission: DeliveredSubmission): SubmissionSummary =
-    SubmissionSummary(
-      submissionId = deliveredSubmission.conversationId,
-      fileName = deliveredSubmission.fileName,
-      operatorId = deliveredSubmission.operatorId,
-      operatorName = deliveredSubmission.operatorName,
-      reportingPeriod = deliveredSubmission.reportingPeriod,
-      submissionDateTime = deliveredSubmission.submissionDateTime,
-      status = deliveredSubmission.submissionStatus
-    )
-    
-  def apply(submission: Submission, fileName: String, reportingPeriod: String): SubmissionSummary =
-    SubmissionSummary(
-      submissionId = submission._id,
-      fileName = fileName,
-      operatorId = submission.operatorId,
-      operatorName = submission.operatorName,
-      reportingPeriod = reportingPeriod,
-      submissionDateTime = submission.created,
-      status = DeliveredSubmissionStatus.Pending
-    )
 }
