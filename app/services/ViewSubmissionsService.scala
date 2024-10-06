@@ -17,7 +17,7 @@
 package services
 
 import connectors.DeliveredSubmissionConnector
-import models.submission.{DeliveredSubmissionRequest, Submission, SubmissionSummary}
+import models.submission.{ViewSubmissionsRequest, Submission, SubmissionSummary}
 import repository.SubmissionRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -28,7 +28,7 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
                                        repository: SubmissionRepository)
                                       (implicit ec: ExecutionContext) {
 
-  def getSubmissions(request: DeliveredSubmissionRequest)(implicit hc: HeaderCarrier): Future[SubmissionSummary] =
+  def getSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionSummary] =
     for {
       deliveredSubmissions  <- connector.get(request)
       repositorySubmissions <- repository.getBySubscriptionId(request.subscriptionId)

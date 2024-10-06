@@ -20,7 +20,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.{JsString, Json}
 
-class DeliveredSubmissionInboundRequestSpec extends AnyFreeSpec with Matchers {
+class ViewSubmissionsInboundRequestSpec extends AnyFreeSpec with Matchers {
 
   ".reads" - {
 
@@ -40,7 +40,7 @@ class DeliveredSubmissionInboundRequestSpec extends AnyFreeSpec with Matchers {
         )
       )
 
-      val expectedRequest = DeliveredSubmissionInboundRequest(
+      val expectedRequest = ViewSubmissionsInboundRequest(
         assumedReporting = true,
         pageNumber = 2,
         sortBy = DeliveredSubmissionSortBy.PlatformOperator,
@@ -51,7 +51,7 @@ class DeliveredSubmissionInboundRequestSpec extends AnyFreeSpec with Matchers {
         statuses = Seq(DeliveredSubmissionStatus.Rejected, DeliveredSubmissionStatus.Success)
       )
 
-      json.as[DeliveredSubmissionInboundRequest] mustEqual expectedRequest
+      json.as[ViewSubmissionsInboundRequest] mustEqual expectedRequest
     }
 
     "must read json details missing, using defaults instead" in {
@@ -60,7 +60,7 @@ class DeliveredSubmissionInboundRequestSpec extends AnyFreeSpec with Matchers {
         "assumedReporting" -> true
       )
 
-      val expectedRequest = DeliveredSubmissionInboundRequest(
+      val expectedRequest = ViewSubmissionsInboundRequest(
         assumedReporting = true,
         pageNumber = 1,
         sortBy = DeliveredSubmissionSortBy.SubmissionDate,
@@ -71,7 +71,7 @@ class DeliveredSubmissionInboundRequestSpec extends AnyFreeSpec with Matchers {
         statuses = Nil
       )
 
-      json.as[DeliveredSubmissionInboundRequest] mustEqual expectedRequest
+      json.as[ViewSubmissionsInboundRequest] mustEqual expectedRequest
     }
   }
 
