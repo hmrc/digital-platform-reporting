@@ -18,11 +18,11 @@ package controllers
 
 import controllers.actions.AuthAction
 import models.submission.Submission.State.{Ready, Submitted, UploadFailed, Uploading, Validated}
-import models.submission.{StartSubmissionRequest, Submission, UploadFailedRequest, UploadSuccessRequest}
+import models.submission.*
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.SubmissionRepository
-import services.{SubmissionService, UuidService, ValidationService}
+import services.{SubmissionService, UuidService, ValidationService, ViewSubmissionsService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.Clock
@@ -37,7 +37,8 @@ class SubmissionController @Inject() (
                                        submissionRepository: SubmissionRepository,
                                        auth: AuthAction,
                                        validationService: ValidationService,
-                                       submissionService: SubmissionService
+                                       submissionService: SubmissionService,
+                                       viewSubmissionsService: ViewSubmissionsService
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def start(id: Option[String]): Action[StartSubmissionRequest] =
@@ -196,5 +197,14 @@ class SubmissionController @Inject() (
         Future.successful(NotFound)
       }
     }
+  }
+
+  def list(): Action[DeliveredSubmissionInboundRequest] = auth(parse.json[DeliveredSubmissionInboundRequest]).async {
+    implicit request =>
+      val outboundRequest = DeliveredSubmissionRequest(request.dprsId, request.body)
+
+      viewSubmissionsService.getSubmissions(outboundRequest).map { response =>
+        if (response.nonEmpty) Ok(Json.toJson(response)) else NotFound
+      }
   }
 }
