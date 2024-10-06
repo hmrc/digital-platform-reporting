@@ -19,20 +19,20 @@ package models.submission
 import play.api.libs.functional.syntax.*
 import play.api.libs.json.*
 
-final case class DeliveredSubmissionRequest (subscriptionId: String,
-                                             assumedReporting: Boolean,
-                                             pageNumber: Int,
-                                             sortBy: DeliveredSubmissionSortBy,
-                                             sortOrder: SortOrder,
-                                             reportingPeriod: Option[Int],
-                                             operatorId: Option[String],
-                                             fileName: Option[String],
-                                             statuses: Seq[DeliveredSubmissionStatus])
+final case class ViewSubmissionsRequest(subscriptionId: String,
+                                        assumedReporting: Boolean,
+                                        pageNumber: Int,
+                                        sortBy: DeliveredSubmissionSortBy,
+                                        sortOrder: SortOrder,
+                                        reportingPeriod: Option[Int],
+                                        operatorId: Option[String],
+                                        fileName: Option[String],
+                                        statuses: Seq[DeliveredSubmissionStatus])
 
-object DeliveredSubmissionRequest {
+object ViewSubmissionsRequest {
 
-  def apply(subscriptionId: String, inboundRequest: DeliveredSubmissionInboundRequest): DeliveredSubmissionRequest =
-    DeliveredSubmissionRequest(
+  def apply(subscriptionId: String, inboundRequest: ViewSubmissionsInboundRequest): ViewSubmissionsRequest =
+    ViewSubmissionsRequest(
       subscriptionId   = subscriptionId,
       assumedReporting = inboundRequest.assumedReporting,
       pageNumber       = inboundRequest.pageNumber,
@@ -45,9 +45,9 @@ object DeliveredSubmissionRequest {
       
     )
 
-  implicit lazy val writes: OWrites[DeliveredSubmissionRequest] = {
+  implicit lazy val writes: OWrites[ViewSubmissionsRequest] = {
     
-    given OWrites[DeliveredSubmissionRequest] = (
+    given OWrites[ViewSubmissionsRequest] = (
       (__ \ "subscriptionId").write[String] and
       (__ \ "isManual").write[Boolean] and
       (__ \ "pageNumber").write[Int] and

@@ -734,8 +734,8 @@ class SubmissionControllerSpec
         status(result) mustEqual OK
         contentAsJson(result) mustEqual Json.toJson(summary)
 
-        val expectedInboundRequest = DeliveredSubmissionInboundRequest(false)
-        val expectedRequest = DeliveredSubmissionRequest(dprsId, expectedInboundRequest)
+        val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
+        val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
         verify(mockViewSubmissionsService, times(1)).getSubmissions(eqTo(expectedRequest))(any())
       }
     }
@@ -769,8 +769,8 @@ class SubmissionControllerSpec
         status(result) mustEqual OK
         contentAsJson(result) mustEqual Json.toJson(summary)
 
-        val expectedInboundRequest = DeliveredSubmissionInboundRequest(false)
-        val expectedRequest = DeliveredSubmissionRequest(dprsId, expectedInboundRequest)
+        val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
+        val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
         verify(mockViewSubmissionsService, times(1)).getSubmissions(eqTo(expectedRequest))(any())
       }
     }
@@ -815,8 +815,8 @@ class SubmissionControllerSpec
         status(result) mustEqual OK
         contentAsJson(result) mustEqual Json.toJson(summary)
 
-        val expectedInboundRequest = DeliveredSubmissionInboundRequest(false)
-        val expectedRequest = DeliveredSubmissionRequest(dprsId, expectedInboundRequest)
+        val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
+        val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
         verify(mockViewSubmissionsService, times(1)).getSubmissions(eqTo(expectedRequest))(any())
       }
     }
@@ -838,8 +838,8 @@ class SubmissionControllerSpec
 
         status(result) mustEqual NOT_FOUND
         
-        val expectedInboundRequest = DeliveredSubmissionInboundRequest(false)
-        val expectedRequest = DeliveredSubmissionRequest(dprsId, expectedInboundRequest)
+        val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
+        val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
         verify(mockViewSubmissionsService, times(1)).getSubmissions(eqTo(expectedRequest))(any())
       }
     }

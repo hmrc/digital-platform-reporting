@@ -20,13 +20,13 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.*
 
-class DeliveredSubmissionRequestSpec extends AnyFreeSpec with Matchers {
+class ViewSubmissionsRequestSpec extends AnyFreeSpec with Matchers {
 
   ".writes" - {
 
     "must write the correct json with all details" in {
 
-      val request = DeliveredSubmissionRequest(
+      val request = ViewSubmissionsRequest(
         subscriptionId = "dprsId",
         assumedReporting = false,
         pageNumber = 2,
@@ -64,7 +64,7 @@ class DeliveredSubmissionRequestSpec extends AnyFreeSpec with Matchers {
 
     "must write the correct json with minimal details" in {
 
-      val request = DeliveredSubmissionRequest(
+      val request = ViewSubmissionsRequest(
         subscriptionId = "dprsId",
         assumedReporting = false,
         pageNumber = 2,
@@ -102,7 +102,7 @@ class DeliveredSubmissionRequestSpec extends AnyFreeSpec with Matchers {
     "must create a request from a subscription Id and an inbound request" in {
 
       val subscriptionId = "dprsId"
-      val inboundRequest = DeliveredSubmissionInboundRequest(
+      val inboundRequest = ViewSubmissionsInboundRequest(
         assumedReporting = true,
         pageNumber = 2,
         sortBy = DeliveredSubmissionSortBy.PlatformOperator,
@@ -113,9 +113,9 @@ class DeliveredSubmissionRequestSpec extends AnyFreeSpec with Matchers {
         statuses = Seq(DeliveredSubmissionStatus.Rejected, DeliveredSubmissionStatus.Success)
       )
 
-      val result = DeliveredSubmissionRequest(subscriptionId, inboundRequest)
+      val result = ViewSubmissionsRequest(subscriptionId, inboundRequest)
 
-      result mustEqual DeliveredSubmissionRequest(
+      result mustEqual ViewSubmissionsRequest(
         subscriptionId = subscriptionId,
         assumedReporting = true,
         pageNumber = 2,

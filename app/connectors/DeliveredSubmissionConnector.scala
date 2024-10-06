@@ -18,7 +18,7 @@ package connectors
 
 import config.AppConfig
 import connectors.DeliveredSubmissionConnector.GetDeliveredSubmissionsFailure
-import models.submission.{DeliveredSubmissionRequest, DeliveredSubmissions}
+import models.submission.{ViewSubmissionsRequest, DeliveredSubmissions}
 import play.api.http.HeaderNames
 import play.api.http.Status.{OK, UNPROCESSABLE_ENTITY}
 import play.api.libs.json.*
@@ -39,7 +39,7 @@ class DeliveredSubmissionConnector @Inject()(httpClient: HttpClientV2,
                                              appConfig: AppConfig)
                                             (implicit ec: ExecutionContext) {
 
-  def get(request: DeliveredSubmissionRequest)
+  def get(request: ViewSubmissionsRequest)
          (implicit hc: HeaderCarrier): Future[Option[DeliveredSubmissions]] = {
 
     val correlationId = uuidService.generate()
