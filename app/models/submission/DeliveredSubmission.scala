@@ -27,7 +27,7 @@ final case class DeliveredSubmission(conversationId: String,
                                      operatorName: String,
                                      reportingPeriod: String,
                                      submissionDateTime: Instant,
-                                     submissionStatus: DeliveredSubmissionStatus,
+                                     submissionStatus: SubmissionStatus,
                                      assumingReporterName: Option[String])
 
 object DeliveredSubmission {
@@ -41,7 +41,7 @@ object DeliveredSubmission {
     (__ \ "pOName").read[String] and
     (__ \ "reportingYear").read[String] and
     (__ \ "submissionDateTime").read[Instant] and
-    (__ \ "submissionStatus").read[DeliveredSubmissionStatus] and
+    (__ \ "submissionStatus").read[SubmissionStatus] and
     (__ \ "assumingReporterName").readNullable[String]
   )(DeliveredSubmission.apply)
 }

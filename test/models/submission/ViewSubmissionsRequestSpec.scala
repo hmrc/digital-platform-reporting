@@ -35,7 +35,7 @@ class ViewSubmissionsRequestSpec extends AnyFreeSpec with Matchers {
         reportingPeriod = Some(2024),
         operatorId = Some("operatorId"),
         fileName = Some("fileName"),
-        statuses = Seq(DeliveredSubmissionStatus.Success, DeliveredSubmissionStatus.Rejected)
+        statuses = Seq(SubmissionStatus.Success, SubmissionStatus.Rejected)
       )
 
       val expectedJson = Json.obj(
@@ -110,7 +110,7 @@ class ViewSubmissionsRequestSpec extends AnyFreeSpec with Matchers {
         reportingPeriod = Some(2025),
         operatorId = Some("operatorId"),
         fileName = Some("file.xml"),
-        statuses = Seq(DeliveredSubmissionStatus.Rejected, DeliveredSubmissionStatus.Success)
+        statuses = Seq(SubmissionStatus.Rejected, SubmissionStatus.Success)
       )
 
       val result = ViewSubmissionsRequest(subscriptionId, inboundRequest)
@@ -124,7 +124,7 @@ class ViewSubmissionsRequestSpec extends AnyFreeSpec with Matchers {
         reportingPeriod = Some(2025),
         operatorId = Some("operatorId"),
         fileName = Some("file.xml"),
-        statuses = Seq(DeliveredSubmissionStatus.Rejected, DeliveredSubmissionStatus.Success)
+        statuses = Seq(SubmissionStatus.Rejected, SubmissionStatus.Success)
       )
     }
   }

@@ -18,7 +18,7 @@ package services
 
 import connectors.DeliveredSubmissionConnector
 import models.submission.*
-import models.submission.DeliveredSubmissionStatus.*
+import models.submission.SubmissionStatus.*
 import models.submission.Submission.State
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
@@ -75,8 +75,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
         val result = service.getSubmissions(request).futureValue
 
-        result mustEqual SubmissionSummary(
-          deliveredSubmissions.submissions,
+        result mustEqual SubmissionsSummary(
+          deliveredSubmissions.submissions.map(x => SubmissionSummary(x)),
           Nil
         )
 
@@ -105,8 +105,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
         val result = service.getSubmissions(request).futureValue
 
-        result mustEqual SubmissionSummary(
-          deliveredSubmissions.submissions, Nil
+        result mustEqual SubmissionsSummary(
+          deliveredSubmissions.submissions.map(x => SubmissionSummary(x)), Nil
         )
 
         verify(mockConnector, times(1)).get(eqTo(request))(any())
@@ -134,9 +134,9 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
         val result = service.getSubmissions(request).futureValue
 
-        result mustEqual SubmissionSummary(
-          deliveredSubmissions.submissions,
-          localSubmissions
+        result mustEqual SubmissionsSummary(
+          deliveredSubmissions.submissions.map(x => SubmissionSummary(x)),
+          localSubmissions.flatMap(x => SubmissionSummary(x))
         )
 
         verify(mockConnector, times(1)).get(eqTo(request))(any())
@@ -156,9 +156,9 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
         val result = service.getSubmissions(request).futureValue
 
-        result mustEqual SubmissionSummary(
+        result mustEqual SubmissionsSummary(
           Nil,
-          localSubmissions
+          localSubmissions.flatMap(x => SubmissionSummary(x))
         )
 
         verify(mockConnector, times(1)).get(eqTo(request))(any())
@@ -174,7 +174,7 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
       val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
       val result = service.getSubmissions(request).futureValue
 
-      result mustEqual SubmissionSummary(Nil, Nil)
+      result mustEqual SubmissionsSummary(Nil, Nil)
 
       verify(mockConnector, times(1)).get(eqTo(request))(any())
       verify(mockRepository, times(1)).getBySubscriptionId("dprsId")

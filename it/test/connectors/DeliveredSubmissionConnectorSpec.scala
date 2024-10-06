@@ -111,7 +111,7 @@ class DeliveredSubmissionConnectorSpec extends AnyFreeSpec
             operatorName = "operatorName",
             reportingPeriod = "2024",
             submissionDateTime = instant,
-            submissionStatus = DeliveredSubmissionStatus.Rejected,
+            submissionStatus = SubmissionStatus.Rejected,
             assumingReporterName = None
           )
         ),

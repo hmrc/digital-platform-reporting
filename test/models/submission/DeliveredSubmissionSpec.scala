@@ -49,7 +49,7 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
         operatorName = "operatorName",
         reportingPeriod = "2024",
         submissionDateTime = Instant.parse("2024-12-31T01:02:03Z"),
-        submissionStatus = DeliveredSubmissionStatus.Pending,
+        submissionStatus = SubmissionStatus.Pending,
         assumingReporterName = Some("assumingName")
       )
       
@@ -75,7 +75,7 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
         operatorName = "operatorName",
         reportingPeriod = "2024",
         submissionDateTime = Instant.parse("2024-12-31T01:02:03Z"),
-        submissionStatus = DeliveredSubmissionStatus.Pending,
+        submissionStatus = SubmissionStatus.Pending,
         assumingReporterName = None
       )
 

@@ -18,14 +18,47 @@ package models.submission
 
 import play.api.libs.json.{Json, OWrites}
 
-final case class SubmissionSummary(deliveredSubmissions: Seq[DeliveredSubmission],
-                                   localSubmissions: Seq[Submission]) {
-  
-  lazy val isEmpty: Boolean = deliveredSubmissions.isEmpty && localSubmissions.isEmpty
-  lazy val nonEmpty: Boolean = !isEmpty
-}
+import java.time.Instant
+
+final case class SubmissionSummary(submissionId: String,
+                                   fileName: String,
+                                   operatorId: String,
+                                   operatorName: String,
+                                   reportingPeriod: String,
+                                   submissionDateTime: Instant,
+                                   submissionStatus: SubmissionStatus,
+                                   assumingReporterName: Option[String])
 
 object SubmissionSummary {
   
   implicit lazy val writes: OWrites[SubmissionSummary] = Json.writes
+  
+  def apply(submission: DeliveredSubmission): SubmissionSummary =
+    SubmissionSummary(
+      submission.conversationId,
+      submission.fileName,
+      submission.operatorId,
+      submission.operatorName,
+      submission.reportingPeriod,
+      submission.submissionDateTime,
+      submission.submissionStatus,
+      submission.assumingReporterName
+    )
+    
+  def apply(submission: Submission): Option[SubmissionSummary] =
+    submission.state match {
+      case state: Submission.State.Submitted =>
+        Some(SubmissionSummary(
+          submission._id,
+          state.fileName,
+          submission.operatorId,
+          submission.operatorName,
+          state.reportingPeriod.toString,
+          submission.updated,
+          SubmissionStatus.Pending,
+          None // TODO: Update when assumed reporter name is available
+        ))
+
+      case _ => None
+    }
 }
