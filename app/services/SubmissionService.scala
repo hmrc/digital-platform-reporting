@@ -65,7 +65,7 @@ class SubmissionService @Inject() (
     for {
       source <- downloadConnector.download(state.downloadUrl)
       bytes <- source.runWith(Sink.fold(ByteString.empty)(_ ++ _))
-      submissionBody = addEnvelope(bytes, submission._id, state, subscription)
+      submissionBody = addEnvelope(bytes, submission._id, state, subscription, isManual = false)
       submissionSource = createSubmissionSource(submissionBody)
       _ <- submissionConnector.submit(submission._id, submissionSource)
     } yield Done
@@ -77,7 +77,8 @@ class SubmissionService @Inject() (
                            body: ByteString,
                            submissionId: String,
                            state: Validated,
-                           subscription: SubscriptionInfo
+                           subscription: SubscriptionInfo,
+                           isManual: Boolean
                          ): Elem =
     <cadx:DPISubmissionRequest
       xmlns:dpi="urn:oecd:ties:dpi:v1"
@@ -87,7 +88,7 @@ class SubmissionService @Inject() (
       xsi:schemaLocation="http://www.hmrc.gsi.gov.uk/dpi/cadx DPISubmissionRequest_v1.0.xsd">
         {requestCommon(submissionId)}
         {requestDetail(body)}
-        {requestAdditionalDetail(state, subscription)}
+        {requestAdditionalDetail(state, subscription, isManual)}
     </cadx:DPISubmissionRequest>
 
   private def requestCommon(submissionId: String): Elem =
@@ -103,14 +104,14 @@ class SubmissionService @Inject() (
       {scala.xml.XML.loadString(body.utf8String)}
     </requestDetail>
 
-  private def requestAdditionalDetail(state: Validated, subscription: SubscriptionInfo): Elem =
+  private def requestAdditionalDetail(state: Validated, subscription: SubscriptionInfo, isManual: Boolean): Elem =
     <requestAdditionalDetail>
       <fileName>{state.fileName}</fileName>
       <subscriptionID>{subscription.id}</subscriptionID>
       {subscription.tradingName.map { tradingName =>
         <tradingName>{tradingName}</tradingName>
       }.orNull}
-      <isManual>false</isManual>
+      <isManual>{isManual}</isManual>
       <isGBUser>{subscription.gbUser.toString}</isGBUser>
       <primaryContact>{contact(subscription.primaryContact)}</primaryContact>
       {subscription.secondaryContact.map { secondaryContact =>
