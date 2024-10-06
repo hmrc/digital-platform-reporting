@@ -16,15 +16,16 @@
 
 package models.submission
 
-import enumeratum.{EnumEntry, PlayEnum}
+import play.api.libs.json.{Json, OWrites}
 
-sealed abstract class DeliveredSubmissionStatus(override val entryName: String) extends EnumEntry
+final case class SubmissionsSummary(deliveredSubmissions: Seq[SubmissionSummary],
+                                    localSubmissions: Seq[SubmissionSummary]) {
 
-object DeliveredSubmissionStatus extends PlayEnum[DeliveredSubmissionStatus] {
-  
-  override val values: IndexedSeq[DeliveredSubmissionStatus] = findValues
-  
-  case object Pending extends DeliveredSubmissionStatus("PENDING")
-  case object Success extends DeliveredSubmissionStatus("SUCCESS")
-  case object Rejected extends DeliveredSubmissionStatus("REJECTED")
+  lazy val isEmpty: Boolean = deliveredSubmissions.isEmpty && localSubmissions.isEmpty
+  lazy val nonEmpty: Boolean = !isEmpty
+}
+
+object SubmissionsSummary {
+
+  implicit lazy val writes: OWrites[SubmissionsSummary] = Json.writes
 }

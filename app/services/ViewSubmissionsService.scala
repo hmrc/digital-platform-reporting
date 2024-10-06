@@ -17,7 +17,7 @@
 package services
 
 import connectors.DeliveredSubmissionConnector
-import models.submission.{ViewSubmissionsRequest, Submission, SubmissionSummary}
+import models.submission.*
 import repository.SubmissionRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -28,23 +28,19 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
                                        repository: SubmissionRepository)
                                       (implicit ec: ExecutionContext) {
 
-  def getSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionSummary] =
+  def getSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] =
     for {
       deliveredSubmissions  <- connector.get(request)
       repositorySubmissions <- repository.getBySubscriptionId(request.subscriptionId)
     } yield {
 
-      val deliveredSubmissionIds = deliveredSubmissions.map(_.submissions.map(_.conversationId)).getOrElse(Nil)
+      val deliveredSubmissionSummaries = deliveredSubmissions.map(_.submissions.map(x => SubmissionSummary(x))).getOrElse(Nil)
+      val deliveredSubmissionIds = deliveredSubmissionSummaries.map(_.submissionId)
       val undeliveredSubmissions =
         repositorySubmissions
           .filter(x => !deliveredSubmissionIds.contains(x._id))
-          .flatMap { submission =>
-            submission.state match {
-              case s: Submission.State.Submitted => Some(submission)
-              case _ => None
-            }
-          }
+          .flatMap(x => SubmissionSummary(x))
 
-      SubmissionSummary(deliveredSubmissions.map(_.submissions).getOrElse(Nil), undeliveredSubmissions)
+      SubmissionsSummary(deliveredSubmissionSummaries, undeliveredSubmissions)
     }
 }

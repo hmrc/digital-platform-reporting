@@ -48,7 +48,7 @@ class ViewSubmissionsInboundRequestSpec extends AnyFreeSpec with Matchers {
         reportingPeriod = Some(2025),
         operatorId = Some("operatorId"),
         fileName = Some("file.xml"),
-        statuses = Seq(DeliveredSubmissionStatus.Rejected, DeliveredSubmissionStatus.Success)
+        statuses = Seq(SubmissionStatus.Rejected, SubmissionStatus.Success)
       )
 
       json.as[ViewSubmissionsInboundRequest] mustEqual expectedRequest
