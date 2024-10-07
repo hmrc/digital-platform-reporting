@@ -70,6 +70,7 @@ class SubmissionController @Inject() (
           dprsId = request.dprsId,
           operatorId = request.body.operatorId,
           operatorName = request.body.operatorName,
+          assumingOperatorName = None,
           state = Ready,
           created = clock.instant(),
           updated = clock.instant()

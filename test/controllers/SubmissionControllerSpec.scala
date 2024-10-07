@@ -119,6 +119,7 @@ class SubmissionControllerSpec
           dprsId = dprsId,
           operatorId = operatorId,
           operatorName = operatorName,
+          assumingOperatorName = None,
           state = Ready,
           created = now,
           updated = now
@@ -152,6 +153,7 @@ class SubmissionControllerSpec
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
+            assumingOperatorName = None,
             state = Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -190,6 +192,7 @@ class SubmissionControllerSpec
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
+            assumingOperatorName = None,
             state = state,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -243,6 +246,7 @@ class SubmissionControllerSpec
           dprsId = dprsId,
           operatorId = operatorId,
           operatorName = operatorName,
+          assumingOperatorName = None,
           state = Ready,
           created = now,
           updated = now
@@ -294,6 +298,7 @@ class SubmissionControllerSpec
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
+            assumingOperatorName = None,
             state = state,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -330,6 +335,7 @@ class SubmissionControllerSpec
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
+            assumingOperatorName = None,
             state = state,
             created = now,
             updated = now
@@ -394,6 +400,7 @@ class SubmissionControllerSpec
               dprsId = dprsId,
               operatorId = operatorId,
               operatorName = operatorName,
+              assumingOperatorName = None,
               state = state,
               created = now.minus(1, ChronoUnit.DAYS),
               updated = now.minus(1, ChronoUnit.DAYS)
@@ -432,6 +439,7 @@ class SubmissionControllerSpec
               dprsId = dprsId,
               operatorId = operatorId,
               operatorName = operatorName,
+              assumingOperatorName = None,
               state = state,
               created = now.minus(1, ChronoUnit.DAYS),
               updated = now.minus(1, ChronoUnit.DAYS)
@@ -471,6 +479,7 @@ class SubmissionControllerSpec
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
+            assumingOperatorName = None,
             state = state,
             created = now,
             updated = now
@@ -529,6 +538,7 @@ class SubmissionControllerSpec
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
+            assumingOperatorName = None,
             state = state,
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -568,6 +578,7 @@ class SubmissionControllerSpec
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
+            assumingOperatorName = None,
             state = state,
             created = now,
             updated = now
@@ -624,6 +635,7 @@ class SubmissionControllerSpec
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
+            assumingOperatorName = None,
             state = Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -662,6 +674,7 @@ class SubmissionControllerSpec
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
+            assumingOperatorName = None,
             state = state,
             created = now,
             updated = now

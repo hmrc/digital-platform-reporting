@@ -118,6 +118,7 @@ class SubmissionServiceSpec
                 dprsId = dprsId,
                 operatorId = "operatorId",
                 operatorName = "operatorName",
+                assumingOperatorName = None,
                 state = Validated(
                   downloadUrl = url"http://example.com",
                   reportingPeriod = Year.of(2024),
@@ -191,6 +192,7 @@ class SubmissionServiceSpec
                 dprsId = dprsId,
                 operatorId = "operatorId",
                 operatorName = "operatorName",
+                assumingOperatorName = None,
                 state = Validated(
                   downloadUrl = url"http://example.com",
                   reportingPeriod = Year.of(2024),
@@ -261,6 +263,7 @@ class SubmissionServiceSpec
               dprsId = dprsId,
               operatorId = "operatorId",
               operatorName = "operatorName",
+              assumingOperatorName = None,
               state = Validated(
                 downloadUrl = url"http://example.com",
                 reportingPeriod = Year.of(2024),
@@ -338,6 +341,7 @@ class SubmissionServiceSpec
             dprsId = dprsId,
             operatorId = "operatorId",
             operatorName = "operatorName",
+            assumingOperatorName = None,
             state = Validated(
               downloadUrl = url"http://example.com",
               reportingPeriod = Year.of(2024),
@@ -383,6 +387,7 @@ class SubmissionServiceSpec
           dprsId = "dprsId",
           operatorId = "operatorId",
           operatorName = "operatorName",
+          assumingOperatorName = None,
           state = Ready,
           created = now,
           updated = now

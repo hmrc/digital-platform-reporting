@@ -72,6 +72,7 @@ class SubmissionRepositorySpec
     dprsId = "dprsId",
     operatorId = "operatorId",
     operatorName = "operatorName",
+    assumingOperatorName = None,
     state = Ready,
     created = created,
     updated = updated
