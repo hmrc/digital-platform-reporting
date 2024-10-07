@@ -14,14 +14,22 @@
  * limitations under the License.
  */
 
-package utils
+package support.builders
 
-import models.registration.requests.ContactDetails
+import models.enrolment.PendingEnrolment
 
-object ContactDetailsBuilder {
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
-  val aContactDetails: ContactDetails = ContactDetails(
-    emailAddress = "default.email@example.com",
-    phoneNumber = None
+object PendingEnrolmentBuilder {
+
+  val aPendingEnrolment: PendingEnrolment = PendingEnrolment(
+    userId = "default-user-id",
+    providerId = "default-provider-id",
+    groupIdentifier = "default-group-identifier",
+    verifierKey = "default-verifier-key",
+    verifierValue = "default-verifier-value",
+    dprsId = "default-dprs-id",
+    created = Instant.now().truncatedTo(ChronoUnit.MILLIS)
   )
 }

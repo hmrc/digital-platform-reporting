@@ -20,7 +20,7 @@ import models.registration.Address
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
-import utils.ContactDetailsBuilder.aContactDetails
+import support.builders.ContactDetailsBuilder.aContactDetails
 
 import java.time.LocalDate
 

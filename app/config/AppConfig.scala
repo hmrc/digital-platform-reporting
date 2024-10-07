@@ -19,6 +19,7 @@ package config
 import play.api.Configuration
 
 import javax.inject.{Inject, Singleton}
+import scala.concurrent.duration.Duration
 
 @Singleton
 class AppConfig @Inject()(configuration: Configuration) {
@@ -35,10 +36,10 @@ class AppConfig @Inject()(configuration: Configuration) {
   val UserSubscriptionBearerToken: String = configuration.get[String]("microservice.services.subscribe.bearerTokens.userSubscription")
   val ReadContactsBearerToken: String = configuration.get[String]("microservice.services.subscribe.bearerTokens.readContacts")
   val UpdateContactsBearerToken: String = configuration.get[String]("microservice.services.subscribe.bearerTokens.updateContacts")
-  
+
   val UpdatePlatformOperatorBaseUrl: String = configuration.get[Service]("microservice.services.update-platform-operator").baseUrl
   val UpdatePlatformOperatorBearerToken: String = configuration.get[String]("microservice.services.update-platform-operator.bearer-token")
-  
+
   val ViewPlatformOperatorsBaseUrl: String = configuration.get[Service]("microservice.services.view-platform-operator").baseUrl
   val ViewPlatformOperatorBearerToken: String = configuration.get[String]("microservice.services.view-platform-operator.bearer-token")
 
@@ -46,5 +47,7 @@ class AppConfig @Inject()(configuration: Configuration) {
   val SubmissionBearerToken: String = configuration.get[String]("microservice.services.report-submission.bearer-token")
 
   val DeliveredSubmissionsBaseUrl: String = configuration.get[Service]("microservice.services.view-submissions").baseUrl
-  val DeliveredSubmissionsBearerToken: String = configuration.get[String]("microservice.services.view-submissions.bearer-token")  
+  val DeliveredSubmissionsBearerToken: String = configuration.get[String]("microservice.services.view-submissions.bearer-token")
+
+  val MongoPendingEnrolmentTTL: Duration = configuration.get[Duration]("mongodb.pending-enrolment.ttl")
 }

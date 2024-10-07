@@ -18,7 +18,6 @@ package controllers
 
 import controllers.actions.AuthAction
 import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.Sink
 import org.apache.pekko.util.ByteString
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
@@ -26,14 +25,14 @@ import repository.CadxValidationErrorRepository
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 @Singleton
-class CadxValidationErrorController @Inject() (
-                                                cc: ControllerComponents,
-                                                cadxValidationErrorRepository: CadxValidationErrorRepository,
-                                                auth: AuthAction
-                                              )(using Materializer, ExecutionContext) extends BackendController(cc) {
+class CadxValidationErrorController @Inject()(
+                                               cc: ControllerComponents,
+                                               cadxValidationErrorRepository: CadxValidationErrorRepository,
+                                               auth: AuthAction
+                                             )(using Materializer, ExecutionContext) extends BackendController(cc) {
 
   def getCadxValidationErrors(submissionId: String): Action[AnyContent] =
     auth { implicit request =>

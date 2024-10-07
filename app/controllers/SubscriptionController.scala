@@ -18,6 +18,7 @@ package controllers
 
 import connectors.SubscriptionConnector
 import controllers.actions.{AuthAction, AuthWithoutEnrolmentAction}
+import models.AuthenticatedRequest
 import models.subscription.requests.SubscriptionRequest
 import models.subscription.responses.{AlreadySubscribedResponse, SubscribedResponse, UnexpectedResponse}
 import play.api.libs.json.Json
@@ -46,7 +47,7 @@ class SubscriptionController @Inject()(cc: ControllerComponents,
   }
 
   def updateSubscription(): Action[SubscriptionRequest] = authenticate(parse.json[SubscriptionRequest]).async {
-    implicit request =>
+    implicit request: AuthenticatedRequest[SubscriptionRequest] =>
       connector
         .updateSubscription(request.body)
         .map(_ => Ok)

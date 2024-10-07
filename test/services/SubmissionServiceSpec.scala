@@ -18,9 +18,9 @@ package services
 
 import connectors.{DownloadConnector, PlatformOperatorConnector, SubmissionConnector, SubscriptionConnector}
 import models.assumed.{AssumingOperatorAddress, AssumingPlatformOperator}
-import models.operator.{AddressDetails, ContactDetails, TinDetails}
-import models.operator.TinType.{Utr, Vrn, Utr as tin}
+import models.operator.TinType.{Utr, Vrn}
 import models.operator.responses.PlatformOperator
+import models.operator.{AddressDetails, ContactDetails, TinDetails}
 import models.submission.Submission
 import models.submission.Submission.State.{Ready, Submitted, Validated}
 import models.subscription.responses.SubscriptionInfo
