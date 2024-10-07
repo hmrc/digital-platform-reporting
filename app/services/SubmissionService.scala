@@ -16,9 +16,11 @@
 
 package services
 
-import connectors.{DownloadConnector, SubmissionConnector, SubscriptionConnector}
+import cats.data.OptionT
+import connectors.{DownloadConnector, PlatformOperatorConnector, SubmissionConnector, SubscriptionConnector}
+import models.assumed.AssumingPlatformOperator
 import models.submission.Submission
-import models.submission.Submission.State.Validated
+import models.submission.Submission.State.{Submitted, Validated}
 import models.subscription.responses.SubscriptionInfo
 import models.subscription.{Contact, IndividualContact, OrganisationContact}
 import org.apache.pekko.Done
@@ -26,11 +28,12 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
 import play.api.Configuration
+import repository.SubmissionRepository
 import services.SubmissionService.InvalidSubmissionStateException
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.DateTimeFormats
 
-import java.time.Clock
+import java.time.{Clock, Year}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.{Elem, NodeSeq}
@@ -42,7 +45,11 @@ class SubmissionService @Inject() (
                                     downloadConnector: DownloadConnector,
                                     clock: Clock,
                                     configuration: Configuration,
-                                    sdesService: SdesService
+                                    sdesService: SdesService,
+                                    uuidService: UuidService,
+                                    platformOperatorConnector: PlatformOperatorConnector,
+                                    assumedReportingService: AssumedReportingService,
+                                    submissionRepository: SubmissionRepository
                                   )(using Materializer, ExecutionContext) {
 
   private val sdesSubmissionThreshold: Long = configuration.get[Long]("sdes.size-threshold")
@@ -61,11 +68,37 @@ class SubmissionService @Inject() (
         Future.failed(InvalidSubmissionStateException(submission._id))
     }
 
+  def submitAssumedReporting(dprsId: String, operatorId: String, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year)(using HeaderCarrier): Future[Done] = {
+    for {
+      subscription <- subscriptionConnector.get(dprsId)
+      operator     <- OptionT(platformOperatorConnector.get(dprsId, operatorId)).getOrElseF(Future.failed(new RuntimeException())) // TODO
+      payload      =  assumedReportingService.createSubmission(operator, assumingOperator, reportingPeriod)
+      fileName     =  s"${payload.messageRef}.xml"
+      submission   =  Submission(
+        _id = uuidService.generate(),
+        dprsId = dprsId,
+        operatorId = operatorId,
+        operatorName = operator.operatorName,
+        assumingOperatorName = Some(assumingOperator.name),
+        state = Submitted(
+          fileName = fileName,
+          reportingPeriod = reportingPeriod
+        ),
+        created = clock.instant(),
+        updated = clock.instant()
+      )
+      _                 <- submissionRepository.save(submission)
+      submissionBody    =  addEnvelope(ByteString.fromString(payload.body.toString), submission._id, fileName, subscription, isManual = true)
+      submissionSource  =  createSubmissionSource(submissionBody)
+      _                 <- submissionConnector.submit(submission._id, submissionSource)
+    } yield Done
+  }
+
   private def submitDirect(submission: Submission, state: Validated, subscription: SubscriptionInfo)(using HeaderCarrier): Future[Done] =
     for {
       source <- downloadConnector.download(state.downloadUrl)
       bytes <- source.runWith(Sink.fold(ByteString.empty)(_ ++ _))
-      submissionBody = addEnvelope(bytes, submission._id, state, subscription, isManual = false)
+      submissionBody = addEnvelope(bytes, submission._id, state.fileName, subscription, isManual = false)
       submissionSource = createSubmissionSource(submissionBody)
       _ <- submissionConnector.submit(submission._id, submissionSource)
     } yield Done
@@ -76,7 +109,7 @@ class SubmissionService @Inject() (
   private def addEnvelope(
                            body: ByteString,
                            submissionId: String,
-                           state: Validated,
+                           fileName: String,
                            subscription: SubscriptionInfo,
                            isManual: Boolean
                          ): Elem =
@@ -88,7 +121,7 @@ class SubmissionService @Inject() (
       xsi:schemaLocation="http://www.hmrc.gsi.gov.uk/dpi/cadx DPISubmissionRequest_v1.0.xsd">
         {requestCommon(submissionId)}
         {requestDetail(body)}
-        {requestAdditionalDetail(state, subscription, isManual)}
+        {requestAdditionalDetail(fileName, subscription, isManual)}
     </cadx:DPISubmissionRequest>
 
   private def requestCommon(submissionId: String): Elem =
@@ -104,9 +137,9 @@ class SubmissionService @Inject() (
       {scala.xml.XML.loadString(body.utf8String)}
     </requestDetail>
 
-  private def requestAdditionalDetail(state: Validated, subscription: SubscriptionInfo, isManual: Boolean): Elem =
+  private def requestAdditionalDetail(fileName: String, subscription: SubscriptionInfo, isManual: Boolean): Elem =
     <requestAdditionalDetail>
-      <fileName>{state.fileName}</fileName>
+      <fileName>{fileName}</fileName>
       <subscriptionID>{subscription.id}</subscriptionID>
       {subscription.tradingName.map { tradingName =>
         <tradingName>{tradingName}</tradingName>
