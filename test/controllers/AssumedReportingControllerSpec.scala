@@ -16,12 +16,12 @@
 
 package controllers
 
-import models.submission.CadxValidationError
-import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.Source
+import models.assumed.{AssumingOperatorAddress, AssumingPlatformOperator}
+import models.submission.AssumedReportingSubmissionRequest
+import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -32,13 +32,13 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import repository.CadxValidationErrorRepository
+import services.SubmissionService
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 
-import java.time.Instant
+import java.time.Year
 import scala.concurrent.Future
 
-class CadxValidationErrorControllerSpec
+class AssumedReportingControllerSpec
   extends AnyFreeSpec
     with Matchers
     with MockitoSugar
@@ -46,20 +46,18 @@ class CadxValidationErrorControllerSpec
     with ScalaFutures
     with BeforeAndAfterEach {
 
-  private val mockCadxValidationErrorRepository = mock[CadxValidationErrorRepository]
+  private val mockSubmissionService = mock[SubmissionService]
   private val mockAuthConnector = mock[AuthConnector]
 
   override def beforeEach(): Unit = {
     super.beforeEach()
     Mockito.reset(
-      mockCadxValidationErrorRepository,
+      mockSubmissionService,
       mockAuthConnector
     )
   }
 
-  private val now = Instant.now()
   private val dprsId = "dprs id"
-  private val submissionId = "submissionId"
 
   private val validEnrolments = Enrolments(Set(
     Enrolment(
@@ -70,36 +68,48 @@ class CadxValidationErrorControllerSpec
     )
   ))
 
-  "getCadxValidationErrors" - {
+  "submit" - {
 
     "must stream the errors from the repository" in {
+
+      val requestBody = AssumedReportingSubmissionRequest(
+        operatorId = "operatorId",
+        assumingOperator = AssumingPlatformOperator(
+          name = "assumingOperator",
+          residentCountry = "GB",
+          tinDetails = Seq.empty,
+          address = AssumingOperatorAddress(
+            line1 = "line1",
+            line2 = None,
+            city = "city",
+            region = None,
+            postCode = "postcode",
+            country = "GB"
+          )
+        ),
+        reportingPeriod = Year.of(2024)
+      )
 
       val app =
         GuiceApplicationBuilder()
           .overrides(
-            bind[CadxValidationErrorRepository].toInstance(mockCadxValidationErrorRepository),
+            bind[SubmissionService].toInstance(mockSubmissionService),
             bind[AuthConnector].toInstance(mockAuthConnector)
           )
           .build()
 
-      val error1 = CadxValidationError.FileError(submissionId, dprsId, "001", None, now)
-      val error2 = CadxValidationError.RowError(submissionId, dprsId, "001", None, "docRef\n", now)
-
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-      when(mockCadxValidationErrorRepository.getErrorsForSubmission(any(), any())).thenReturn(Source(Seq(error1, error2)))
+      when(mockSubmissionService.submitAssumedReporting(any(), any(), any(), any())(using any())).thenReturn(Future.successful(Done))
 
       running(app) {
-        given Materializer = app.materializer
-
-        val request = FakeRequest(routes.CadxValidationErrorController.getCadxValidationErrors(submissionId))
+        val request = FakeRequest(routes.AssumedReportingController.submit())
+          .withJsonBody(Json.toJson(requestBody))
         val result = route(app, request).value
 
-        status(result) mustEqual OK
-        contentType(result).value mustEqual "application/x-ndjson"
-
-        val results = contentAsString(result).split("\n").map(Json.parse(_).as[CadxValidationError])
-        results must contain only (error1, error2)
+        status(result) mustEqual NO_CONTENT
       }
+
+      verify(mockSubmissionService).submitAssumedReporting(any(), any(), any(), any())(using any())
     }
   }
 }
