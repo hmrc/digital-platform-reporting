@@ -101,6 +101,7 @@ class SdesSubmissionCallbackControllerSpec
           dprsId = "dprsId",
           operatorId = "operatorId",
           operatorName = "operatorName",
+          assumingOperatorName = None,
           state = Submitted("test.xml", Year.of(2024)),
           created = now.minus(1, ChronoUnit.DAYS),
           updated = now.minus(1, ChronoUnit.DAYS)
@@ -161,6 +162,7 @@ class SdesSubmissionCallbackControllerSpec
           dprsId = "dprsId",
           operatorId = "operatorId",
           operatorName = "operatorName",
+          assumingOperatorName = None,
           state = state,
           created = now,
           updated = now

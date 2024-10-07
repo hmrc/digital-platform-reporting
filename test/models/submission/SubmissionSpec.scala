@@ -37,6 +37,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
+      assumingOperatorName = None,
       state = Ready,
       created = created,
       updated = updated
@@ -70,6 +71,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
+      assumingOperatorName = None,
       state = Uploading,
       created = created,
       updated = updated
@@ -103,6 +105,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
+      assumingOperatorName = None,
       state = UploadFailed("some reason"),
       created = created,
       updated = updated
@@ -137,6 +140,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
+      assumingOperatorName = None,
       state = Validated(
         downloadUrl = url"http://example.com",
         reportingPeriod = Year.of(2024),
@@ -181,6 +185,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
+      assumingOperatorName = None,
       state = Submitted(
         fileName = "test.xml",
         reportingPeriod = Year.of(2024)
@@ -219,6 +224,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
+      assumingOperatorName = None,
       state = Approved(
         fileName = "test.xml",
         reportingPeriod = Year.of(2024)
@@ -257,6 +263,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
+      assumingOperatorName = None,
       state = Rejected(
         fileName = "test.xml",
         reportingPeriod = Year.of(2024)
@@ -272,6 +279,46 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       "operatorName" -> "operatorName",
       "state" -> Json.obj(
         "type" -> "Rejected",
+        "fileName" -> "test.xml",
+        "reportingPeriod" -> 2024
+      ),
+      "created" -> created,
+      "updated" -> updated
+    )
+
+    "must read from json" in {
+      Json.fromJson[Submission](json).get mustEqual submission
+    }
+
+    "must write to json" in {
+      Json.toJsObject(submission) mustEqual json
+    }
+  }
+
+  "when there is an assuming operator name" - {
+
+    val submission = Submission(
+      _id = "id",
+      dprsId = "dprsId",
+      operatorId = "operatorId",
+      operatorName = "operatorName",
+      assumingOperatorName = Some("assumingOperator"),
+      state = Submitted(
+        fileName = "test.xml",
+        reportingPeriod = Year.of(2024)
+      ),
+      created = created,
+      updated = updated
+    )
+
+    val json = Json.obj(
+      "_id" -> "id",
+      "dprsId" -> "dprsId",
+      "operatorId" -> "operatorId",
+      "operatorName" -> "operatorName",
+      "assumingOperatorName" -> "assumingOperator",
+      "state" -> Json.obj(
+        "type" -> "Submitted",
         "fileName" -> "test.xml",
         "reportingPeriod" -> 2024
       ),

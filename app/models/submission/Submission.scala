@@ -28,6 +28,7 @@ final case class Submission(
                              dprsId: String,
                              operatorId: String,
                              operatorName: String,
+                             assumingOperatorName: Option[String],
                              state: Submission.State,
                              created: Instant,
                              updated: Instant

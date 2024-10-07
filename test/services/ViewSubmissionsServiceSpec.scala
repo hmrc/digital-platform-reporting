@@ -65,8 +65,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         )
 
         val localSubmissions = Seq(
-          Submission(_id = "id3", "dprsId", "operatorId", "operatorName", State.Ready, instant, instant),
-          Submission(_id = "id4", "dprsId", "operatorId", "operatorName", State.Uploading, instant, instant),
+          Submission(_id = "id3", "dprsId", "operatorId", "operatorName", None, State.Ready, instant, instant),
+          Submission(_id = "id4", "dprsId", "operatorId", "operatorName", None, State.Uploading, instant, instant),
         )
         
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(deliveredSubmissions)))
@@ -95,8 +95,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         )
 
         val localSubmissions = Seq(
-          Submission(_id = "id1", "dprsId", "operatorId", "operatorName", State.Submitted("fileName", Year.of(2024)), instant, instant),
-          Submission(_id = "id2", "dprsId", "operatorId", "operatorName", State.Submitted("fileName", Year.of(2024)), instant, instant),
+          Submission(_id = "id1", "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName", Year.of(2024)), instant, instant),
+          Submission(_id = "id2", "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName", Year.of(2024)), instant, instant),
         )
 
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(deliveredSubmissions)))
@@ -124,8 +124,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         )
 
         val localSubmissions = Seq(
-          Submission(_id = "id3", "dprsId", "operatorId", "operatorName", State.Submitted("fileName3", Year.of(2024)), instant, instant),
-          Submission(_id = "id4", "dprsId", "operatorId", "operatorName", State.Submitted("fileName4", Year.of(2024)), instant, instant),
+          Submission(_id = "id3", "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName3", Year.of(2024)), instant, instant),
+          Submission(_id = "id4", "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName4", Year.of(2024)), instant, instant),
         )
 
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(deliveredSubmissions)))
@@ -146,8 +146,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
       "when there are no delivered submissions and some Submitted local submissions" in {
 
         val localSubmissions = Seq(
-          Submission(_id = "id3", "dprsId", "operatorId", "operatorName", State.Submitted("fileName3", Year.of(2024)), instant, instant),
-          Submission(_id = "id4", "dprsId", "operatorId", "operatorName", State.Submitted("fileName4", Year.of(2024)), instant, instant),
+          Submission(_id = "id3", "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName3", Year.of(2024)), instant, instant),
+          Submission(_id = "id4", "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName4", Year.of(2024)), instant, instant),
         )
 
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(None))

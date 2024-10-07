@@ -70,7 +70,7 @@ class SubmissionService @Inject() (
       _ <- submissionConnector.submit(submission._id, submissionSource)
     } yield Done
 
-  private def createSubmissionSource(body: Elem): Source[ByteString, _] =
+  private def createSubmissionSource(body: Elem): Source[ByteString, ?] =
     Source.single(ByteString.fromString(scala.xml.Utility.trim(body).toString))
 
   private def addEnvelope(

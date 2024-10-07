@@ -66,6 +66,7 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
         dprsId = "dprsId",
         operatorId = "operatorId",
         operatorName = "operatorName",
+        assumingOperatorName = None,
         state = Submitted("filename", Year.of(2024)),
         created = now,
         updated = now
@@ -99,6 +100,7 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
         dprsId = "dprsId",
         operatorId = "operatorId",
         operatorName = "operatorName",
+        assumingOperatorName = None,
         state = nonSubmittedStateGen.sample.value,
         created = now,
         updated = now
