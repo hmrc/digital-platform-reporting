@@ -129,14 +129,16 @@ class AssumedReportingServiceSpec
         )
       )
 
-      val expectedSubmissionSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test.xml").toURI)
-      val expectedSubmission = Utility.trim(XML.loadString(expectedSubmissionSource.mkString))
-      expectedSubmissionSource.close()
+      val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test.xml").toURI)
+      val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
+      expectedPayloadSource.close()
 
-      val submission = assumedReportingService.createSubmission(operator, assumingOperator, Year.of(2024))
-      submission mustEqual expectedSubmission
+      val payload = assumedReportingService.createSubmission(operator, assumingOperator, Year.of(2024))
 
-      validate(submission)
+      validate(payload.body)
+
+      payload.messageRef mustEqual "GB2024GB-operatorId-86233cb7-4922-4e54-a5ff-75f5e62eec0d"
+      payload.body mustEqual expectedPayload
     }
 
     "must create a valid submission from minimal data" in {
@@ -180,14 +182,16 @@ class AssumedReportingServiceSpec
         )
       )
 
-      val expectedSubmissionSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test2.xml").toURI)
-      val expectedSubmission = Utility.trim(XML.loadString(expectedSubmissionSource.mkString))
-      expectedSubmissionSource.close()
+      val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test2.xml").toURI)
+      val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
+      expectedPayloadSource.close()
 
-      val submission = assumedReportingService.createSubmission(operator, assumingOperator, Year.of(2024))
-      submission mustEqual expectedSubmission
+      val payload = assumedReportingService.createSubmission(operator, assumingOperator, Year.of(2024))
 
-      validate(submission)
+      validate(payload.body)
+
+      payload.messageRef mustEqual "GB2024GB-operatorId-86233cb7-4922-4e54-a5ff-75f5e62eec0d"
+      payload.body mustEqual expectedPayload
     }
   }
 

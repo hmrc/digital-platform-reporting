@@ -33,7 +33,9 @@ class AssumedReportingService @Inject() (
                                           clock: Clock
                                         ) {
 
-  def createSubmission(operator: PlatformOperator, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year): NodeSeq = {
+  def createSubmission(operator: PlatformOperator, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year): AssumedReportingPayload = {
+    
+    val messageRef = createMessageRefId(reportingPeriod, operator.operatorId)
 
     val submission = DPI_OECD(
       MessageSpec = MessageSpec_Type(
@@ -43,7 +45,7 @@ class AssumedReportingService @Inject() (
         MessageType = DPI,
         Warning = None,
         Contact = None,
-        MessageRefId = createMessageRefId(reportingPeriod, operator.operatorId),
+        MessageRefId = messageRef,
         MessageTypeIndic = DPI401, // TODO should this be DPI403?
         ReportingPeriod = scalaxb.Helper.toCalendar(DateTimeFormatter.ISO_LOCAL_DATE.format(reportingPeriod.atMonth(Month.DECEMBER).atEndOfMonth())),
         Timestamp = scalaxb.Helper.toCalendar(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now(clock)))
@@ -87,7 +89,9 @@ class AssumedReportingService @Inject() (
       attributes = Map("@version" -> DataRecord("1"))
     )
 
-    scalaxb.toXML(submission, Some("urn:oecd:ties:dpi:v1"), Some("DPI_OECD"), generated.defaultScope)
+    val body = scalaxb.toXML(submission, Some("urn:oecd:ties:dpi:v1"), Some("DPI_OECD"), generated.defaultScope)
+    
+    AssumedReportingPayload(messageRef, body)
   }
 
   private def createMessageRefId(reportingPeriod: Year, operatorId: String): String =
@@ -176,3 +180,5 @@ class AssumedReportingService @Inject() (
     )
   }
 }
+
+final case class AssumedReportingPayload(messageRef: String, body: NodeSeq)
