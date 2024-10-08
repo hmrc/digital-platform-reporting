@@ -92,7 +92,20 @@ class ValidationServiceSpec
         .thenReturn(Future.successful(source))
 
       val result = validationService.validateXml(downloadUrl, poid).futureValue
-      result.left.value mustEqual ValidationError("error.schema")
+      result.left.value mustEqual ValidationError("schema")
+
+      verify(mockDownloadConnector).download(downloadUrl)
+    }
+
+    "must return an error when the given file is not XML" in {
+
+      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/NotXml.xml"))
+
+      when(mockDownloadConnector.download(any()))
+        .thenReturn(Future.successful(source))
+
+      val result = validationService.validateXml(downloadUrl, poid).futureValue
+      result.left.value mustEqual ValidationError("not-xml")
 
       verify(mockDownloadConnector).download(downloadUrl)
     }
@@ -105,7 +118,7 @@ class ValidationServiceSpec
         .thenReturn(Future.successful(source))
 
       val result = validationService.validateXml(downloadUrl, "a-different-poid").futureValue
-      result.left.value mustEqual ValidationError("error.poid.incorrect")
+      result.left.value mustEqual ValidationError("poid.incorrect")
 
       verify(mockDownloadConnector).download(downloadUrl)
     }
@@ -118,7 +131,7 @@ class ValidationServiceSpec
         .thenReturn(Future.successful(source))
 
       val result = validationService.validateXml(downloadUrl, poid).futureValue
-      result.left.value mustEqual ValidationError("error.poid.missing")
+      result.left.value mustEqual ValidationError("poid.missing")
 
       verify(mockDownloadConnector).download(downloadUrl)
     }

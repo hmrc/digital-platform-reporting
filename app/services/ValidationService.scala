@@ -22,7 +22,7 @@ import org.apache.pekko.stream.scaladsl.StreamConverters
 import org.xml.sax.Attributes
 import org.xml.sax.helpers.DefaultHandler
 import play.api.{Configuration, Environment}
-import services.ValidatingSaxHandler.{platformOperatorPath, reportingPeriodPath}
+import services.ValidatingSaxHandler.{FatalSaxParsingException, platformOperatorPath, reportingPeriodPath}
 import services.ValidationService.ValidationError
 
 import java.net.URL
@@ -36,6 +36,7 @@ import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.SchemaFactory
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
+import scala.util.control.NoStackTrace
 import scala.xml.SAXParseException
 
 @Singleton
@@ -70,8 +71,11 @@ class ValidationService @Inject() (
           _               <- handler.getPlatformOperatorId
           reportingPeriod <- handler.getReportingPeriod
         } yield reportingPeriod
-      } catch { case _: SAXParseException =>
-        Left(ValidationError("error.schema"))
+      } catch {
+        case _: FatalSaxParsingException =>
+          Left(ValidationError("not-xml"))
+        case _: SAXParseException =>
+          Left(ValidationError("schema"))
       }
     }
   }
@@ -86,7 +90,7 @@ final class ValidatingSaxHandler(platformOperatorId: String) extends DefaultHand
 
   override def warning(e: SAXParseException): Unit = throw e
   override def error(e: SAXParseException): Unit = throw e
-  override def fatalError(e: SAXParseException): Unit = throw e
+  override def fatalError(e: SAXParseException): Unit = throw FatalSaxParsingException(e)
 
   private var path: List[String] = Nil
   private val platformOperatorBuilder = new java.lang.StringBuilder()
@@ -109,9 +113,9 @@ final class ValidatingSaxHandler(platformOperatorId: String) extends DefaultHand
 
   def getPlatformOperatorId: Either[ValidationError, String] =
     if (platformOperatorBuilder.length == 0) {
-      Left(ValidationError("error.poid.missing"))
+      Left(ValidationError("poid.missing"))
     } else if (platformOperatorBuilder.toString != platformOperatorId) {
-      Left(ValidationError("error.poid.incorrect"))
+      Left(ValidationError("poid.incorrect"))
     } else {
       Right(platformOperatorBuilder.toString)
     }
@@ -119,11 +123,15 @@ final class ValidatingSaxHandler(platformOperatorId: String) extends DefaultHand
   def getReportingPeriod: Either[ValidationError, Year] =
     Try(Year.from(DateTimeFormatter.ISO_DATE.parse(reportingPeriodBuilder.toString)))
       .toEither
-      .left.map(_ => ValidationError("error.reporting-period.invalid"))
+      .left.map(_ => ValidationError("reporting-period.invalid"))
 }
 
 object ValidatingSaxHandler {
 
   private val platformOperatorPath: List[String] = List("SendingEntityIN", "MessageSpec", "DPI_OECD")
   private val reportingPeriodPath: List[String] = List("ReportingPeriod", "MessageSpec", "DPI_OECD")
+
+  final case class FatalSaxParsingException(error: SAXParseException) extends Throwable with NoStackTrace {
+    override def getCause: Throwable = error
+  }
 }
