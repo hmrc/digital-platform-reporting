@@ -16,8 +16,7 @@
 
 package repository
 
-import models.submission.{CadxValidationError, Submission}
-import models.submission.Submission.State.{Ready, Validated}
+import models.submission.CadxValidationError
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Sink
 import org.mongodb.scala.model.Indexes
@@ -27,18 +26,15 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import org.slf4j.MDC
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
-import scala.concurrent.{ExecutionContext, Future}
 
 class CadxValidationErrorRepositorySpec
   extends AnyFreeSpec
@@ -102,7 +98,7 @@ class CadxValidationErrorRepositorySpec
 
       val result = findAll().futureValue
 
-      result must contain only (fileError, rowError)
+      result must contain only(fileError, rowError)
     }
   }
 
@@ -121,7 +117,7 @@ class CadxValidationErrorRepositorySpec
 
       val source = repository.getErrorsForSubmission(dprsId, submissionId)
       val result = source.runWith(Sink.fold(Seq.empty[CadxValidationError])(_ :+ _)).futureValue
-      result must contain only (fileError, rowError)
+      result must contain only(fileError, rowError)
     }
   }
 }

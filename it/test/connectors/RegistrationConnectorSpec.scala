@@ -34,7 +34,7 @@ import play.api.libs.json.Json
 import services.UuidService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.WireMockSupport
-import utils.ContactDetailsBuilder.aContactDetails
+import support.builders.ContactDetailsBuilder.aContactDetails
 
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneId}

@@ -24,3 +24,5 @@ DELETE      /platform-operator/:operatorId      controllers.PlatformOperatorCont
 GET         /platform-operator                  controllers.PlatformOperatorController.get()
 GET         /platform-operator/:operatorId      controllers.PlatformOperatorController.getOne(operatorId: String)
 
+GET         /pending-enrolment              controllers.PendingEnrolmentController.get()
+POST        /pending-enrolment              controllers.PendingEnrolmentController.save()

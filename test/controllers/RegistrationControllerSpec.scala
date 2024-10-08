@@ -35,7 +35,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import services.UuidService
-import utils.ContactDetailsBuilder.aContactDetails
+import support.builders.ContactDetailsBuilder.aContactDetails
 
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneId}

@@ -16,28 +16,26 @@
 
 package models.operator
 
-import play.api.libs.json._
-import play.api.libs.functional.syntax._
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
 
-final case class ContactDetails(
-                                 phoneNumber: Option[String],
-                                 contactName: String,
-                                 emailAddress: String
-                               )
+final case class ContactDetails(phoneNumber: Option[String],
+                                contactName: String,
+                                emailAddress: String)
 
 object ContactDetails {
 
   lazy val defaultFormat: OFormat[ContactDetails] = Json.format
-  
+
   lazy val downstreamWrites: OWrites[ContactDetails] = (
     (__ \ "PhoneNumber").writeNullable[String] and
-    (__ \ "ContactName").write[String] and
-    (__ \ "EmailAddress").write[String]
-  )(o => Tuple.fromProductTyped(o))
-  
+      (__ \ "ContactName").write[String] and
+      (__ \ "EmailAddress").write[String]
+    )(o => Tuple.fromProductTyped(o))
+
   lazy val downStreamReads: Reads[ContactDetails] = (
     (__ \ "PhoneNumber").readNullable[String] and
-    (__ \ "ContactName").read[String] and
-    (__ \ "EmailAddress").read[String]
-  )(ContactDetails.apply _)
+      (__ \ "ContactName").read[String] and
+      (__ \ "EmailAddress").read[String]
+    )(ContactDetails.apply)
 }

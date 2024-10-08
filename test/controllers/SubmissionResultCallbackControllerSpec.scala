@@ -17,9 +17,9 @@
 package controllers
 
 import generated.{AEOI, Accepted, BREResponse_Type, ErrorDetail_Type, FileError_Type, Generated_BREResponse_TypeFormat, GenericStatusMessage_Type, RecordError_Type, Rejected, RequestCommon_Type, RequestDetail_Type, ValidationErrors_Type, ValidationResult_Type}
-import models.submission.{CadxValidationError, Submission}
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Ready, Submitted}
+import models.submission.{CadxValidationError, Submission}
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
