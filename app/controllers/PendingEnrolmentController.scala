@@ -41,8 +41,12 @@ class PendingEnrolmentController @Inject()(authAction: AuthPendingEnrolmentActio
     }
   }
 
-  def save() = authAction(parse.json[PendingEnrolmentRequest]).async { implicit request =>
-    val pendingEnrolment = PendingEnrolment(request = request, created = clock.instant())
+  def save(): Action[PendingEnrolmentRequest] = authAction(parse.json[PendingEnrolmentRequest]).async { implicit request =>
+    val pendingEnrolment = PendingEnrolment(pendingEnrolmentRequest = request, created = clock.instant())
     pendingEnrolmentRepository.insert(pendingEnrolment).map(_ => Ok)
+  }
+
+  def remove(): Action[AnyContent] = authAction(parse.default).async { implicit request =>
+    pendingEnrolmentRepository.delete(request.userId).map(_ => Ok)
   }
 }

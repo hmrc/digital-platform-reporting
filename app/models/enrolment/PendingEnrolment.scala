@@ -40,15 +40,15 @@ object PendingEnrolment {
 
   implicit val format: OFormat[PendingEnrolment] = Json.format[PendingEnrolment]
 
-  def apply(request: AuthenticatedPendingEnrolmentRequest[PendingEnrolmentRequest],
+  def apply(pendingEnrolmentRequest: AuthenticatedPendingEnrolmentRequest[PendingEnrolmentRequest],
             created: Instant): PendingEnrolment = {
     PendingEnrolment(
-      userId = request.userId,
-      providerId = request.providerId,
-      groupIdentifier = request.groupIdentifier,
-      verifierKey = request.body.verifierKey,
-      verifierValue = request.body.verifierValue,
-      dprsId = request.body.dprsId,
+      userId = pendingEnrolmentRequest.userId,
+      providerId = pendingEnrolmentRequest.providerId,
+      groupIdentifier = pendingEnrolmentRequest.groupIdentifier,
+      verifierKey = pendingEnrolmentRequest.body.verifierKey,
+      verifierValue = pendingEnrolmentRequest.body.verifierValue,
+      dprsId = pendingEnrolmentRequest.body.dprsId,
       created = created
     )
   }

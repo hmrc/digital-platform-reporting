@@ -59,7 +59,7 @@ class PendingEnrolmentSpec extends SpecBase {
       val created = Instant.now()
 
       PendingEnrolment.apply(
-        request = anAuthenticatedPendingEnrolmentRequest,
+        pendingEnrolmentRequest = anAuthenticatedPendingEnrolmentRequest,
         created = created,
       ) mustBe PendingEnrolment(
         userId = anAuthenticatedPendingEnrolmentRequest.userId,
