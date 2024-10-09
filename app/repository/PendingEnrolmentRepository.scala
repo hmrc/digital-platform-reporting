@@ -47,6 +47,9 @@ class PendingEnrolmentRepository @Inject()(mongoComponent: MongoComponent,
   def find(userId: String): Future[Option[PendingEnrolment]] =
     collection.find(userIdFilter(userId)).limit(1).headOption()
 
+  def delete(userId: String): Future[Done] =
+    collection.deleteMany(userIdFilter(userId)).toFuture().map(_ => Done)
+
   private def userIdFilter(userId: String) = Filters.equal("userId", userId)
 }
 

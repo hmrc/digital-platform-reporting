@@ -52,8 +52,11 @@ class PendingEnrolmentControllerSpec extends SpecBase
 
   private val mockPendingEnrolmentRepository = mock[PendingEnrolmentRepository]
 
-  private val action = new FakeAuthPendingEnrolmentAction(aPendingEnrolment.userId,
-    aPendingEnrolment.providerId, aPendingEnrolment.groupIdentifier)
+  private val action = new FakeAuthPendingEnrolmentAction(
+    aPendingEnrolment.userId,
+    aPendingEnrolment.providerId,
+    aPendingEnrolment.groupIdentifier
+  )
 
   override def fakeApplication(): Application = GuiceApplicationBuilder().overrides(
     bind[PendingEnrolmentRepository].toInstance(mockPendingEnrolmentRepository),
@@ -66,7 +69,7 @@ class PendingEnrolmentControllerSpec extends SpecBase
     Mockito.reset(mockPendingEnrolmentRepository)
   }
 
-  ".get(...)" - {
+  ".get()" - {
     "must return pending enrolment when matching one is found" in {
       when(mockPendingEnrolmentRepository.find(aPendingEnrolment.userId)).thenReturn(Future.successful(Some(aPendingEnrolment)))
 
@@ -87,7 +90,7 @@ class PendingEnrolmentControllerSpec extends SpecBase
     }
   }
 
-  ".save(...)" - {
+  ".save()" - {
     "must save pending enrolment and return OK" in {
       val pendingEnrolment = aPendingEnrolment.copy(
         verifierKey = aPendingEnrolmentRequest.verifierKey,
@@ -104,6 +107,19 @@ class PendingEnrolmentControllerSpec extends SpecBase
       status(result) mustBe OK
 
       verify(mockPendingEnrolmentRepository, times(1)).insert(pendingEnrolment)
+    }
+  }
+
+  ".remove()" - {
+    "must delete pending enrolment" in {
+      when(mockPendingEnrolmentRepository.delete(any())).thenReturn(Future.successful(Done))
+
+      val request = FakeRequest(routes.PendingEnrolmentController.remove())
+      val result = route(app, request).value
+
+      status(result) mustBe OK
+
+      verify(mockPendingEnrolmentRepository, times(1)).delete(aPendingEnrolment.userId)
     }
   }
 }

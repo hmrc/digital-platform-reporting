@@ -76,4 +76,14 @@ class PendingEnrolmentRepositorySpec extends SpecBase
       repository.find("unknown-id").futureValue mustBe None
     }
   }
+
+  ".delete" - {
+    "must remove existing item in the DB" in {
+      insert(aPendingEnrolment).futureValue
+
+      repository.delete(aPendingEnrolment.userId).futureValue
+
+      findAll().futureValue mustBe empty
+    }
+  }
 }
