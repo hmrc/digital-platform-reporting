@@ -16,7 +16,7 @@ POST        /submission/:id/submit                  controllers.SubmissionContro
 POST        /submission/list                        controllers.SubmissionController.list()
 GET         /submission/:id/errors                  controllers.CadxValidationErrorController.getCadxValidationErrors(id: String)
 POST        /sdes/submission/callback               controllers.SdesSubmissionCallbackController.callback()
-POST        /cadx/submission/callback               controllers.SubmissionResultCallbackController.callback()
+POST        /dac6/dprs0504/v1                       controllers.SubmissionResultCallbackController.callback()
 
 POST        /platform-operator                  controllers.PlatformOperatorController.create()
 PUT         /platform-operator                  controllers.PlatformOperatorController.update()
