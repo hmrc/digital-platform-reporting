@@ -17,7 +17,7 @@
 package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
-import connectors.SubscriptionConnector.UpdateSubscriptionFailure
+import connectors.SubscriptionConnector.{CreateSubscriptionFailure, CreateSubscriptionUnprocessableFailure, UpdateSubscriptionFailure}
 import models.subscription.*
 import models.subscription.requests.SubscriptionRequest
 import models.subscription.responses.*
@@ -112,7 +112,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
         result mustEqual expectedResponse
       }
 
-      "and return already subscribed when the server returns CONFLICT" in {
+      "and return already subscribed when the server returns UNPROCESSABLE_ENTITY with error code `007`" in {
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
 
@@ -138,6 +138,35 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
         result mustEqual AlreadySubscribedResponse
       }
 
+      "and return a failed future when the server returns UNPROCESSABLE_ENTITY with an error code other than `007`" in {
+        when(mockUuidService.generate())
+          .thenReturn(correlationId.toString, conversationId.toString)
+
+        val request = SubscriptionRequest("safe id", true, None, OrganisationContact(Organisation("name"), "email", None), None)
+
+        wireMockServer.stubFor(
+          post(urlMatching(".*/dac6/dprs0201/v1"))
+            .withHeader("Authorization", equalTo("Bearer createSubscriptionToken"))
+            .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
+            .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withHeader("Accept", equalTo("application/json"))
+            .withHeader("Date", equalTo("Sun, 02 Jan 2000 03:04:05 UTC"))
+            .withRequestBody(equalTo(Json.toJson(request)(SubscriptionRequest.createWrites).toString))
+            .willReturn(
+              aResponse()
+                .withStatus(422)
+                .withBody(Json.toJson(ErrorResponse(ErrorDetail("001"))).toString)
+            ))
+
+        val result = connector.subscribe(request).failed.futureValue
+        result mustBe a[CreateSubscriptionUnprocessableFailure]
+
+        val failure = result.asInstanceOf[CreateSubscriptionUnprocessableFailure]
+        failure.correlationId mustEqual correlationId.toString
+        failure.errorCode mustEqual "001"
+      }
+
       "and return a failed future when the server returns an error" in {
         when(mockUuidService.generate())
           .thenReturn(correlationId.toString, conversationId.toString)
@@ -146,7 +175,7 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
 
         wireMockServer.stubFor(
           post(urlMatching(".*/dac6/dprs0201/v1"))
-            .withHeader("Authorization", equalTo("Bearer token"))
+            .withHeader("Authorization", equalTo("Bearer createSubscriptionToken"))
             .withHeader("X-Correlation-ID", equalTo(correlationId.toString))
             .withHeader("X-Conversation-ID", equalTo(conversationId.toString))
             .withHeader("Content-Type", equalTo("application/json"))
@@ -156,7 +185,12 @@ class SubscriptionConnectorSpec extends AnyFreeSpec
             .willReturn(serverError())
         )
 
-        connector.subscribe(request).failed.futureValue
+        val result = connector.subscribe(request).failed.futureValue
+        result mustBe a[CreateSubscriptionFailure]
+        
+        val failure = result.asInstanceOf[CreateSubscriptionFailure]
+        failure.correlationId mustEqual correlationId.toString
+        failure.status mustEqual 500
       }
     }
   }

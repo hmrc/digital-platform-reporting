@@ -37,9 +37,3 @@ object SubscribedResponse {
 }
 
 case object AlreadySubscribedResponse extends SubscriptionResponse
-
-final case class UnexpectedResponse(errorCode: String) extends SubscriptionResponse
-
-object UnexpectedResponse {
-  implicit lazy val format: OFormat[UnexpectedResponse] = Json.format[UnexpectedResponse]
-}
