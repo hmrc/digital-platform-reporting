@@ -517,7 +517,8 @@ class SubmissionServiceSpec
       when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
       when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.successful(Done))
 
-      submissionService.submitAssumedReporting(dprsId, operator.operatorId, assumingOperator, Year.of(2024))(using HeaderCarrier()).futureValue
+      val submission = submissionService.submitAssumedReporting(dprsId, operator.operatorId, assumingOperator, Year.of(2024))(using HeaderCarrier()).futureValue
+      submission mustEqual expectedSubmission
 
       verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
       verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())

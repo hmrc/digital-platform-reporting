@@ -68,7 +68,7 @@ class SubmissionService @Inject() (
         Future.failed(InvalidSubmissionStateException(submission._id))
     }
 
-  def submitAssumedReporting(dprsId: String, operatorId: String, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year)(using HeaderCarrier): Future[Done] = {
+  def submitAssumedReporting(dprsId: String, operatorId: String, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year)(using HeaderCarrier): Future[Submission] = {
     for {
       subscription <- subscriptionConnector.get(dprsId)
       operator     <- OptionT(platformOperatorConnector.get(dprsId, operatorId)).getOrElseF(Future.failed(new RuntimeException())) // TODO
@@ -91,7 +91,7 @@ class SubmissionService @Inject() (
       submissionBody    =  addEnvelope(ByteString.fromString(payload.body.toString), submission._id, fileName, subscription, isManual = true)
       submissionSource  =  createSubmissionSource(submissionBody)
       _                 <- submissionConnector.submit(submission._id, submissionSource)
-    } yield Done
+    } yield submission
   }
 
   private def submitDirect(submission: Submission, state: Validated, subscription: SubscriptionInfo)(using HeaderCarrier): Future[Done] =

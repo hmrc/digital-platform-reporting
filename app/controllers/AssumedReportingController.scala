@@ -18,6 +18,7 @@ package controllers
 
 import controllers.actions.AuthAction
 import models.submission.AssumedReportingSubmissionRequest
+import play.api.libs.json.Json
 import play.api.mvc.{Action, ControllerComponents}
 import services.SubmissionService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -39,6 +40,6 @@ class AssumedReportingController @Inject() (
         operatorId = request.body.operatorId,
         assumingOperator = request.body.assumingOperator,
         reportingPeriod = request.body.reportingPeriod
-      ).map(_ => NoContent)
+      ).map(submission => Ok(Json.toJson(submission)))
     }
 }
