@@ -17,6 +17,7 @@
 package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
+import generated.{DPI_OECD, Generated_DPI_OECDFormat}
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
@@ -25,11 +26,11 @@ import org.mockito.Mockito.when
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
-import org.scalatest.{BeforeAndAfterEach, EitherValues}
+import org.scalatest.{BeforeAndAfterEach, EitherValues, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
-import play.api.http.Status.INTERNAL_SERVER_ERROR
+import play.api.http.Status.{INTERNAL_SERVER_ERROR, NOT_FOUND, OK, UNPROCESSABLE_ENTITY}
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import services.UuidService
@@ -39,6 +40,7 @@ import utils.DateTimeFormats.RFC7231Formatter
 
 import java.time.{Clock, Instant, ZoneOffset}
 import java.util.UUID
+import scala.xml.{Utility, XML}
 
 class SubmissionConnectorSpec
   extends AnyFreeSpec
@@ -49,7 +51,8 @@ class SubmissionConnectorSpec
     with MockitoSugar
     with EitherValues
     with GuiceOneAppPerSuite
-    with BeforeAndAfterEach {
+    with BeforeAndAfterEach
+    with OptionValues {
 
   private val now = Instant.now()
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
@@ -64,7 +67,9 @@ class SubmissionConnectorSpec
     new GuiceApplicationBuilder()
       .configure(
         "microservice.services.report-submission.port" -> wireMockPort,
-        "microservice.services.report-submission.bearer-token" -> "token"
+        "microservice.services.report-submission.bearer-token" -> "token",
+        "microservice.services.get-manual-assumed-reporting-submission.port" -> wireMockPort,
+        "microservice.services.get-manual-assumed-reporting-submission.bearer-token" -> "token"
       )
       .overrides(
         bind[Clock].toInstance(clock),
@@ -106,10 +111,10 @@ class SubmissionConnectorSpec
     "must fail when the server responds with anything else" in {
 
       wireMockServer.stubFor(
-        post(urlPathEqualTo("/dac6/dprs0502/v1"))
+        post(urlPathEqualTo("/digital-platform-reporting-stubs/dac6/dprs0502/v1"))
           .withRequestBody(equalTo("foobar"))
           .withHeader("Authorization", equalTo("Bearer token"))
-          .withHeader("X-Forwarded-Host", equalTo("digital-platform-submission"))
+          .withHeader("X-Forwarded-Host", equalTo("digital-platform-reporting"))
           .withHeader("X-Correlation-ID", equalTo(correlationId))
           .withHeader("X-Correlation-ID", equalTo(correlationId))
           .withHeader("X-Conversation-ID", equalTo(submissionId))
@@ -123,6 +128,88 @@ class SubmissionConnectorSpec
 
       val body = Source(Seq(ByteString.fromString("foo"), ByteString.fromString("bar")))
       connector.submit(submissionId, body)(using HeaderCarrier()).failed.futureValue
+    }
+  }
+
+  "getManualAssumedReportingSubmission" - {
+
+    val caseId = "caseId"
+    val correlationId = UUID.randomUUID().toString
+    val conversationId = UUID.randomUUID().toString
+    val expectedDate = RFC7231Formatter.format(now.atZone(ZoneOffset.UTC))
+
+    "must return the inner DPI_OECD body from the response when the server responds OK" in {
+
+      val payloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/0504_success.xml").toURI)
+      val payload = Utility.trim(XML.loadString(payloadSource.mkString))
+      payloadSource.close()
+
+      val expectedBodySource = scala.io.Source.fromFile(getClass.getResource("/assumed/test.xml").toURI)
+      val expectedBody = scalaxb.fromXML[DPI_OECD](Utility.trim(XML.loadString(expectedBodySource.mkString)))
+      expectedBodySource.close()
+
+      wireMockServer.stubFor(
+        get(urlPathEqualTo("/digital-platform-reporting-stubs/dac6/dprs0504/v1/caseId"))
+          .withHeader("Authorization", equalTo("Bearer token"))
+          .withHeader("X-Forwarded-Host", equalTo("digital-platform-reporting"))
+          .withHeader("X-Correlation-ID", equalTo(correlationId))
+          .withHeader("X-Conversation-ID", equalTo(conversationId))
+          .withHeader("Accept", equalTo("application/xml"))
+          .withHeader("Date", equalTo(expectedDate))
+          .willReturn(
+            aResponse()
+              .withStatus(OK)
+              .withBody(payload.toString)
+          )
+      )
+
+      when(mockUuidService.generate()).thenReturn(correlationId, conversationId)
+
+      val result = connector.getManualAssumedReportingSubmission(caseId)(using HeaderCarrier()).futureValue.value
+      result mustEqual expectedBody
+    }
+
+    "must return None when the server responds with NOT_FOUND" in {
+
+      wireMockServer.stubFor(
+        get(urlPathEqualTo("/digital-platform-reporting-stubs/dac6/dprs0504/v1/caseId"))
+          .withHeader("Authorization", equalTo("Bearer token"))
+          .withHeader("X-Forwarded-Host", equalTo("digital-platform-reporting"))
+          .withHeader("X-Correlation-ID", equalTo(correlationId))
+          .withHeader("X-Conversation-ID", equalTo(conversationId))
+          .withHeader("Accept", equalTo("application/xml"))
+          .withHeader("Date", equalTo(expectedDate))
+          .willReturn(
+            aResponse()
+              .withStatus(NOT_FOUND)
+          )
+      )
+
+      when(mockUuidService.generate()).thenReturn(correlationId, conversationId)
+
+      val result = connector.getManualAssumedReportingSubmission(caseId)(using HeaderCarrier()).futureValue
+      result mustBe None
+    }
+
+    "must fail when the server responds with anything else" in {
+
+      wireMockServer.stubFor(
+        get(urlPathEqualTo("/digital-platform-reporting-stubs/dac6/dprs0504/v1/caseId"))
+          .withHeader("Authorization", equalTo("Bearer token"))
+          .withHeader("X-Forwarded-Host", equalTo("digital-platform-reporting"))
+          .withHeader("X-Correlation-ID", equalTo(correlationId))
+          .withHeader("X-Conversation-ID", equalTo(conversationId))
+          .withHeader("Accept", equalTo("application/xml"))
+          .withHeader("Date", equalTo(expectedDate))
+          .willReturn(
+            aResponse()
+              .withStatus(UNPROCESSABLE_ENTITY)
+          )
+      )
+
+      when(mockUuidService.generate()).thenReturn(correlationId, conversationId)
+
+      connector.getManualAssumedReportingSubmission(caseId)(using HeaderCarrier()).failed.futureValue
     }
   }
 }
