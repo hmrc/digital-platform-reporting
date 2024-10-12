@@ -49,5 +49,8 @@ class AppConfig @Inject()(configuration: Configuration) {
   val DeliveredSubmissionsBaseUrl: String = configuration.get[Service]("microservice.services.view-submissions").baseUrl
   val DeliveredSubmissionsBearerToken: String = configuration.get[String]("microservice.services.view-submissions.bearer-token")
 
+  val GetManualAssumedReportingSubmissionUrl: String = configuration.get[Service]("microservice.services.get-manual-assumed-reporting-submission").baseUrl
+  val GetManualAssumedReportingSubmissionToken: String = configuration.get[String]("microservice.services.get-manual-assumed-reporting-submission.bearer-token")
+
   val MongoPendingEnrolmentTTL: Duration = configuration.get[Duration]("mongodb.pending-enrolment.ttl")
 }

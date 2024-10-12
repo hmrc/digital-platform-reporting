@@ -17,12 +17,13 @@
 package connectors
 
 import config.AppConfig
-import connectors.SubmissionConnector.SubmissionFailed
+import connectors.SubmissionConnector.{GetManualAssumedReportingSubmissionFailure, SubmissionFailed}
+import generated.{DPI_OECD, SuccessType, Generated_SuccessTypeFormat}
 import org.apache.pekko.Done
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import play.api.http.HeaderNames
-import play.api.http.Status.NO_CONTENT
+import play.api.http.Status.{NOT_FOUND, NO_CONTENT, OK}
 import play.api.libs.ws.{BodyWritable, SourceBody}
 import services.UuidService
 import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
@@ -33,6 +34,7 @@ import utils.DateTimeFormats.RFC7231Formatter
 import java.time.Clock
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.xml.XML
 
 @Singleton
 class SubmissionConnector @Inject() (
@@ -68,9 +70,36 @@ class SubmissionConnector @Inject() (
         }
       }
   }
+
+  def getManualAssumedReportingSubmission(submissionCaseId: String)(using HeaderCarrier): Future[Option[DPI_OECD]] = {
+
+    val correlationId = uuidService.generate()
+    val conversationId = uuidService.generate()
+
+    httpClient.get(url"${appConfig.GetManualAssumedReportingSubmissionUrl}/dac6/dprs0504/v1/$submissionCaseId")
+      .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.GetManualAssumedReportingSubmissionToken}")
+      .setHeader("X-Correlation-ID" -> correlationId)
+      .setHeader("X-Conversation-ID" -> conversationId)
+      .setHeader("X-Forwarded-Host" -> appConfig.AppName)
+      .setHeader(HeaderNames.ACCEPT -> "application/xml")
+      .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
+      .execute[HttpResponse]
+      .flatMap { response =>
+        response.status match {
+          case OK =>
+            Future.successful(Some(scalaxb.fromXML[SuccessType](XML.loadString(response.body)).DPI_OECD))
+          case NOT_FOUND =>
+            Future.successful(None)
+          case _ =>
+            Future.failed(GetManualAssumedReportingSubmissionFailure(submissionCaseId, response.status))
+        }
+      }
+  }
 }
 
 object SubmissionConnector {
 
   final case class SubmissionFailed(submissionId: String) extends Throwable
+
+  final case class GetManualAssumedReportingSubmissionFailure(submissionCaseId: String, status: Int) extends Throwable
 }

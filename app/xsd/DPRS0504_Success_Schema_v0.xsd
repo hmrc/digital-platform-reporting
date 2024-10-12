@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- NOTE: This XSD is based on the EPIDD provided for DPRS0504 but the schema itself was not included and so has not been agreed by other parties -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:cadx="http://www.hmrc.gsi.gov.uk/dpi/cadx" xmlns:dpi="urn:oecd:ties:dpi:v1" targetNamespace="http://www.hmrc.gsi.gov.uk/dpi/cadx">
+  <xs:import namespace="urn:oecd:ties:dpi:v1" schemaLocation="DPIXML_v1.08.xsd"/>
+  <xs:element name="success_type" type="cadx:SuccessType"/>
+  <xs:complexType name="SuccessType">
+    <xs:sequence>
+      <xs:element name="processingDate" type="xs:dateTime"/>
+      <xs:element ref="dpi:DPI_OECD"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>
