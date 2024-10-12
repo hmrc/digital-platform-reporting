@@ -137,7 +137,7 @@ class AssumedReportingServiceSpec
 
       validate(payload.body)
 
-      payload.messageRef mustEqual "GB2024GB-operatorId-86233cb7-4922-4e54-a5ff-75f5e62eec0d"
+      payload.messageRef mustEqual "GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d"
       payload.body mustEqual expectedPayload
     }
 
@@ -190,7 +190,7 @@ class AssumedReportingServiceSpec
 
       validate(payload.body)
 
-      payload.messageRef mustEqual "GB2024GB-operatorId-86233cb7-4922-4e54-a5ff-75f5e62eec0d"
+      payload.messageRef mustEqual "GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d"
       payload.body mustEqual expectedPayload
     }
   }
