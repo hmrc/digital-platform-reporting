@@ -25,7 +25,7 @@ import scalaxb.DataRecord
 import java.time.format.DateTimeFormatter
 import java.time.{Clock, LocalDateTime, Month, Year}
 import javax.inject.{Inject, Singleton}
-import scala.xml.NodeSeq
+import scala.xml.{NodeSeq, Utility}
 
 @Singleton
 class AssumedReportingService @Inject() (
@@ -63,7 +63,7 @@ class AssumedReportingService @Inject() (
           AssumedReporting = Some(true),
           DocSpec = DocSpec_Type(
             DocTypeIndic = OECD1,
-            DocRefId = uuidService.generate(),
+            DocRefId = createDocRefId(messageRef),
             CorrMessageRefId = None,
             CorrDocRefId = None
           )
@@ -77,7 +77,7 @@ class AssumedReportingService @Inject() (
               Address = createAssumingOperatorAddress(assumingOperator.address),
               DocSpec = DocSpec_Type(
                 DocTypeIndic = OECD1,
-                DocRefId = uuidService.generate(),
+                DocRefId = createDocRefId(messageRef),
                 CorrMessageRefId = None,
                 CorrDocRefId = None
               )
@@ -89,13 +89,16 @@ class AssumedReportingService @Inject() (
       attributes = Map("@version" -> DataRecord("1"))
     )
 
-    val body = scalaxb.toXML(submission, Some("urn:oecd:ties:dpi:v1"), Some("DPI_OECD"), generated.defaultScope)
+    val body = Utility.trim(scalaxb.toXML(submission, Some("urn:oecd:ties:dpi:v1"), Some("DPI_OECD"), generated.defaultScope).head)
     
     AssumedReportingPayload(messageRef, body)
   }
 
   private def createMessageRefId(reportingPeriod: Year, operatorId: String): String =
-    s"GB${reportingPeriod}GB-$operatorId-${uuidService.generate()}"
+    s"GB${reportingPeriod}GB-$operatorId-${uuidService.generate().replaceAll("-", "")}"
+
+  private def createDocRefId(messageRefId: String): String =
+    s"$messageRefId-${uuidService.generate().replaceAll("-", "")}"
 
   private def createTinDetails(tinDetails: Seq[TinDetails]): Seq[TIN_Type] = {
     if (tinDetails.nonEmpty) {
@@ -108,7 +111,7 @@ class AssumedReportingService @Inject() (
         )
       }
     } else {
-      Seq(TIN_Type("", Map("@unknown" -> DataRecord(true))))
+      Seq(TIN_Type("N/A", Map("@unknown" -> DataRecord(true))))
     }
   }
 
@@ -145,7 +148,7 @@ class AssumedReportingService @Inject() (
     Address_Type(
       CountryCode = addressDetails.countryCode.map(CountryCode_Type.fromString(_, generated.defaultScope)).get, // This is required but we don't require this in the address details
       address_typeoption = innerAddress,
-      attributes = Map.empty
+      attributes = Map("@legalAddressType" -> DataRecord[OECDLegalAddressType_EnumType](OECD304))
     )
   }
 
@@ -176,7 +179,7 @@ class AssumedReportingService @Inject() (
         ),
         AddressFree = Some(addressFree)
       )),
-      attributes = Map.empty
+      attributes = Map("@legalAddressType" -> DataRecord[OECDLegalAddressType_EnumType](OECD304))
     )
   }
 }

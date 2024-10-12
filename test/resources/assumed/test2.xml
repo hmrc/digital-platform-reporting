@@ -7,7 +7,7 @@
     <dpi:TransmittingCountry>GB</dpi:TransmittingCountry>
     <dpi:ReceivingCountry>GB</dpi:ReceivingCountry>
     <dpi:MessageType>DPI</dpi:MessageType>
-    <dpi:MessageRefId>GB2024GB-operatorId-86233cb7-4922-4e54-a5ff-75f5e62eec0d</dpi:MessageRefId>
+    <dpi:MessageRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d</dpi:MessageRefId>
     <dpi:MessageTypeIndic>DPI401</dpi:MessageTypeIndic>
     <dpi:ReportingPeriod>2024-12-31</dpi:ReportingPeriod>
     <dpi:Timestamp>2024-12-01T12:30:45</dpi:Timestamp>
@@ -15,24 +15,24 @@
   <dpi:DPIBody>
     <dpi:PlatformOperator>
       <dpi:ResCountryCode>GB</dpi:ResCountryCode>
-      <dpi:TIN unknown="true"></dpi:TIN>
+      <dpi:TIN unknown="true">N/A</dpi:TIN>
       <dpi:Name>operatorName</dpi:Name>
-      <dpi:Address>
+      <dpi:Address legalAddressType="OECD304">
         <dpi:CountryCode>GB</dpi:CountryCode>
         <dpi:AddressFree>line1, GB</dpi:AddressFree>
       </dpi:Address>
       <dpi:AssumedReporting>true</dpi:AssumedReporting>
       <dpi:DocSpec>
         <stf:DocTypeIndic>OECD1</stf:DocTypeIndic>
-        <stf:DocRefId>eb6bb8e9-6879-4f4e-bebf-7d2f6a6d95c9</stf:DocRefId>
+        <stf:DocRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d-eb6bb8e968794f4ebebf7d2f6a6d95c9</stf:DocRefId>
       </dpi:DocSpec>
     </dpi:PlatformOperator>
     <dpi:OtherPlatformOperators>
       <dpi:AssumingPlatformOperator>
         <dpi:ResCountryCode>US</dpi:ResCountryCode>
-        <dpi:TIN unknown="true"></dpi:TIN>
+        <dpi:TIN unknown="true">N/A</dpi:TIN>
         <dpi:Name>assumingOperator</dpi:Name>
-        <dpi:Address>
+        <dpi:Address legalAddressType="OECD304">
           <dpi:CountryCode>US</dpi:CountryCode>
           <dpi:AddressFix>
             <dpi:PostCode>assumed postcode</dpi:PostCode>
@@ -42,7 +42,7 @@
         </dpi:Address>
         <dpi:DocSpec>
           <stf:DocTypeIndic>OECD1</stf:DocTypeIndic>
-          <stf:DocRefId>a84001ba-ef8a-45f6-a47f-d5eca823fc33</stf:DocRefId>
+          <stf:DocRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d-a84001baef8a45f6a47fd5eca823fc33</stf:DocRefId>
         </dpi:DocSpec>
       </dpi:AssumingPlatformOperator>
     </dpi:OtherPlatformOperators>
