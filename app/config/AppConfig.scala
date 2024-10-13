@@ -53,4 +53,8 @@ class AppConfig @Inject()(configuration: Configuration) {
   val GetManualAssumedReportingSubmissionToken: String = configuration.get[String]("microservice.services.get-manual-assumed-reporting-submission.bearer-token")
 
   val MongoPendingEnrolmentTTL: Duration = configuration.get[Duration]("mongodb.pending-enrolment.ttl")
+
+  val blockedSubmissionThreshold: java.time.Duration = configuration
+    .get[java.time.Duration]("submissions.blocked-threshold")
+//    .getOrElse(java.time.Duration.ofDays(2))
 }

@@ -27,3 +27,5 @@ GET         /platform-operator/:operatorId      controllers.PlatformOperatorCont
 GET         /pending-enrolment              controllers.PendingEnrolmentController.get()
 POST        /pending-enrolment              controllers.PendingEnrolmentController.save()
 DELETE      /pending-enrolment              controllers.PendingEnrolmentController.remove()
+
+GET         /admin/blocked-submissions      controllers.AdminController.getBlockedSubmissions()
