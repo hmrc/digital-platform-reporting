@@ -17,27 +17,20 @@
 package repository
 
 import config.AppConfig
-import models.submission.Submission
+import models.submission
+import models.submission.{IdAndLastUpdated, Submission}
 import org.apache.pekko.Done
-import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import org.mongodb.scala.model.*
+import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import play.api.Configuration
-import play.api.libs.json.{Json, OWrites}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.play.http.logging.Mdc
-
 import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
-
-final case class IdAndLastUpdated(id:String, lastUpdated: Instant)
-
-object IdAndLastUpdated {
-  implicit val writes: OWrites[IdAndLastUpdated] = Json.writes
-}
 
 @Singleton
 class SubmissionRepository @Inject() (
@@ -52,6 +45,7 @@ class SubmissionRepository @Inject() (
   indexes = SubmissionRepository.indexes(configuration),
   replaceIndexes = true
 ) {
+  
   def save(submission: Submission): Future[Done] = Mdc.preservingMdc {
     collection.replaceOne(
       filter = Filters.and(
@@ -82,7 +76,7 @@ class SubmissionRepository @Inject() (
             Filters.lt("updated", cutoff)
           )
         ).limit(1000)
-        .map(s => IdAndLastUpdated(s._id, s.updated))
+        .map(s => submission.IdAndLastUpdated(s._id, s.updated))
         .toFuture()
     }
   }
@@ -101,6 +95,7 @@ class SubmissionRepository @Inject() (
 }
 
 object SubmissionRepository {
+  
   def indexes(configuration: Configuration): Seq[IndexModel] =
     Seq(
       IndexModel(

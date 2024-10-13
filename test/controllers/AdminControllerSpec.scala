@@ -16,6 +16,8 @@
 
 package controllers
 
+import models.submission
+import models.submission.IdAndLastUpdated
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{reset, when}
@@ -30,7 +32,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.Helpers.*
 import play.api.test.{FakeRequest, Helpers}
-import repository.{IdAndLastUpdated, SubmissionRepository}
+import repository.SubmissionRepository
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.internalauth.client.test.{BackendAuthComponentsStub, StubBehaviour}
 import uk.gov.hmrc.internalauth.client.{BackendAuthComponents, Retrieval}
@@ -103,8 +105,8 @@ class AdminControllerSpec
       when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval))).thenReturn(Future.unit)
 
       when(mockSubmissionRepo.getBlockedSubmissionIds()).thenReturn(Future.successful(List(
-        IdAndLastUpdated("ID1",Instant.parse("2024-10-10T10:10:10.100Z")),
-        IdAndLastUpdated("ID2",Instant.parse("2024-10-10T10:10:10.100Z"))
+        submission.IdAndLastUpdated("ID1",Instant.parse("2024-10-10T10:10:10.100Z")),
+        submission.IdAndLastUpdated("ID2",Instant.parse("2024-10-10T10:10:10.100Z"))
       )))
 
       running(app) {

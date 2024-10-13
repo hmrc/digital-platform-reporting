@@ -16,7 +16,6 @@ lazy val microservice = Project("digital-platform-reporting", file("."))
   .settings(resolvers += Resolver.jcenterRepo)
   .settings(CodeCoverageSettings.settings *)
   .settings(PlayKeys.playDefaultPort := 20004)
-  .settings(offline := true)
 
 lazy val it = project
   .enablePlugins(PlayScala)

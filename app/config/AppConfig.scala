@@ -55,6 +55,6 @@ class AppConfig @Inject()(configuration: Configuration) {
   val MongoPendingEnrolmentTTL: Duration = configuration.get[Duration]("mongodb.pending-enrolment.ttl")
 
   val blockedSubmissionThreshold: java.time.Duration = configuration
-    .get[java.time.Duration]("submissions.blocked-threshold")
-//    .getOrElse(java.time.Duration.ofDays(2))
+    .getOptional[java.time.Duration]("submissions.blocked-threshold")
+    .getOrElse(java.time.Duration.ofDays(2))
 }
