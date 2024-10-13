@@ -39,6 +39,7 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
         operatorId = "operatorId",
         operatorName = "operatorName",
         reportingPeriod = "reportingPeriod",
+        submissionCaseId = "submissionCaseId",
         submissionDateTime = now,
         submissionStatus = SubmissionStatus.Pending,
         assumingReporterName = None

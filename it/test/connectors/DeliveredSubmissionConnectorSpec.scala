@@ -93,7 +93,7 @@ class DeliveredSubmissionConnectorSpec extends AnyFreeSpec
                 "pOId" -> "operatorId",
                 "pOName" -> "operatorName",
                 "reportingYear" -> "2024",
-                "submissionCaseId" -> "CASE-ID",
+                "submissionCaseId" -> "DPI-SUB-1",
                 "submissionDateTime" -> "2000-01-02T03:04:05Z",
                 "submissionStatus" -> "REJECTED"
               )
@@ -110,6 +110,7 @@ class DeliveredSubmissionConnectorSpec extends AnyFreeSpec
             operatorId = "operatorId",
             operatorName = "operatorName",
             reportingPeriod = "2024",
+            submissionCaseId = "DPI-SUB-1",
             submissionDateTime = instant,
             submissionStatus = SubmissionStatus.Rejected,
             assumingReporterName = None

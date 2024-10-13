@@ -58,8 +58,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         
         val deliveredSubmissions = DeliveredSubmissions(
           submissions = Seq(
-            DeliveredSubmission("id1", "fileName", "operatorId", "operatorName", "2024", instant, Success, None),
-            DeliveredSubmission("id2", "fileName2", "operatorId", "operatorName", "2024", instant, Success, None)
+            DeliveredSubmission("id1", "fileName", "operatorId", "operatorName", "2024", "submissionCaseId", instant, Success, None),
+            DeliveredSubmission("id2", "fileName2", "operatorId", "operatorName", "2024", "submissionCaseId", instant, Success, None)
           ),
           resultsCount = 2
         )
@@ -88,8 +88,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
 
         val deliveredSubmissions = DeliveredSubmissions(
           submissions = Seq(
-            DeliveredSubmission("id1", "fileName", "operatorId", "operatorName", "2024", instant, Success, None),
-            DeliveredSubmission("id2", "fileName2", "operatorId", "operatorName", "2024", instant, Success, None)
+            DeliveredSubmission("id1", "fileName", "operatorId", "operatorName", "2024", "submissionCaseId", instant, Success, None),
+            DeliveredSubmission("id2", "fileName2", "operatorId", "operatorName", "2024", "submissionCaseId", instant, Success, None)
           ),
           resultsCount = 2
         )
@@ -117,8 +117,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
 
         val deliveredSubmissions = DeliveredSubmissions(
           submissions = Seq(
-            DeliveredSubmission("id1", "fileName", "operatorId", "operatorName", "2024", instant, Success, None),
-            DeliveredSubmission("id2", "fileName2", "operatorId", "operatorName", "2024", instant, Success, None)
+            DeliveredSubmission("id1", "fileName", "operatorId", "operatorName", "2024", "submissionCaseId", instant, Success, None),
+            DeliveredSubmission("id2", "fileName2", "operatorId", "operatorName", "2024", "submissionCaseId", instant, Success, None)
           ),
           resultsCount = 2
         )
