@@ -161,7 +161,7 @@ class AssumedReportingServiceSpec
         val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
           subscriptionId = dprsId,
           assumedReporting = true,
-          pageNumber = 0,
+          pageNumber = 1,
           sortBy = SubmissionDate,
           sortOrder = Descending,
           reportingPeriod = Some(2024),
@@ -235,7 +235,7 @@ class AssumedReportingServiceSpec
         val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
           subscriptionId = dprsId,
           assumedReporting = true,
-          pageNumber = 0,
+          pageNumber = 1,
           sortBy = SubmissionDate,
           sortOrder = Descending,
           reportingPeriod = Some(2024),
@@ -363,7 +363,7 @@ class AssumedReportingServiceSpec
         val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
           subscriptionId = dprsId,
           assumedReporting = true,
-          pageNumber = 0,
+          pageNumber = 1,
           sortBy = SubmissionDate,
           sortOrder = Descending,
           reportingPeriod = Some(2024),
@@ -455,7 +455,7 @@ class AssumedReportingServiceSpec
         val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
           subscriptionId = dprsId,
           assumedReporting = true,
-          pageNumber = 0,
+          pageNumber = 1,
           sortBy = SubmissionDate,
           sortOrder = Descending,
           reportingPeriod = Some(2024),
