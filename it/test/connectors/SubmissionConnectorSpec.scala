@@ -177,6 +177,7 @@ class SubmissionConnectorSpec
           .withHeader("X-Forwarded-Host", equalTo("digital-platform-reporting"))
           .withHeader("X-Correlation-ID", equalTo(correlationId))
           .withHeader("X-Conversation-ID", equalTo(conversationId))
+          .withHeader("Content-Type", equalTo("application/xml"))
           .withHeader("Accept", equalTo("application/xml"))
           .withHeader("Date", equalTo(expectedDate))
           .willReturn(
