@@ -512,7 +512,7 @@ class SubmissionServiceSpec
 
       when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
       when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
-      when(mockAssumedReportingService.createSubmission(any(), any(), any())).thenReturn(assumedReportingPayload)
+      when(mockAssumedReportingService.createSubmission(any(), any(), any(), any())(using any())).thenReturn(Future.successful(assumedReportingPayload))
       when(mockUuidService.generate()).thenReturn(submissionId)
       when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
       when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.successful(Done))
@@ -522,9 +522,8 @@ class SubmissionServiceSpec
 
       verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
       verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-      verify(mockAssumedReportingService).createSubmission(operator, assumingOperator, Year.of(2024))
       verify(mockSubmissionRepository).save(expectedSubmission)
-      verify(mockAssumedReportingService).createSubmission(eqTo(operator), eqTo(assumingOperator), eqTo(Year.of(2024)))
+      verify(mockAssumedReportingService).createSubmission(eqTo(dprsId), eqTo(operator), eqTo(assumingOperator), eqTo(Year.of(2024)))(using any())
 
       val captor: ArgumentCaptor[Source[ByteString, ?]] = ArgumentCaptor.forClass(classOf[Source[ByteString, ?]])
       verify(mockSubmissionConnector).submit(eqTo(submissionId), captor.capture())(using any())

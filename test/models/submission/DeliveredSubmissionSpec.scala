@@ -37,6 +37,7 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
         "pOId" -> "operatorId",
         "pOName" -> "operatorName",
         "reportingYear" -> "2024",
+        "submissionCaseId" -> "DPI-SUB-1",
         "submissionDateTime" -> "2024-12-31T01:02:03Z",
         "submissionStatus" -> "PENDING",
         "assumingReporterName" -> "assumingName"
@@ -48,6 +49,7 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
         operatorId = "operatorId",
         operatorName = "operatorName",
         reportingPeriod = "2024",
+        submissionCaseId = "DPI-SUB-1",
         submissionDateTime = Instant.parse("2024-12-31T01:02:03Z"),
         submissionStatus = SubmissionStatus.Pending,
         assumingReporterName = Some("assumingName")
@@ -64,6 +66,7 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
         "pOId" -> "operatorId",
         "pOName" -> "operatorName",
         "reportingYear" -> "2024",
+        "submissionCaseId" -> "DPI-SUB-1",
         "submissionDateTime" -> "2024-12-31T01:02:03Z",
         "submissionStatus" -> "PENDING"
       )
@@ -74,6 +77,7 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
         operatorId = "operatorId",
         operatorName = "operatorName",
         reportingPeriod = "2024",
+        submissionCaseId = "DPI-SUB-1",
         submissionDateTime = Instant.parse("2024-12-31T01:02:03Z"),
         submissionStatus = SubmissionStatus.Pending,
         assumingReporterName = None

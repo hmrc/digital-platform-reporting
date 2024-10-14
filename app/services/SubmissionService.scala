@@ -72,7 +72,7 @@ class SubmissionService @Inject() (
     for {
       subscription <- subscriptionConnector.get(dprsId)
       operator     <- OptionT(platformOperatorConnector.get(dprsId, operatorId)).getOrElseF(Future.failed(new RuntimeException())) // TODO
-      payload      =  assumedReportingService.createSubmission(operator, assumingOperator, reportingPeriod)
+      payload      <- assumedReportingService.createSubmission(dprsId, operator, assumingOperator, reportingPeriod)
       fileName     =  s"${payload.messageRef}.xml"
       submission   =  Submission(
         _id = uuidService.generate(),
