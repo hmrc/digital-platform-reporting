@@ -1,4 +1,4 @@
-<dpi:DPI_OECD version="1" xmlns:dpi="urn:oecd:ties:dpi:v1"
+<dpi:DPI_OECD version="1.0" xmlns:dpi="urn:oecd:ties:dpi:v1"
               xmlns:gsm="http://www.hmrc.gsi.gov.uk/gsm" xmlns:iso="urn:oecd:ties:isodpitypes:v1"
               xmlns:stf="urn:oecd:ties:dpistf:v1" xmlns:xs="http://www.w3.org/2001/XMLSchema"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -18,7 +18,9 @@
       <dpi:TIN issuedBy="GB">tin1</dpi:TIN>
       <dpi:TIN issuedBy="GB">tin2</dpi:TIN>
       <dpi:Name>operatorName</dpi:Name>
+      <dpi:PlatformBusinessName>operatorName</dpi:PlatformBusinessName>
       <dpi:PlatformBusinessName>businessName</dpi:PlatformBusinessName>
+      <dpi:PlatformBusinessName>tradingName</dpi:PlatformBusinessName>
       <dpi:Address legalAddressType="OECD304">
         <dpi:CountryCode>GB</dpi:CountryCode>
         <dpi:AddressFix>
