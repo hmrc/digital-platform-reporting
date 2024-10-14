@@ -55,6 +55,11 @@ class ValidationService @Inject() (
   private val schema = schemaFactory.newSchema(schemaFile)
 
   private val parserFactory = SAXParserFactory.newInstance()
+  parserFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+  parserFactory.setFeature("http://xml.org/sax/features/external-general-entities", false)
+  parserFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+  parserFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+  parserFactory.setXIncludeAware(false)
   parserFactory.setNamespaceAware(true)
   parserFactory.setSchema(schema)
 
