@@ -5,7 +5,7 @@
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
               xmlns:cadx="http://www.hmrc.gsi.gov.uk/dpi/cadx">
   <processingDate>2024-12-01T12:30:45</processingDate>
-  <dpi:DPI_OECD version="1">
+  <dpi:DPI_OECD version="1.0">
     <dpi:MessageSpec>
       <dpi:SendingEntityIN>operatorId</dpi:SendingEntityIN>
       <dpi:TransmittingCountry>GB</dpi:TransmittingCountry>
@@ -22,7 +22,9 @@
         <dpi:TIN issuedBy="GB">tin1</dpi:TIN>
         <dpi:TIN issuedBy="GB">tin2</dpi:TIN>
         <dpi:Name>operatorName</dpi:Name>
+        <dpi:PlatformBusinessName>operatorName</dpi:PlatformBusinessName>
         <dpi:PlatformBusinessName>businessName</dpi:PlatformBusinessName>
+        <dpi:PlatformBusinessName>tradingName</dpi:PlatformBusinessName>
         <dpi:Address legalAddressType="OECD304">
           <dpi:CountryCode>GB</dpi:CountryCode>
           <dpi:AddressFix>

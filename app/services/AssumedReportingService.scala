@@ -102,7 +102,7 @@ class AssumedReportingService @Inject()(
         OtherPlatformOperators = Some(createAssumingPlatformOperator(assumingOperator, messageRef, previousSubmission)),
         ReportableSeller = Seq.empty
       )),
-      attributes = Map("@version" -> DataRecord("1"))
+      attributes = Map("@version" -> DataRecord("1.0"))
     )
 
     val body = Utility.trim(scalaxb.toXML(submission, Some("urn:oecd:ties:dpi:v1"), Some("DPI_OECD"), generated.defaultScope).head)
@@ -123,7 +123,7 @@ class AssumedReportingService @Inject()(
       IN = Seq.empty, // Should this be the CRN / CHRN if it exists?
       VAT = None, // Should this be the VRN from the tin details if it exists?
       Name = Seq(NameOrganisation_Type(operator.operatorName)),
-      PlatformBusinessName = operator.businessName.toSeq,
+      PlatformBusinessName = Seq(Some(operator.operatorName), operator.businessName, operator.tradingName).flatten,
       Address = Seq(createOperatorAddress(operator.addressDetails)),
       Nexus = None,
       AssumedReporting = Some(true),
