@@ -81,6 +81,7 @@ class SubmissionConnector @Inject() (
       .setHeader("X-Correlation-ID" -> correlationId)
       .setHeader("X-Conversation-ID" -> conversationId)
       .setHeader("X-Forwarded-Host" -> appConfig.AppName)
+      .setHeader(HeaderNames.CONTENT_TYPE -> "application/xml")
       .setHeader(HeaderNames.ACCEPT -> "application/xml")
       .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
       .execute[HttpResponse]
