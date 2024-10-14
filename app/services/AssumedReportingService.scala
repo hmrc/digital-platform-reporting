@@ -66,7 +66,7 @@ class AssumedReportingService @Inject()(
     deliveredSubmissionConnector.get(ViewSubmissionsRequest(
       subscriptionId = dprsId,
       assumedReporting = true,
-      pageNumber = 0, // TODO is this 0 indexed or 1 indexed?
+      pageNumber = 1,
       sortBy = SubmissionDate,
       sortOrder = Descending,
       reportingPeriod = Some(reportingPeriod.getValue),
