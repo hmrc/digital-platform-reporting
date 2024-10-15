@@ -174,7 +174,7 @@ class AssumedReportingService @Inject()(
     s"GB${reportingPeriod}GB-$operatorId-${uuidService.generate().replaceAll("-", "")}"
 
   private def createDocRefId(messageRefId: String): String =
-    s"$messageRefId-${uuidService.generate().replaceAll("-", "")}"
+    s"${messageRefId}_${uuidService.generate().replaceAll("-", "")}"
 
   private def createTinDetails(tinDetails: Seq[TinDetails]): Seq[TIN_Type] = {
     if (tinDetails.nonEmpty) {

@@ -32,8 +32,8 @@
       <dpi:AssumedReporting>true</dpi:AssumedReporting>
       <dpi:DocSpec>
         <stf:DocTypeIndic>OECD2</stf:DocTypeIndic>
-        <stf:DocRefId>GB2024GB-operatorId-06abd30ff30248328a1c028873b2f4bf-507eb793f0a5404588285300f61e9bd3</stf:DocRefId>
-        <stf:CorrDocRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d-eb6bb8e968794f4ebebf7d2f6a6d95c9</stf:CorrDocRefId>
+        <stf:DocRefId>GB2024GB-operatorId-06abd30ff30248328a1c028873b2f4bf_507eb793f0a5404588285300f61e9bd3</stf:DocRefId>
+        <stf:CorrDocRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d_eb6bb8e968794f4ebebf7d2f6a6d95c9</stf:CorrDocRefId>
       </dpi:DocSpec>
     </dpi:PlatformOperator>
     <dpi:OtherPlatformOperators>
@@ -54,8 +54,8 @@
         </dpi:Address>
         <dpi:DocSpec>
           <stf:DocTypeIndic>OECD2</stf:DocTypeIndic>
-          <stf:DocRefId>GB2024GB-operatorId-06abd30ff30248328a1c028873b2f4bf-c181f0b5f8f5404698234b4978f9ed39</stf:DocRefId>
-          <stf:CorrDocRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d-a84001baef8a45f6a47fd5eca823fc33</stf:CorrDocRefId>
+          <stf:DocRefId>GB2024GB-operatorId-06abd30ff30248328a1c028873b2f4bf_c181f0b5f8f5404698234b4978f9ed39</stf:DocRefId>
+          <stf:CorrDocRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d_a84001baef8a45f6a47fd5eca823fc33</stf:CorrDocRefId>
         </dpi:DocSpec>
       </dpi:AssumingPlatformOperator>
     </dpi:OtherPlatformOperators>
