@@ -187,7 +187,7 @@ class AssumedReportingService @Inject()(
         )
       }
     } else {
-      Seq(TIN_Type("N/A", Map("@unknown" -> DataRecord(true))))
+      Seq(TIN_Type("NOTIN", Map("@unknown" -> DataRecord(true))))
     }
   }
 

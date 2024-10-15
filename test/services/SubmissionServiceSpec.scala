@@ -500,8 +500,8 @@ class SubmissionServiceSpec
         updated = now
       )
 
-      val individualContact = IndividualContact(Individual("first", "last"), "individual email", Some("0777777"))
-      val organisationContact = OrganisationContact(Organisation("org name"), "org email", Some("0787777"))
+      val individualContact = IndividualContact(Individual("first", "last"), "individual@email", Some("0777777"))
+      val organisationContact = OrganisationContact(Organisation("org name"), "org@email", Some("0787777"))
       val subscription = SubscriptionInfo(
         id = subscriptionId,
         gbUser = true,
@@ -529,6 +529,7 @@ class SubmissionServiceSpec
       verify(mockSubmissionConnector).submit(eqTo(submissionId), captor.capture())(using any())
 
       val result = captor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
+      println(result.utf8String)
       val document = validate(result)
 
       document.docElem.label mustEqual "DPISubmissionRequest"
@@ -544,12 +545,12 @@ class SubmissionServiceSpec
       (document \ "requestAdditionalDetail" \ "isGBUser").text mustEqual subscription.gbUser.toString
 
       (document \ "requestAdditionalDetail" \ "primaryContact" \ "phoneNumber").text mustEqual individualContact.phone.value
-      (document \ "requestAdditionalDetail" \ "primaryContact" \ "emailAddress").text mustEqual individualContact.email
+      (document \ "requestAdditionalDetail" \ "primaryContact" \ "emailAddress").text mustEqual "individual&commat;email"
       (document \ "requestAdditionalDetail" \ "primaryContact" \ "individualDetails" \ "firstName").text mustEqual individualContact.individual.firstName
       (document \ "requestAdditionalDetail" \ "primaryContact" \ "individualDetails" \ "lastName").text mustEqual individualContact.individual.lastName
 
       (document \ "requestAdditionalDetail" \ "secondaryContact" \ "phoneNumber").text mustEqual organisationContact.phone.value
-      (document \ "requestAdditionalDetail" \ "secondaryContact" \ "emailAddress").text mustEqual organisationContact.email
+      (document \ "requestAdditionalDetail" \ "secondaryContact" \ "emailAddress").text mustEqual "org&commat;email"
       (document \ "requestAdditionalDetail" \ "secondaryContact" \ "organisationDetails" \ "organisationName").text mustEqual organisationContact.organisation.name
 
       (document \ "requestDetail" \ "_").last mustEqual expectedPayload

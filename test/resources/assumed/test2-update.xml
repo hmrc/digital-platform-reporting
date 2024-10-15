@@ -15,7 +15,7 @@
   <dpi:DPIBody>
     <dpi:PlatformOperator>
       <dpi:ResCountryCode>GB</dpi:ResCountryCode>
-      <dpi:TIN unknown="true">N/A</dpi:TIN>
+      <dpi:TIN unknown="true">NOTIN</dpi:TIN>
       <dpi:Name>operatorName</dpi:Name>
       <dpi:PlatformBusinessName>operatorName</dpi:PlatformBusinessName>
       <dpi:Address legalAddressType="OECD304">
@@ -32,7 +32,7 @@
     <dpi:OtherPlatformOperators>
       <dpi:AssumingPlatformOperator>
         <dpi:ResCountryCode>US</dpi:ResCountryCode>
-        <dpi:TIN unknown="true">N/A</dpi:TIN>
+        <dpi:TIN unknown="true">NOTIN</dpi:TIN>
         <dpi:Name>assumingOperator</dpi:Name>
         <dpi:Address legalAddressType="OECD304">
           <dpi:CountryCode>US</dpi:CountryCode>
