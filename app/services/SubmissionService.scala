@@ -157,7 +157,7 @@ class SubmissionService @Inject() (
       {contact.phone.map { phone =>
         <phoneNumber>{phone}</phoneNumber>
       }.orNull}
-      <emailAddress>{contact.email.replaceAll("@", "&commat;")}</emailAddress>
+      <emailAddress>{contact.email}</emailAddress>
       {contact match {
         case contact: IndividualContact =>
           <individualDetails>

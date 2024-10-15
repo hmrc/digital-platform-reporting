@@ -545,12 +545,12 @@ class SubmissionServiceSpec
       (document \ "requestAdditionalDetail" \ "isGBUser").text mustEqual subscription.gbUser.toString
 
       (document \ "requestAdditionalDetail" \ "primaryContact" \ "phoneNumber").text mustEqual individualContact.phone.value
-      (document \ "requestAdditionalDetail" \ "primaryContact" \ "emailAddress").text mustEqual "individual&commat;email"
+      (document \ "requestAdditionalDetail" \ "primaryContact" \ "emailAddress").text mustEqual "individual@email"
       (document \ "requestAdditionalDetail" \ "primaryContact" \ "individualDetails" \ "firstName").text mustEqual individualContact.individual.firstName
       (document \ "requestAdditionalDetail" \ "primaryContact" \ "individualDetails" \ "lastName").text mustEqual individualContact.individual.lastName
 
       (document \ "requestAdditionalDetail" \ "secondaryContact" \ "phoneNumber").text mustEqual organisationContact.phone.value
-      (document \ "requestAdditionalDetail" \ "secondaryContact" \ "emailAddress").text mustEqual "org&commat;email"
+      (document \ "requestAdditionalDetail" \ "secondaryContact" \ "emailAddress").text mustEqual "org@email"
       (document \ "requestAdditionalDetail" \ "secondaryContact" \ "organisationDetails" \ "organisationName").text mustEqual organisationContact.organisation.name
 
       (document \ "requestDetail" \ "_").last mustEqual expectedPayload
