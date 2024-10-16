@@ -183,7 +183,7 @@ class SubmissionServiceSpec
               (document \ "requestCommon" \ "conversationID").text mustEqual submissionId
               (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0.0"
 
-              (document \ "requestAdditionalDetail" \ "fileName").text mustEqual fileName
+              (document \ "requestAdditionalDetail" \ "fileName").text mustEqual "test"
               (document \ "requestAdditionalDetail" \ "subscriptionID").text mustEqual subscription.id
               (document \ "requestAdditionalDetail" \ "tradingName").text mustEqual subscription.tradingName.value
               (document \ "requestAdditionalDetail" \ "isManual").text mustEqual "false"
@@ -256,7 +256,7 @@ class SubmissionServiceSpec
               (document \ "requestCommon" \ "conversationID").text mustEqual submissionId
               (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0.0"
 
-              (document \ "requestAdditionalDetail" \ "fileName").text mustEqual fileName
+              (document \ "requestAdditionalDetail" \ "fileName").text mustEqual "test"
               (document \ "requestAdditionalDetail" \ "subscriptionID").text mustEqual subscription.id
               (document \ "requestAdditionalDetail" \ "tradingName") mustBe empty
               (document \ "requestAdditionalDetail" \ "isManual").text mustEqual "false"
@@ -328,7 +328,7 @@ class SubmissionServiceSpec
             (document \ "requestCommon" \ "conversationID").text mustEqual submissionId
             (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0.0"
 
-            (document \ "requestAdditionalDetail" \ "fileName").text mustEqual fileName
+            (document \ "requestAdditionalDetail" \ "fileName").text mustEqual "test"
             (document \ "requestAdditionalDetail" \ "subscriptionID").text mustEqual subscription.id
             (document \ "requestAdditionalDetail" \ "tradingName").text mustEqual subscription.tradingName.value
             (document \ "requestAdditionalDetail" \ "isManual").text mustEqual "false"
@@ -538,7 +538,7 @@ class SubmissionServiceSpec
       (document \ "requestCommon" \ "conversationID").text mustEqual submissionId
       (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0.0"
 
-      (document \ "requestAdditionalDetail" \ "fileName").text mustEqual expectedFileName
+      (document \ "requestAdditionalDetail" \ "fileName").text mustEqual messageRef
       (document \ "requestAdditionalDetail" \ "subscriptionID").text mustEqual subscription.id
       (document \ "requestAdditionalDetail" \ "tradingName").text mustEqual subscription.tradingName.value
       (document \ "requestAdditionalDetail" \ "isManual").text mustEqual "true"
