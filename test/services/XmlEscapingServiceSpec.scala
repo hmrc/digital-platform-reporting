@@ -20,7 +20,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 
-import scala.xml.{EntityRef, Text, Utility}
+import scala.xml.{EntityRef, Text}
 
 class XmlEscapingServiceSpec
   extends AnyFreeSpec
@@ -33,7 +33,8 @@ class XmlEscapingServiceSpec
 
     "must escape '\'' and '@'" in {
 
-      val xml = <foo>' lorem ipsum ' @ dolor '<bar>lorem ' ipsum @ dolor</bar></foo>
+      val bar = "lorem ' ipsum @ dolor"
+      val xml = <foo>' lorem ipsum ' @ dolor '<bar>{bar}</bar></foo>
 
       val expectedXml = <foo>{Seq(
         EntityRef("apos"),

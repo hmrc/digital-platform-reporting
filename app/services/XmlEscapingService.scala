@@ -20,7 +20,7 @@ import services.XmlEscapingService.StringReplacementRewriteRule
 
 import javax.inject.{Inject, Singleton}
 import scala.annotation.tailrec
-import scala.xml.{EntityRef, Node, NodeSeq, Text}
+import scala.xml.{Atom, EntityRef, Node, NodeSeq, PCData, Text}
 import scala.xml.transform.{RewriteRule, RuleTransformer}
 
 @Singleton
@@ -41,8 +41,8 @@ object XmlEscapingService {
 
     override def transform(n: Node): collection.Seq[Node] =
       n match {
-        case Text(content) =>
-          process(content, Seq.empty)
+        case node: Atom[?] if node.data.isInstanceOf[String] =>
+          process(node.data.asInstanceOf[String], Seq.empty)
         case _ =>
           n
       }
