@@ -27,7 +27,8 @@ final case class SubmissionSummary(submissionId: String,
                                    reportingPeriod: String,
                                    submissionDateTime: Instant,
                                    submissionStatus: SubmissionStatus,
-                                   assumingReporterName: Option[String])
+                                   assumingReporterName: Option[String],
+                                   submissionCaseId: Option[String])
 
 object SubmissionSummary {
   
@@ -42,7 +43,8 @@ object SubmissionSummary {
       submission.reportingPeriod,
       submission.submissionDateTime,
       submission.submissionStatus,
-      submission.assumingReporterName
+      submission.assumingReporterName,
+      Some(submission.submissionCaseId)
     )
     
   def apply(submission: Submission): Option[SubmissionSummary] =
@@ -56,7 +58,8 @@ object SubmissionSummary {
           state.reportingPeriod.toString,
           submission.updated,
           SubmissionStatus.Pending,
-          None // TODO: Update when assumed reporter name is available
+          submission.assumingOperatorName,
+          None
         ))
 
       case _ => None
