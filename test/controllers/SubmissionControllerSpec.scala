@@ -729,7 +729,8 @@ class SubmissionControllerSpec
           reportingPeriod = "2024",
           submissionDateTime = now,
           submissionStatus = SubmissionStatus.Success,
-          assumingReporterName = None
+          assumingReporterName = None,
+          submissionCaseId = Some("submissionCaseId")
         ))
         val summary = SubmissionsSummary(deliveredSubmissions, Nil)
 
@@ -765,7 +766,8 @@ class SubmissionControllerSpec
           reportingPeriod = "2024",
           submissionDateTime = now,
           submissionStatus = SubmissionStatus.Success,
-          assumingReporterName = None
+          assumingReporterName = None,
+          submissionCaseId = None
         ))
         val summary = SubmissionsSummary(Nil, localSubmissions)
 
@@ -801,7 +803,8 @@ class SubmissionControllerSpec
           reportingPeriod = "2024",
           submissionDateTime = now,
           submissionStatus = SubmissionStatus.Success,
-          assumingReporterName = None
+          assumingReporterName = None,
+          submissionCaseId = Some("submissionCaseId")
         ))
 
         val localSubmissions = Seq(SubmissionSummary(
@@ -812,7 +815,8 @@ class SubmissionControllerSpec
           reportingPeriod = "2024",
           submissionDateTime = now,
           submissionStatus = SubmissionStatus.Success,
-          assumingReporterName = None
+          assumingReporterName = None,
+          submissionCaseId = None
         ))
         val summary = SubmissionsSummary(deliveredSubmissions, localSubmissions)
         
