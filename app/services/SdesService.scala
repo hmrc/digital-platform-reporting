@@ -27,6 +27,7 @@ import repository.SdesSubmissionWorkItemRepository
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.workitem.ProcessingStatus
 import utils.DateTimeFormats
+import utils.FileUtils.stripExtension
 
 import java.time.{Clock, Duration}
 import javax.inject.{Inject, Singleton}
@@ -107,7 +108,7 @@ class SdesService @Inject()(
     }
 
     List(
-      Some(FileProperty("/requestAdditionalDetail/fileName", workItem.fileName)),
+      Some(FileProperty("/requestAdditionalDetail/fileName", stripExtension(workItem.fileName))),
       Some(FileProperty("/requestAdditionalDetail/subscriptionID", workItem.subscriptionInfo.id)),
       workItem.subscriptionInfo.tradingName.map(FileProperty("/requestAdditionalDetail/tradingName", _)),
       Some(FileProperty("/requestAdditionalDetail/isGBUser", workItem.subscriptionInfo.gbUser.toString)),

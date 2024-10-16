@@ -32,7 +32,9 @@ import repository.SubmissionRepository
 import services.SubmissionService.InvalidSubmissionStateException
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.DateTimeFormats
+import utils.FileUtils.stripExtension
 
+import java.nio.file.Paths
 import java.time.{Clock, Year}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -139,7 +141,7 @@ class SubmissionService @Inject() (
 
   private def requestAdditionalDetail(fileName: String, subscription: SubscriptionInfo, isManual: Boolean): Elem =
     <requestAdditionalDetail>
-      <fileName>{fileName}</fileName>
+      <fileName>{stripExtension(fileName)}</fileName>
       <subscriptionID>{subscription.id}</subscriptionID>
       {subscription.tradingName.map { tradingName =>
         <tradingName>{tradingName}</tradingName>
