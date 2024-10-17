@@ -297,7 +297,7 @@ class AssumedReportingServiceSpec
         existingSubmissionSource.close()
 
         when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
-        when(mockSubmissionConnector.getManualAssumedReportingSubmission(any())(using any())).thenReturn(Future.successful(Some(existingSubmission)))
+        when(mockSubmissionConnector.getManualAssumedReportingSubmission(any())(using any())).thenReturn(Future.successful(existingSubmission))
 
         when(mockUuidService.generate()).thenReturn(
           "06abd30f-f302-4832-8a1c-028873b2f4bf",
@@ -411,7 +411,7 @@ class AssumedReportingServiceSpec
         existingSubmissionSource.close()
 
         when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
-        when(mockSubmissionConnector.getManualAssumedReportingSubmission(any())(using any())).thenReturn(Future.successful(Some(existingSubmission)))
+        when(mockSubmissionConnector.getManualAssumedReportingSubmission(any())(using any())).thenReturn(Future.successful(existingSubmission))
 
         when(mockUuidService.generate()).thenReturn(
           "06abd30f-f302-4832-8a1c-028873b2f4bf",
@@ -477,64 +477,6 @@ class AssumedReportingServiceSpec
 
         verify(mockDeliveredSubmissionConnector).get(eqTo(expectedViewSubmissionsRequest))(using any())
         verify(mockSubmissionConnector).getManualAssumedReportingSubmission(eqTo("submissionCaseId"))(using any())
-      }
-
-      "must fail when there is an assumed report for that reporting period but can't fetch the contents" in {
-
-        val submissions = DeliveredSubmissions(
-          submissions = Seq(
-            DeliveredSubmission(
-              conversationId = "conversationId",
-              fileName = "test.xml",
-              operatorId = "operatorId",
-              operatorName = "operatorName",
-              reportingPeriod = "2024",
-              submissionCaseId = "submissionCaseId",
-              submissionDateTime = now,
-              submissionStatus = Success,
-              assumingReporterName = Some("assumingReporterName")
-            )
-          ),
-          resultsCount = 1
-        )
-
-        val operator = PlatformOperator(
-          operatorId = "operatorId",
-          operatorName = "operatorName",
-          tinDetails = Seq.empty,
-          businessName = None,
-          tradingName = None,
-          primaryContactDetails = ContactDetails(Some("phoneNumber"), "primaryContactName", "primaryEmail"),
-          secondaryContactDetails = None,
-          addressDetails = AddressDetails(
-            line1 = "line1",
-            line2 = None,
-            line3 = None,
-            line4 = None,
-            postCode = None,
-            countryCode = Some("GB")
-          ),
-          notifications = Seq.empty
-        )
-
-        val assumingOperator = AssumingPlatformOperator(
-          name = "assumingOperator",
-          residentCountry = "US",
-          tinDetails = Seq.empty,
-          address = AssumingOperatorAddress(
-            line1 = "assumed line1",
-            line2 = None,
-            city = "assumed city",
-            region = None,
-            postCode = "assumed postcode",
-            country = "US"
-          )
-        )
-
-        when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
-        when(mockSubmissionConnector.getManualAssumedReportingSubmission(any())(using any())).thenReturn(Future.successful(None))
-
-        assumedReportingService.createSubmission(dprsId, operator, assumingOperator, Year.of(2024))(using HeaderCarrier()).failed.futureValue
       }
     }
   }

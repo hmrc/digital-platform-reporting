@@ -52,15 +52,9 @@ class AssumedReportingService @Inject()(
   private def getPreviousSubmission(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[DPI_OECD]] = {
     for {
       caseId     <- OptionT(getPreviousCaseId(dprsId, operatorId, reportingPeriod))
-      submission <- OptionT.liftF(getPreviousSubmissionContents(dprsId, caseId))
+      submission <- OptionT.liftF(submissionConnector.getManualAssumedReportingSubmission(caseId))
     } yield submission
   }.value
-
-  private def getPreviousSubmissionContents(dprsId: String, caseId: String)(using HeaderCarrier): Future[DPI_OECD] =
-    submissionConnector.getManualAssumedReportingSubmission(caseId).flatMap {
-      _.map(Future.successful)
-        .getOrElse(Future.failed(UnableToRetrieveExistingSubmissionException(dprsId, caseId)))
-    }
 
   private def getPreviousCaseId(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[String]] =
     deliveredSubmissionConnector.get(ViewSubmissionsRequest(
