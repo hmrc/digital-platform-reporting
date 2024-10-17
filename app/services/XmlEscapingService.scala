@@ -20,8 +20,8 @@ import services.XmlEscapingService.StringReplacementRewriteRule
 
 import javax.inject.{Inject, Singleton}
 import scala.annotation.tailrec
-import scala.xml.{Atom, EntityRef, Node, NodeSeq, PCData, Text}
 import scala.xml.transform.{RewriteRule, RuleTransformer}
+import scala.xml.*
 
 @Singleton
 class XmlEscapingService @Inject() {

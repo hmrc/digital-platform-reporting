@@ -34,7 +34,6 @@ import uk.gov.hmrc.http.HeaderCarrier
 import utils.DateTimeFormats
 import utils.FileUtils.stripExtension
 
-import java.nio.file.Paths
 import java.time.{Clock, Year}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
