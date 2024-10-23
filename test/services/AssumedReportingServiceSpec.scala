@@ -39,6 +39,7 @@ import org.xml.sax.ErrorHandler
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
+import services.AssumedReportingService.{NoPreviousSubmissionException, SubmissionAlreadyDeletedException}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import java.nio.file.Paths
@@ -83,9 +84,9 @@ class AssumedReportingServiceSpec
 
   private lazy val assumedReportingService: AssumedReportingService = app.injector.instanceOf[AssumedReportingService]
 
-  "createSubmission" - {
+  private val dprsId = "dprsId"
 
-    val dprsId = "dprsId"
+  "createSubmission" - {
 
     "when there is no existing manual assumed report for that reporting period" - {
 
@@ -164,7 +165,7 @@ class AssumedReportingServiceSpec
           statuses = Seq(Pending, Rejected, Success)
         )
 
-        val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test.xml").toURI)
+        val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/create/test.xml").toURI)
         val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
         expectedPayloadSource.close()
 
@@ -232,7 +233,7 @@ class AssumedReportingServiceSpec
           statuses = Seq(Pending, Rejected, Success)
         )
 
-        val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test2.xml").toURI)
+        val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/create/test2.xml").toURI)
         val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
         expectedPayloadSource.close()
 
@@ -280,7 +281,7 @@ class AssumedReportingServiceSpec
           resultsCount = 1
         )
 
-        val existingSubmissionSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test2.xml").toURI)
+        val existingSubmissionSource = scala.io.Source.fromFile(getClass.getResource("/assumed/create/test2.xml").toURI)
         val existingSubmission = scalaxb.fromXML[DPI_OECD](Utility.trim(XML.loadString(existingSubmissionSource.mkString)))
         existingSubmissionSource.close()
 
@@ -354,7 +355,7 @@ class AssumedReportingServiceSpec
           statuses = Seq(Pending, Rejected, Success)
         )
 
-        val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test-update.xml").toURI)
+        val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/update/test.xml").toURI)
         val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
         expectedPayloadSource.close()
 
@@ -388,7 +389,7 @@ class AssumedReportingServiceSpec
           resultsCount = 1
         )
 
-        val existingSubmissionSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test2.xml").toURI)
+        val existingSubmissionSource = scala.io.Source.fromFile(getClass.getResource("/assumed/create/test2.xml").toURI)
         val existingSubmission = scalaxb.fromXML[DPI_OECD](Utility.trim(XML.loadString(existingSubmissionSource.mkString)))
         existingSubmissionSource.close()
 
@@ -440,7 +441,7 @@ class AssumedReportingServiceSpec
           statuses = Seq(Pending, Rejected, Success)
         )
 
-        val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test2-update.xml").toURI)
+        val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/update/test2.xml").toURI)
         val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
         expectedPayloadSource.close()
 
@@ -453,6 +454,273 @@ class AssumedReportingServiceSpec
 
         verify(mockDeliveredSubmissionConnector).get(eqTo(expectedViewSubmissionsRequest))(using any())
         verify(mockSubmissionConnector).getManualAssumedReportingSubmission(eqTo("submissionCaseId"))(using any())
+      }
+    }
+  }
+
+  "createDeleteSubmission" - {
+
+    "when there is an existing manual assumed report submission" - {
+
+      "when the latest submission is a create" - {
+
+        "must create a valid submission" in {
+
+          val submissions = DeliveredSubmissions(
+            submissions = Seq(
+              DeliveredSubmission(
+                conversationId = "conversationId",
+                fileName = "test.xml",
+                operatorId = "operatorId",
+                operatorName = "operatorName",
+                reportingPeriod = "2024",
+                submissionCaseId = "submissionCaseId",
+                submissionDateTime = now,
+                submissionStatus = Success,
+                assumingReporterName = Some("assumingReporterName")
+              )
+            ),
+            resultsCount = 1
+          )
+
+          val existingSubmissionSource = scala.io.Source.fromFile(getClass.getResource("/assumed/create/test2.xml").toURI)
+          val existingSubmission = scalaxb.fromXML[DPI_OECD](Utility.trim(XML.loadString(existingSubmissionSource.mkString)))
+          existingSubmissionSource.close()
+
+          when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
+          when(mockSubmissionConnector.getManualAssumedReportingSubmission(any())(using any())).thenReturn(Future.successful(existingSubmission))
+
+          when(mockUuidService.generate()).thenReturn(
+            "06abd30f-f302-4832-8a1c-028873b2f4bf",
+            "507eb793-f0a5-4045-8828-5300f61e9bd3",
+            "c181f0b5-f8f5-4046-9823-4b4978f9ed39"
+          )
+
+          val operator = PlatformOperator(
+            operatorId = "operatorId",
+            operatorName = "operatorName",
+            tinDetails = Seq.empty,
+            businessName = None,
+            tradingName = None,
+            primaryContactDetails = ContactDetails(Some("phoneNumber"), "primaryContactName", "primaryEmail"),
+            secondaryContactDetails = None,
+            addressDetails = AddressDetails(
+              line1 = "line1",
+              line2 = None,
+              line3 = None,
+              line4 = None,
+              postCode = None,
+              countryCode = Some("GB")
+            ),
+            notifications = Seq.empty
+          )
+
+          val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
+            subscriptionId = dprsId,
+            assumedReporting = true,
+            pageNumber = 1,
+            sortBy = SubmissionDate,
+            sortOrder = Descending,
+            reportingPeriod = Some(2024),
+            operatorId = Some("operatorId"),
+            fileName = None,
+            statuses = Seq(Pending, Rejected, Success)
+          )
+
+          val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/delete/test.xml").toURI)
+          val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
+          expectedPayloadSource.close()
+
+          val payload = assumedReportingService.createDeleteSubmission(dprsId, operator.operatorId, Year.of(2024))(using HeaderCarrier()).futureValue
+
+          validate(payload.body)
+
+          payload.messageRef mustEqual "GB2024GB-operatorId-06abd30ff30248328a1c028873b2f4bf"
+          payload.body mustEqual expectedPayload
+
+          verify(mockDeliveredSubmissionConnector).get(eqTo(expectedViewSubmissionsRequest))(using any())
+          verify(mockSubmissionConnector).getManualAssumedReportingSubmission(eqTo("submissionCaseId"))(using any())
+        }
+      }
+
+      "when the latest submission is an update" - {
+
+        "must create a valid submission" in {
+
+          val submissions = DeliveredSubmissions(
+            submissions = Seq(
+              DeliveredSubmission(
+                conversationId = "conversationId",
+                fileName = "test.xml",
+                operatorId = "operatorId",
+                operatorName = "operatorName",
+                reportingPeriod = "2024",
+                submissionCaseId = "submissionCaseId",
+                submissionDateTime = now,
+                submissionStatus = Success,
+                assumingReporterName = Some("assumingReporterName")
+              )
+            ),
+            resultsCount = 1
+          )
+
+          val existingSubmissionSource = scala.io.Source.fromFile(getClass.getResource("/assumed/update/test2.xml").toURI)
+          val existingSubmission = scalaxb.fromXML[DPI_OECD](Utility.trim(XML.loadString(existingSubmissionSource.mkString)))
+          existingSubmissionSource.close()
+
+          when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
+          when(mockSubmissionConnector.getManualAssumedReportingSubmission(any())(using any())).thenReturn(Future.successful(existingSubmission))
+
+          when(mockUuidService.generate()).thenReturn(
+            "0488fc70-bc98-42d7-b49c-583d5d74768f",
+            "507eb793-f0a5-4045-8828-5300f61e9bd3",
+            "c181f0b5-f8f5-4046-9823-4b4978f9ed39"
+          )
+
+          val operator = PlatformOperator(
+            operatorId = "operatorId",
+            operatorName = "operatorName",
+            tinDetails = Seq.empty,
+            businessName = None,
+            tradingName = None,
+            primaryContactDetails = ContactDetails(Some("phoneNumber"), "primaryContactName", "primaryEmail"),
+            secondaryContactDetails = None,
+            addressDetails = AddressDetails(
+              line1 = "line1",
+              line2 = None,
+              line3 = None,
+              line4 = None,
+              postCode = None,
+              countryCode = Some("GB")
+            ),
+            notifications = Seq.empty
+          )
+
+          val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
+            subscriptionId = dprsId,
+            assumedReporting = true,
+            pageNumber = 1,
+            sortBy = SubmissionDate,
+            sortOrder = Descending,
+            reportingPeriod = Some(2024),
+            operatorId = Some("operatorId"),
+            fileName = None,
+            statuses = Seq(Pending, Rejected, Success)
+          )
+
+          val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/delete/test2.xml").toURI)
+          val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
+          expectedPayloadSource.close()
+
+          val payload = assumedReportingService.createDeleteSubmission(dprsId, operator.operatorId, Year.of(2024))(using HeaderCarrier()).futureValue
+
+          validate(payload.body)
+
+          payload.messageRef mustEqual "GB2024GB-operatorId-0488fc70bc9842d7b49c583d5d74768f"
+          payload.body mustEqual expectedPayload
+
+          verify(mockDeliveredSubmissionConnector).get(eqTo(expectedViewSubmissionsRequest))(using any())
+          verify(mockSubmissionConnector).getManualAssumedReportingSubmission(eqTo("submissionCaseId"))(using any())
+        }
+      }
+
+      "when the latest submission is a delete" - {
+
+        "must fail to create a submission" in {
+
+          val submissions = DeliveredSubmissions(
+            submissions = Seq(
+              DeliveredSubmission(
+                conversationId = "conversationId",
+                fileName = "test.xml",
+                operatorId = "operatorId",
+                operatorName = "operatorName",
+                reportingPeriod = "2024",
+                submissionCaseId = "submissionCaseId",
+                submissionDateTime = now,
+                submissionStatus = Success,
+                assumingReporterName = Some("assumingReporterName")
+              )
+            ),
+            resultsCount = 1
+          )
+
+          val existingSubmissionSource = scala.io.Source.fromFile(getClass.getResource("/assumed/delete/test.xml").toURI)
+          val existingSubmission = scalaxb.fromXML[DPI_OECD](Utility.trim(XML.loadString(existingSubmissionSource.mkString)))
+          existingSubmissionSource.close()
+
+          when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
+          when(mockSubmissionConnector.getManualAssumedReportingSubmission(any())(using any())).thenReturn(Future.successful(existingSubmission))
+
+          when(mockUuidService.generate()).thenReturn(
+            "06abd30f-f302-4832-8a1c-028873b2f4bf",
+            "507eb793-f0a5-4045-8828-5300f61e9bd3",
+            "c181f0b5-f8f5-4046-9823-4b4978f9ed39"
+          )
+
+          val operator = PlatformOperator(
+            operatorId = "operatorId",
+            operatorName = "operatorName",
+            tinDetails = Seq.empty,
+            businessName = None,
+            tradingName = None,
+            primaryContactDetails = ContactDetails(Some("phoneNumber"), "primaryContactName", "primaryEmail"),
+            secondaryContactDetails = None,
+            addressDetails = AddressDetails(
+              line1 = "line1",
+              line2 = None,
+              line3 = None,
+              line4 = None,
+              postCode = None,
+              countryCode = Some("GB")
+            ),
+            notifications = Seq.empty
+          )
+
+          val failure = assumedReportingService.createDeleteSubmission(dprsId, operator.operatorId, Year.of(2024))(using HeaderCarrier()).failed.futureValue
+          failure mustBe a[SubmissionAlreadyDeletedException]
+        }
+      }
+    }
+
+    "when there is no existing manual assumed report submission" - {
+
+      "must fail to create a submission" in {
+
+        val submissions = DeliveredSubmissions(
+          submissions = Seq.empty,
+          resultsCount = 0
+        )
+
+        when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
+
+        when(mockUuidService.generate()).thenReturn(
+          "06abd30f-f302-4832-8a1c-028873b2f4bf",
+          "507eb793-f0a5-4045-8828-5300f61e9bd3",
+          "c181f0b5-f8f5-4046-9823-4b4978f9ed39"
+        )
+
+        val operator = PlatformOperator(
+          operatorId = "operatorId",
+          operatorName = "operatorName",
+          tinDetails = Seq.empty,
+          businessName = None,
+          tradingName = None,
+          primaryContactDetails = ContactDetails(Some("phoneNumber"), "primaryContactName", "primaryEmail"),
+          secondaryContactDetails = None,
+          addressDetails = AddressDetails(
+            line1 = "line1",
+            line2 = None,
+            line3 = None,
+            line4 = None,
+            postCode = None,
+            countryCode = Some("GB")
+          ),
+          notifications = Seq.empty
+        )
+
+        val failure = assumedReportingService.createDeleteSubmission(dprsId, operator.operatorId, Year.of(2024))(using HeaderCarrier()).failed.futureValue
+        failure mustBe a[NoPreviousSubmissionException]
       }
     }
   }

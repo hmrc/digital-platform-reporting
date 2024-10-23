@@ -472,7 +472,7 @@ class SubmissionServiceSpec
         address = "assumed line 1\nassumed line 2\nassumed line 3"
       )
 
-      val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test.xml").toURI)
+      val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/create/test.xml").toURI)
       val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
       expectedPayloadSource.close()
 
