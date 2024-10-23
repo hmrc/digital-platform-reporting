@@ -23,7 +23,8 @@ final case class AssumingPlatformOperator(
                                            name: String,
                                            residentCountry: String,
                                            tinDetails: Seq[TinDetails],
-                                           address: AssumingOperatorAddress
+                                           registeredCountry: String,
+                                           address: String
                                          )
 
 object AssumingPlatformOperator {
@@ -32,18 +33,4 @@ object AssumingPlatformOperator {
     given OFormat[TinDetails] = TinDetails.defaultFormat
     Json.format
   }
-}
-
-final case class AssumingOperatorAddress(
-                                          line1: String,
-                                          line2: Option[String],
-                                          city: String,
-                                          region: Option[String],
-                                          postCode: String,
-                                          country: String
-                                        )
-
-object AssumingOperatorAddress {
-
-  given OFormat[AssumingOperatorAddress] = Json.format
 }
