@@ -36,11 +36,9 @@
         <dpi:Name>assumingOperator</dpi:Name>
         <dpi:Address legalAddressType="OECD304">
           <dpi:CountryCode>US</dpi:CountryCode>
-          <dpi:AddressFix>
-            <dpi:PostCode>assumed postcode</dpi:PostCode>
-            <dpi:City>assumed city</dpi:City>
-          </dpi:AddressFix>
-          <dpi:AddressFree>assumed line1, assumed city, assumed postcode, US</dpi:AddressFree>
+          <dpi:AddressFree>assumed line 1
+            assumed line 2
+            assumed line 3</dpi:AddressFree>
         </dpi:Address>
         <dpi:DocSpec>
           <stf:DocTypeIndic>OECD2</stf:DocTypeIndic>

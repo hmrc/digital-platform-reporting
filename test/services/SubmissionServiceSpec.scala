@@ -17,7 +17,7 @@
 package services
 
 import connectors.{DownloadConnector, PlatformOperatorConnector, SubmissionConnector, SubscriptionConnector}
-import models.assumed.{AssumingOperatorAddress, AssumingPlatformOperator}
+import models.assumed.AssumingPlatformOperator
 import models.operator.TinType.{Utr, Vrn}
 import models.operator.responses.PlatformOperator
 import models.operator.{AddressDetails, ContactDetails, TinDetails}
@@ -468,14 +468,8 @@ class SubmissionServiceSpec
             issuedBy = "GB"
           )
         ),
-        address = AssumingOperatorAddress(
-          line1 = "assumed line1",
-          line2 = Some("assumed line2"),
-          city = "assumed city",
-          region = Some("assumed regionName"),
-          postCode = "assumed postcode",
-          country = "US"
-        )
+        registeredCountry = "US",
+        address = "assumed line 1\nassumed line 2\nassumed line 3"
       )
 
       val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test.xml").toURI)

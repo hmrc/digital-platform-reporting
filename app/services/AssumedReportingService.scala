@@ -19,7 +19,7 @@ package services
 import cats.data.OptionT
 import connectors.{DeliveredSubmissionConnector, SubmissionConnector}
 import generated.*
-import models.assumed.{AssumingOperatorAddress, AssumingPlatformOperator}
+import models.assumed.AssumingPlatformOperator
 import models.operator.responses.PlatformOperator
 import models.operator.{AddressDetails, TinDetails}
 import models.submission.DeliveredSubmissionSortBy.SubmissionDate
@@ -149,7 +149,7 @@ class AssumedReportingService @Inject()(
           ResCountryCode = Seq(CountryCode_Type.fromString(assumingOperator.residentCountry, generated.defaultScope)),
           TIN = createTinDetails(assumingOperator.tinDetails),
           Name = NameOrganisation_Type(assumingOperator.name),
-          Address = createAssumingOperatorAddress(assumingOperator.address),
+          Address = createAssumingOperatorAddress(assumingOperator.address, assumingOperator.registeredCountry),
           DocSpec = DocSpec_Type(
             DocTypeIndic = createDocTypeIndicator(previousSubmission),
             DocRefId = createDocRefId(messageRef),
@@ -222,36 +222,12 @@ class AssumedReportingService @Inject()(
     )
   }
 
-  private def createAssumingOperatorAddress(address: AssumingOperatorAddress): Address_Type = {
-
-    val addressFree = Seq(
-      Some(address.line1),
-      address.line2,
-      Some(address.city),
-      address.region,
-      Some(address.postCode),
-      Some(address.country)
-    ).flatten.mkString(", ")
-
+  private def createAssumingOperatorAddress(address: String, registeredCountry: String): Address_Type =
     Address_Type(
-      CountryCode = CountryCode_Type.fromString(address.country, generated.defaultScope),
-      address_typeoption = DataRecord(Address_TypeSequence1(
-        AddressFix = AddressFix_Type(
-          Street = None, // Can't use line 1 as that would be street + number in most cases
-          BuildingIdentifier = None,
-          SuiteIdentifier = None,
-          FloorIdentifier = None,
-          DistrictName = None,
-          POB = None,
-          PostCode = Some(address.postCode),
-          City = address.city,
-          CountrySubentity = address.region
-        ),
-        AddressFree = Some(addressFree)
-      )),
+      CountryCode = CountryCode_Type.fromString(registeredCountry, generated.defaultScope),
+      address_typeoption = DataRecord(Some("urn:oecd:ties:dpi:v1"), Some("AddressFree"), address),
       attributes = Map("@legalAddressType" -> DataRecord[OECDLegalAddressType_EnumType](OECD304))
     )
-  }
 }
 
 object AssumedReportingService {

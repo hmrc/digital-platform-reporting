@@ -16,7 +16,7 @@
 
 package controllers
 
-import models.assumed.{AssumingOperatorAddress, AssumingPlatformOperator}
+import models.assumed.AssumingPlatformOperator
 import models.submission.Submission.State.Submitted
 import models.submission.{AssumedReportingSubmissionRequest, Submission}
 import org.apache.pekko.Done
@@ -81,14 +81,8 @@ class AssumedReportingControllerSpec
           name = "assumingOperator",
           residentCountry = "GB",
           tinDetails = Seq.empty,
-          address = AssumingOperatorAddress(
-            line1 = "line1",
-            line2 = None,
-            city = "city",
-            region = None,
-            postCode = "postcode",
-            country = "GB"
-          )
+          registeredCountry = "GB",
+          address = "line 1\nline2\nline3"
         ),
         reportingPeriod = Year.of(2024)
       )

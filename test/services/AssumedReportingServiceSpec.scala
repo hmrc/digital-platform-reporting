@@ -18,7 +18,7 @@ package services
 
 import connectors.{DeliveredSubmissionConnector, SubmissionConnector}
 import generated.{DPI_OECD, Generated_DPI_OECDFormat}
-import models.assumed.{AssumingOperatorAddress, AssumingPlatformOperator}
+import models.assumed.AssumingPlatformOperator
 import models.operator.TinType.{Utr, Vrn}
 import models.operator.responses.PlatformOperator
 import models.operator.{AddressDetails, ContactDetails, TinDetails}
@@ -148,14 +148,8 @@ class AssumedReportingServiceSpec
               issuedBy = "GB"
             )
           ),
-          address = AssumingOperatorAddress(
-            line1 = "assumed line1",
-            line2 = Some("assumed line2"),
-            city = "assumed city",
-            region = Some("assumed regionName"),
-            postCode = "assumed postcode",
-            country = "US"
-          )
+          registeredCountry = "US",
+          address = "assumed line 1\nassumed line 2\nassumed line 3"
         )
 
         val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
@@ -222,14 +216,8 @@ class AssumedReportingServiceSpec
           name = "assumingOperator",
           residentCountry = "US",
           tinDetails = Seq.empty,
-          address = AssumingOperatorAddress(
-            line1 = "assumed line1",
-            line2 = None,
-            city = "assumed city",
-            region = None,
-            postCode = "assumed postcode",
-            country = "US"
-          )
+          registeredCountry = "US",
+          address = "assumed line 1\nassumed line 2\nassumed line 3"
         )
 
         val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
@@ -350,14 +338,8 @@ class AssumedReportingServiceSpec
               issuedBy = "GB"
             )
           ),
-          address = AssumingOperatorAddress(
-            line1 = "assumed line1",
-            line2 = Some("assumed line2"),
-            city = "assumed city",
-            region = Some("assumed regionName"),
-            postCode = "assumed postcode",
-            country = "US"
-          )
+          registeredCountry = "US",
+          address = "assumed line 1\nassumed line 2\nassumed line 3"
         )
 
         val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
@@ -442,14 +424,8 @@ class AssumedReportingServiceSpec
           name = "assumingOperator",
           residentCountry = "US",
           tinDetails = Seq.empty,
-          address = AssumingOperatorAddress(
-            line1 = "assumed line1",
-            line2 = None,
-            city = "assumed city",
-            region = None,
-            postCode = "assumed postcode",
-            country = "US"
-          )
+          registeredCountry = "US",
+          address = "assumed line 1\nassumed line 2\nassumed line 3"
         )
 
         val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
