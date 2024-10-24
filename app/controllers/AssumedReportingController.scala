@@ -17,7 +17,7 @@
 package controllers
 
 import controllers.actions.AuthAction
-import models.submission.AssumedReportingSubmissionRequest
+import models.submission.AssumedReportingSubmission
 import play.api.libs.json.Json
 import play.api.mvc.{Action, ControllerComponents}
 import services.SubmissionService
@@ -33,8 +33,8 @@ class AssumedReportingController @Inject() (
                                              auth: AuthAction
                                            )(using ExecutionContext) extends BackendController(cc) {
 
-  def submit(): Action[AssumedReportingSubmissionRequest] =
-    auth.async(parse.json[AssumedReportingSubmissionRequest]) { implicit request =>
+  def submit(): Action[AssumedReportingSubmission] =
+    auth.async(parse.json[AssumedReportingSubmission]) { implicit request =>
       submissionService.submitAssumedReporting(
         dprsId = request.dprsId,
         operatorId = request.body.operatorId,

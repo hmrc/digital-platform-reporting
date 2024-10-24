@@ -18,7 +18,7 @@ package controllers
 
 import models.assumed.AssumingPlatformOperator
 import models.submission.Submission.State.Submitted
-import models.submission.{AssumedReportingSubmissionRequest, Submission}
+import models.submission.{AssumedReportingSubmission, Submission}
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
@@ -75,7 +75,7 @@ class AssumedReportingControllerSpec
 
     "must submit an assumed reporting submission and return the submission details" in {
 
-      val requestBody = AssumedReportingSubmissionRequest(
+      val requestBody = AssumedReportingSubmission(
         operatorId = "operatorId",
         assumingOperator = AssumingPlatformOperator(
           name = "assumingOperator",
