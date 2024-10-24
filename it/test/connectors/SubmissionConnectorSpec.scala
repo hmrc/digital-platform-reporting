@@ -140,7 +140,7 @@ class SubmissionConnectorSpec
 
     "must return the DPI_OECD body from the response when the server responds OK" in {
 
-      val expectedBodySource = scala.io.Source.fromFile(getClass.getResource("/assumed/test.xml").toURI)
+      val expectedBodySource = scala.io.Source.fromFile(getClass.getResource("/assumed/create/test.xml").toURI)
       val payload = expectedBodySource.mkString
       val expectedBody = scalaxb.fromXML[DPI_OECD](Utility.trim(XML.loadString(payload)))
       expectedBodySource.close()
