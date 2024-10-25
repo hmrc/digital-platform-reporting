@@ -24,10 +24,9 @@ import models.operator.responses.PlatformOperator
 import models.operator.{AddressDetails, TinDetails}
 import models.submission.DeliveredSubmissionSortBy.SubmissionDate
 import models.submission.SortOrder.Descending
-import models.submission.SubmissionStatus.{Pending, Rejected, Success}
-import models.submission.ViewSubmissionsRequest
+import models.submission.{SubmissionStatus, ViewSubmissionsRequest}
 import scalaxb.DataRecord
-import services.AssumedReportingService.UnableToRetrieveExistingSubmissionException
+import services.AssumedReportingService.{NoPreviousSubmissionException, SubmissionAlreadyDeletedException, SubmissionIsNotAssumedReportException}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import java.time.format.DateTimeFormatter
@@ -49,6 +48,11 @@ class AssumedReportingService @Inject()(
       createSubmissionPayload(operator, assumingOperator, reportingPeriod, previousSubmission)
     }
 
+  def createDeleteSubmission(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[AssumedReportingPayload] =
+    getPreviousSubmission(dprsId, operatorId, reportingPeriod).flatMap { previousSubmission =>
+      createDeleteSubmissionPayload(dprsId, operatorId, reportingPeriod, previousSubmission)
+    }
+
   private def getPreviousSubmission(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[DPI_OECD]] = {
     for {
       caseId     <- OptionT(getPreviousCaseId(dprsId, operatorId, reportingPeriod))
@@ -66,7 +70,7 @@ class AssumedReportingService @Inject()(
       reportingPeriod = Some(reportingPeriod.getValue),
       operatorId = Some(operatorId),
       fileName = None,
-      statuses = Seq(Pending, Rejected, Success) // TODO should we be ignoring certain statuses?
+      statuses = Seq(SubmissionStatus.Pending, SubmissionStatus.Rejected, SubmissionStatus.Success) // TODO should we be ignoring certain statuses?
     )).map { deliveredSubmissions =>
       for {
         submissions <- deliveredSubmissions
@@ -87,7 +91,7 @@ class AssumedReportingService @Inject()(
         Warning = None,
         Contact = None,
         MessageRefId = messageRef,
-        MessageTypeIndic = if (previousSubmission.isDefined) DPI402 else DPI401,
+        MessageTypeIndic = if (previousSubmission.forall(isDeletion)) DPI401 else DPI402,
         ReportingPeriod = scalaxb.Helper.toCalendar(DateTimeFormatter.ISO_LOCAL_DATE.format(reportingPeriod.atMonth(Month.DECEMBER).atEndOfMonth())),
         Timestamp = scalaxb.Helper.toCalendar(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now(clock)))
       ),
@@ -99,15 +103,14 @@ class AssumedReportingService @Inject()(
       attributes = Map("@version" -> DataRecord("1.0"))
     )
 
-    val body = Utility.trim(scalaxb.toXML(submission, Some("urn:oecd:ties:dpi:v1"), Some("DPI_OECD"), generated.defaultScope).head)
-
-    AssumedReportingPayload(messageRef, body)
+    AssumedReportingPayload(messageRef, toXml(submission))
   }
 
   private def createPlatformOperator(operator: PlatformOperator, messageRef: String, previousSubmission: Option[DPI_OECD]): CorrectablePlatformOperator_Type = {
 
     val previousDocRefId = for {
       submission <- previousSubmission
+      if !isDeletion(submission)
       body       <- submission.DPIBody.headOption
     } yield body.PlatformOperator.DocSpec.DocRefId
 
@@ -134,6 +137,7 @@ class AssumedReportingService @Inject()(
 
     val previousDocRefId = for {
       submission      <- previousSubmission
+      if !isDeletion(submission)
       body            <- submission.DPIBody.headOption
       otherOperators  <- body.OtherPlatformOperators
 
@@ -161,8 +165,8 @@ class AssumedReportingService @Inject()(
     )
   }
 
-  private def createDocTypeIndicator[A](previousSubmission: Option[A]): OECDDocTypeIndic_EnumType =
-    if (previousSubmission.isDefined) OECD2 else OECD1
+  private def createDocTypeIndicator(previousSubmission: Option[DPI_OECD]): OECDDocTypeIndic_EnumType =
+    if (previousSubmission.forall(isDeletion)) OECD1 else OECD2
 
   private def createMessageRefId(reportingPeriod: Year, operatorId: String): String =
     s"GB${reportingPeriod}GB-$operatorId-${uuidService.generate().replaceAll("-", "")}"
@@ -228,12 +232,102 @@ class AssumedReportingService @Inject()(
       address_typeoption = DataRecord(Some("urn:oecd:ties:dpi:v1"), Some("AddressFree"), address),
       attributes = Map("@legalAddressType" -> DataRecord[OECDLegalAddressType_EnumType](OECD304))
     )
+
+  private def createDeleteSubmissionPayload(dprsId: String, operatorId: String, reportingPeriod: Year, previousSubmission: Option[DPI_OECD]): Future[AssumedReportingPayload] = {
+
+    def getPreviousSubmission: Future[DPI_OECD] =
+      previousSubmission.map(Future.successful).getOrElse(Future.failed(NoPreviousSubmissionException(dprsId, operatorId, reportingPeriod)))
+
+    def requireExistingRecord(submission: DPI_OECD): Future[Unit] =
+      if (isDeletion(submission)) Future.failed(SubmissionAlreadyDeletedException(dprsId, operatorId, reportingPeriod)) else Future.unit
+
+    def getOtherPlatformOperator(submission: DPI_OECD): Future[CorrectableOtherRPO_Type] =
+      submission.DPIBody.head.OtherPlatformOperators.map { otherPlatformOperators =>
+        otherPlatformOperators.otherplatformoperators_typeoption.value match {
+          case OtherPlatformOperators_TypeSequence1(assumingPlatformOperator) =>
+            Future.successful(assumingPlatformOperator)
+          case _ =>
+            Future.failed(SubmissionIsNotAssumedReportException(dprsId, operatorId, reportingPeriod))
+        }
+      }.getOrElse(Future.failed(SubmissionIsNotAssumedReportException(dprsId, operatorId, reportingPeriod)))
+
+    def createPlatformOperatorDeletion(messageRef: String, operator: CorrectablePlatformOperator_Type): CorrectablePlatformOperator_Type =
+      operator.copy(
+        DocSpec = DocSpec_Type(
+          DocTypeIndic = OECD3,
+          DocRefId = createDocRefId(messageRef),
+          CorrMessageRefId = None,
+          CorrDocRefId = Some(operator.DocSpec.DocRefId)
+        )
+      )
+
+    def createOtherPlatformOperatorDeletion(messageRef: String, operator: CorrectableOtherRPO_Type): OtherPlatformOperators_Type = {
+
+      val updatedOperator = operator.copy(
+        DocSpec = DocSpec_Type(
+          DocTypeIndic = OECD3,
+          DocRefId = createDocRefId(messageRef),
+          CorrMessageRefId = None,
+          CorrDocRefId = Some(operator.DocSpec.DocRefId)
+        )
+      )
+
+      OtherPlatformOperators_Type(DataRecord(OtherPlatformOperators_TypeSequence1(updatedOperator)))
+    }
+
+    for {
+      submission           <- getPreviousSubmission
+      _                    <- requireExistingRecord(submission)
+      messageRef           =  createMessageRefId(reportingPeriod, operatorId)
+      updatedOperator      =  createPlatformOperatorDeletion(messageRef, submission.DPIBody.head.PlatformOperator)
+      otherOperator        <- getOtherPlatformOperator(submission)
+      updatedOtherOperator =  createOtherPlatformOperatorDeletion(messageRef, otherOperator)
+    } yield {
+
+      val updatedSubmission = DPI_OECD(
+        MessageSpec = MessageSpec_Type(
+          SendingEntityIN = Some(operatorId),
+          TransmittingCountry = GB,
+          ReceivingCountry = GB,
+          MessageType = DPI,
+          Warning = None,
+          Contact = None,
+          MessageRefId = messageRef,
+          MessageTypeIndic = DPI402,
+          ReportingPeriod = scalaxb.Helper.toCalendar(DateTimeFormatter.ISO_LOCAL_DATE.format(reportingPeriod.atMonth(Month.DECEMBER).atEndOfMonth())),
+          Timestamp = scalaxb.Helper.toCalendar(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now(clock)))
+        ),
+        DPIBody = Seq(DPIBody_Type(
+          PlatformOperator = updatedOperator,
+          OtherPlatformOperators = Some(updatedOtherOperator),
+          ReportableSeller = Seq.empty
+        )),
+        attributes = Map("@version" -> DataRecord("1.0"))
+      )
+
+      AssumedReportingPayload(messageRef, toXml(updatedSubmission))
+    }
+  }
+
+  private def isDeletion(submission: DPI_OECD): Boolean =
+    submission.DPIBody.head.PlatformOperator.DocSpec.DocTypeIndic == OECD3
+
+  private def toXml(submission: DPI_OECD): NodeSeq =
+    Utility.trim(scalaxb.toXML(submission, Some("urn:oecd:ties:dpi:v1"), Some("DPI_OECD"), generated.defaultScope).head)
 }
 
 object AssumedReportingService {
 
-  final case class UnableToRetrieveExistingSubmissionException(dprsId: String, submissionCaseId: String) extends Throwable {
-    override def getMessage: String = s"Unable to fetch submission for DPRS ID: $dprsId,  case ID: $submissionCaseId"
+  final case class NoPreviousSubmissionException(dprsId: String, operatorId: String, reportingPeriod: Year) extends Throwable {
+    override def getMessage: String = s"No previous submission for DPRS ID: $dprsId, POID: $operatorId, Reporting Period: $reportingPeriod"
+  }
+
+  final case class SubmissionAlreadyDeletedException(dprsId: String, operatorId: String, reportingPeriod: Year) extends Throwable {
+    override def getMessage: String = s"Submission already deleted for DPRS ID: $dprsId, POID: $operatorId, Reporting Period: $reportingPeriod"
+  }
+
+  final case class SubmissionIsNotAssumedReportException(dprsId: String, operatorId: String, reportingPeriod: Year) extends Throwable {
+    override def getMessage: String = s""
   }
 }
 
