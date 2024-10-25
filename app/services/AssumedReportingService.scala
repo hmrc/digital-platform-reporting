@@ -21,10 +21,10 @@ import connectors.{DeliveredSubmissionConnector, SubmissionConnector}
 import generated.*
 import models.assumed.AssumingPlatformOperator
 import models.operator.responses.PlatformOperator
-import models.operator.{AddressDetails, TinDetails}
+import models.operator.{AddressDetails, TinDetails, TinType}
 import models.submission.DeliveredSubmissionSortBy.SubmissionDate
 import models.submission.SortOrder.Descending
-import models.submission.{SubmissionStatus, ViewSubmissionsRequest}
+import models.submission.{AssumedReportingSubmission, SubmissionStatus, ViewSubmissionsRequest}
 import scalaxb.DataRecord
 import services.AssumedReportingService.{NoPreviousSubmissionException, SubmissionAlreadyDeletedException, SubmissionIsNotAssumedReportException}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -52,7 +52,45 @@ class AssumedReportingService @Inject()(
     getPreviousSubmission(dprsId, operatorId, reportingPeriod).flatMap { previousSubmission =>
       createDeleteSubmissionPayload(dprsId, operatorId, reportingPeriod, previousSubmission)
     }
+    
+  def getSubmission(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[AssumedReportingSubmission]] =
+    getPreviousSubmission(dprsId, operatorId, reportingPeriod).map { maybeSubmission =>
+      for {
+        submission     <- maybeSubmission
+        body           <- submission.DPIBody.headOption
+        otherOperators <- body.OtherPlatformOperators
+        
+        if otherOperators.otherplatformoperators_typeoption.value.isInstanceOf[OtherPlatformOperators_TypeSequence1]
 
+        otherOperator    = otherOperators.otherplatformoperators_typeoption.as[OtherPlatformOperators_TypeSequence1]
+        assumingOperator = otherOperator.AssumingPlatformOperator
+        residentCountry  <- assumingOperator.ResCountryCode.headOption
+        address          <- getAddress(assumingOperator.Address)
+      } yield AssumedReportingSubmission(
+        operatorId       = operatorId,
+        assumingOperator = AssumingPlatformOperator(
+          name              = assumingOperator.Name.value,
+          residentCountry   = residentCountry.toString,
+          tinDetails        = getTinDetails(assumingOperator.TIN),
+          registeredCountry = assumingOperator.Address.CountryCode.toString,
+          address           = address
+        ),
+        reportingPeriod = reportingPeriod
+      )
+    }
+
+  private def getTinDetails(tins: Seq[TIN_Type]): Seq[TinDetails] =
+    tins.flatMap { tin =>
+      if (tin.unknown.contains(true)) None
+      else tin.issuedBy.map(country => TinDetails(tin.value, TinType.Other, country.toString))
+    }
+    
+  private def getAddress(address: Address_Type): Option[String] =
+    address.address_typeoption match {
+      case x: DataRecord[String] => Some(x.value)
+      case _                     => None
+    }
+  
   private def getPreviousSubmission(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[DPI_OECD]] = {
     for {
       caseId     <- OptionT(getPreviousCaseId(dprsId, operatorId, reportingPeriod))

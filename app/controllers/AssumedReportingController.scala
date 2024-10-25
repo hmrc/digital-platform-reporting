@@ -19,10 +19,11 @@ package controllers
 import controllers.actions.AuthAction
 import models.submission.AssumedReportingSubmission
 import play.api.libs.json.Json
-import play.api.mvc.{Action, ControllerComponents}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.SubmissionService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import java.time.Year
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
@@ -42,4 +43,7 @@ class AssumedReportingController @Inject() (
         reportingPeriod = request.body.reportingPeriod
       ).map(submission => Ok(Json.toJson(submission)))
     }
+    
+  def get(operatorId: String, reportingPeriod: Year): Action[AnyContent] =
+    ???
 }
