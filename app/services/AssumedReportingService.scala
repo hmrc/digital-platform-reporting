@@ -91,7 +91,7 @@ class AssumedReportingService @Inject()(
         Warning = None,
         Contact = None,
         MessageRefId = messageRef,
-        MessageTypeIndic = if (previousSubmission.isDefined) DPI402 else DPI401,
+        MessageTypeIndic = if (previousSubmission.forall(isDeletion)) DPI401 else DPI402,
         ReportingPeriod = scalaxb.Helper.toCalendar(DateTimeFormatter.ISO_LOCAL_DATE.format(reportingPeriod.atMonth(Month.DECEMBER).atEndOfMonth())),
         Timestamp = scalaxb.Helper.toCalendar(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now(clock)))
       ),
@@ -103,15 +103,14 @@ class AssumedReportingService @Inject()(
       attributes = Map("@version" -> DataRecord("1.0"))
     )
 
-    val body = Utility.trim(scalaxb.toXML(submission, Some("urn:oecd:ties:dpi:v1"), Some("DPI_OECD"), generated.defaultScope).head)
-
-    AssumedReportingPayload(messageRef, body)
+    AssumedReportingPayload(messageRef, toXml(submission))
   }
 
   private def createPlatformOperator(operator: PlatformOperator, messageRef: String, previousSubmission: Option[DPI_OECD]): CorrectablePlatformOperator_Type = {
 
     val previousDocRefId = for {
       submission <- previousSubmission
+      if !isDeletion(submission)
       body       <- submission.DPIBody.headOption
     } yield body.PlatformOperator.DocSpec.DocRefId
 
@@ -138,6 +137,7 @@ class AssumedReportingService @Inject()(
 
     val previousDocRefId = for {
       submission      <- previousSubmission
+      if !isDeletion(submission)
       body            <- submission.DPIBody.headOption
       otherOperators  <- body.OtherPlatformOperators
 
@@ -165,8 +165,8 @@ class AssumedReportingService @Inject()(
     )
   }
 
-  private def createDocTypeIndicator[A](previousSubmission: Option[A]): OECDDocTypeIndic_EnumType =
-    if (previousSubmission.isDefined) OECD2 else OECD1
+  private def createDocTypeIndicator(previousSubmission: Option[DPI_OECD]): OECDDocTypeIndic_EnumType =
+    if (previousSubmission.forall(isDeletion)) OECD1 else OECD2
 
   private def createMessageRefId(reportingPeriod: Year, operatorId: String): String =
     s"GB${reportingPeriod}GB-$operatorId-${uuidService.generate().replaceAll("-", "")}"
