@@ -17,10 +17,11 @@
 package models
 
 import play.api.libs.json.{Format, Reads, Writes}
+import play.api.mvc.PathBindable
 
 import java.net.URL
 import java.time.Year
-import scala.util.Try
+import scala.util.{Success, Try}
 
 given urlFormat: Format[URL] = {
 
@@ -46,4 +47,20 @@ given yearFormat: Format[Year] = {
   val writes = Writes.of[Int].contramap[Year](_.getValue)
 
   Format(reads, writes)
+}
+
+given yearPathBindable(using intBinder: PathBindable[Int]): PathBindable[Year] = new PathBindable[Year] {
+  
+  override def bind(key: String, value: String): Either[String, Year] =
+    intBinder.bind(key, value) match {
+      case Right(x) =>
+        Try(Year.of(x)) match {
+          case Success(year) => Right(year)
+          case _             => Left(s"Could not bind $x as a Year")
+        }
+      case _ => Left(s"Could not bind $value as a Year")
+    }
+
+  override def unbind(key: String, value: Year): String =
+    value.toString
 }
