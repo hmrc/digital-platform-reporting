@@ -122,7 +122,48 @@ class AssumedReportingControllerSpec
         contentAsJson(result) mustEqual Json.toJson(submission)
       }
 
-      verify(mockSubmissionService).submitAssumedReporting(any(), any(), any(), any())(using any())
+      verify(mockSubmissionService).submitAssumedReporting(eqTo(dprsId), eqTo(submission.operatorId), eqTo(requestBody.assumingOperator), eqTo(Year.of(2024)))(using any())
+    }
+  }
+
+  "delete" - {
+
+    "must delete an assumed reporting submission and return the submission details" in {
+
+      val submission = Submission(
+        _id = "id",
+        dprsId = dprsId,
+        operatorId = "operatorId",
+        operatorName = "operatorName",
+        assumingOperatorName = None,
+        state = Submitted(
+          fileName = "test.xml",
+          reportingPeriod = Year.of(2024)
+        ),
+        created = now,
+        updated = now
+      )
+
+      val app =
+        GuiceApplicationBuilder()
+          .overrides(
+            bind[SubmissionService].toInstance(mockSubmissionService),
+            bind[AuthConnector].toInstance(mockAuthConnector)
+          )
+          .build()
+
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
+      when(mockSubmissionService.submitAssumedReportingDeletion(any(), any(), any())(using any())).thenReturn(Future.successful(submission))
+
+      running(app) {
+        val request = FakeRequest(routes.AssumedReportingController.delete(submission.operatorId, Year.of(2024)))
+        val result = route(app, request).value
+
+        status(result) mustEqual OK
+        contentAsJson(result) mustEqual Json.toJson(submission)
+      }
+
+      verify(mockSubmissionService).submitAssumedReportingDeletion(eqTo(dprsId), eqTo(submission.operatorId), eqTo(Year.of(2024)))(using any())
     }
   }
 

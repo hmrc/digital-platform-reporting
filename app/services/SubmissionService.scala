@@ -29,7 +29,7 @@ import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
 import play.api.Configuration
 import repository.SubmissionRepository
-import services.SubmissionService.InvalidSubmissionStateException
+import services.SubmissionService.{InvalidSubmissionStateException, NoPlatformOperatorException}
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.DateTimeFormats
 import utils.FileUtils.stripExtension
@@ -66,13 +66,13 @@ class SubmissionService @Inject() (
           }
         }
       case _ =>
-        Future.failed(InvalidSubmissionStateException(submission._id))
+        Future.failed(InvalidSubmissionStateException(submission._id, submission.state))
     }
 
-  def submitAssumedReporting(dprsId: String, operatorId: String, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year)(using HeaderCarrier): Future[Submission] = {
+  def submitAssumedReporting(dprsId: String, operatorId: String, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year)(using HeaderCarrier): Future[Submission] =
     for {
       subscription <- subscriptionConnector.get(dprsId)
-      operator     <- OptionT(platformOperatorConnector.get(dprsId, operatorId)).getOrElseF(Future.failed(new RuntimeException())) // TODO
+      operator     <- OptionT(platformOperatorConnector.get(dprsId, operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(dprsId, operatorId)))
       payload      <- assumedReportingService.createSubmission(dprsId, operator, assumingOperator, reportingPeriod)
       fileName     =  s"${payload.messageRef}.xml"
       submission   =  Submission(
@@ -93,7 +93,31 @@ class SubmissionService @Inject() (
       submissionSource  =  createSubmissionSource(submissionBody)
       _                 <- submissionConnector.submit(submission._id, submissionSource)
     } yield submission
-  }
+
+  def submitAssumedReportingDeletion(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Submission] =
+    for {
+      subscription <- subscriptionConnector.get(dprsId)
+      operator <- OptionT(platformOperatorConnector.get(dprsId, operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(dprsId, operatorId)))
+      payload <- assumedReportingService.createDeleteSubmission(dprsId, operator.operatorId, reportingPeriod)
+      fileName = s"${payload.messageRef}.xml"
+      submission = Submission(
+        _id = uuidService.generate(),
+        dprsId = dprsId,
+        operatorId = operatorId,
+        operatorName = operator.operatorName,
+        assumingOperatorName = None,
+        state = Submitted(
+          fileName = fileName,
+          reportingPeriod = reportingPeriod
+        ),
+        created = clock.instant(),
+        updated = clock.instant()
+      )
+      _                 <- submissionRepository.save(submission)
+      submissionBody    =  addEnvelope(ByteString.fromString(payload.body.toString), submission._id, fileName, subscription, isManual = true)
+      submissionSource  =  createSubmissionSource(submissionBody)
+      _                 <- submissionConnector.submit(submission._id, submissionSource)
+    } yield submission
 
   private def submitDirect(submission: Submission, state: Validated, subscription: SubscriptionInfo)(using HeaderCarrier): Future[Done] =
     for {
@@ -181,5 +205,11 @@ class SubmissionService @Inject() (
 
 object SubmissionService {
 
-  final case class InvalidSubmissionStateException(submissionId: String) extends Throwable
+  final case class InvalidSubmissionStateException(submissionId: String, state: Submission.State) extends Throwable {
+    override def getMessage: String = s"Submission state was invalid for submission: $submissionId, expected Validated was: ${state.getClass.getSimpleName}"
+  }
+
+  final case class NoPlatformOperatorException(dprsId: String, operatorId: String) extends Throwable {
+    override def getMessage: String = s"No operator found for operator id: $operatorId, on behalf of DPRS ID: $dprsId"
+  }
 }

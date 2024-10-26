@@ -44,6 +44,15 @@ class AssumedReportingController @Inject() (
         reportingPeriod = request.body.reportingPeriod
       ).map(submission => Ok(Json.toJson(submission)))
     }
+
+  def delete(operatorId: String, reportingPeriod: Year): Action[AnyContent] =
+    auth.async { implicit request =>
+      submissionService.submitAssumedReportingDeletion(
+        dprsId = request.dprsId,
+        operatorId = operatorId,
+        reportingPeriod = reportingPeriod
+      ).map(submission => Ok(Json.toJson(submission)))
+    }
     
   def get(operatorId: String, reportingPeriod: Year): Action[AnyContent] = auth.async { implicit request =>
     assumedReportingService.getSubmission(request.dprsId, operatorId, reportingPeriod)
