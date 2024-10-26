@@ -77,6 +77,7 @@ class SubmissionService @Inject() (
       fileName     =  s"${payload.messageRef}.xml"
       submission   =  Submission(
         _id = uuidService.generate(),
+        submissionType = Submission.SubmissionType.ManualAssumedReport,
         dprsId = dprsId,
         operatorId = operatorId,
         operatorName = operator.operatorName,
@@ -102,6 +103,7 @@ class SubmissionService @Inject() (
       fileName = s"${payload.messageRef}.xml"
       submission = Submission(
         _id = uuidService.generate(),
+        submissionType = Submission.SubmissionType.ManualAssumedReport,
         dprsId = dprsId,
         operatorId = operatorId,
         operatorName = operator.operatorName,

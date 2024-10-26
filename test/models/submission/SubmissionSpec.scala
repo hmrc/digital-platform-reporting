@@ -17,6 +17,7 @@
 package models.submission
 
 import models.submission.Submission.State.*
+import models.submission.Submission.SubmissionType
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
@@ -34,6 +35,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.Xml,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -45,6 +47,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "Xml",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -68,6 +71,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.ManualAssumedReport,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -79,6 +83,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "ManualAssumedReport",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -102,6 +107,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.Xml,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -113,6 +119,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "Xml",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -137,6 +144,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.Xml,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -154,6 +162,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "Xml",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -182,6 +191,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.Xml,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -196,6 +206,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "Xml",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -221,6 +232,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.Xml,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -235,6 +247,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "Xml",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -260,6 +273,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.Xml,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -274,6 +288,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "Xml",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -299,6 +314,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.ManualAssumedReport,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -313,6 +329,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "ManualAssumedReport",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -332,6 +349,95 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     "must write to json" in {
       Json.toJsObject(submission) mustEqual json
+    }
+  }
+
+  "when the submission type is invalid" - {
+
+    val json = Json.obj(
+      "_id" -> "id",
+      "submissionType" -> "invalid",
+      "dprsId" -> "dprsId",
+      "operatorId" -> "operatorId",
+      "operatorName" -> "operatorName",
+      "assumingOperatorName" -> "assumingOperator",
+      "state" -> Json.obj(
+        "type" -> "Submitted",
+        "fileName" -> "test.xml",
+        "reportingPeriod" -> 2024
+      ),
+      "created" -> created,
+      "updated" -> updated
+    )
+
+    "must fail to read from json" in {
+      Json.fromJson[Submission](json).isError mustBe true
+    }
+  }
+
+  "when there is no submission type" - {
+
+    "when there is no assuming operator name" - {
+
+      val submission = Submission(
+        _id = "id",
+        submissionType = SubmissionType.Xml,
+        dprsId = "dprsId",
+        operatorId = "operatorId",
+        operatorName = "operatorName",
+        assumingOperatorName = None,
+        state = Ready,
+        created = created,
+        updated = updated
+      )
+
+      val json = Json.obj(
+        "_id" -> "id",
+        "dprsId" -> "dprsId",
+        "operatorId" -> "operatorId",
+        "operatorName" -> "operatorName",
+        "state" -> Json.obj(
+          "type" -> "Ready"
+        ),
+        "created" -> created,
+        "updated" -> updated
+      )
+
+      "must read from json and set submissionType to Xml" in {
+        Json.fromJson[Submission](json).get mustEqual submission
+      }
+    }
+
+    "when there is an assuming operator name" - {
+
+      val submission = Submission(
+        _id = "id",
+        submissionType = SubmissionType.ManualAssumedReport,
+        dprsId = "dprsId",
+        operatorId = "operatorId",
+        operatorName = "operatorName",
+        assumingOperatorName = Some("assumingOperatorName"),
+        state = Ready,
+        created = created,
+        updated = updated
+      )
+
+      val json = Json.obj(
+        "_id" -> "id",
+        "dprsId" -> "dprsId",
+        "operatorId" -> "operatorId",
+        "operatorName" -> "operatorName",
+        "assumingOperatorName" -> "assumingOperatorName",
+        "state" -> Json.obj(
+          "type" -> "Ready"
+        ),
+        "created" -> created,
+        "updated" -> updated
+      )
+
+      "must read from json and set submissionType to ManualAssumedReport" in {
+        Json.fromJson[Submission](json).get mustEqual submission
+      }
     }
   }
 }

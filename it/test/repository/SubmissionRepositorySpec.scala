@@ -18,6 +18,7 @@ package repository
 
 import models.submission.Submission
 import models.submission.Submission.State.{Ready, Validated}
+import models.submission.Submission.SubmissionType
 import org.mongodb.scala.model.Indexes
 import org.scalactic.source.Position
 import org.scalatest.concurrent.IntegrationPatience
@@ -69,6 +70,7 @@ class SubmissionRepositorySpec
 
   private val submission = Submission(
     _id = "id",
+    submissionType = SubmissionType.Xml,
     dprsId = "dprsId",
     operatorId = "operatorId",
     operatorName = "operatorName",

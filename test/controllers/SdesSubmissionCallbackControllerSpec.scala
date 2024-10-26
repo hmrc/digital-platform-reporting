@@ -19,6 +19,7 @@ package controllers
 import models.sdes.{NotificationCallback, NotificationType}
 import models.submission.{CadxValidationError, Submission}
 import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
+import models.submission.Submission.SubmissionType
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
@@ -98,6 +99,7 @@ class SdesSubmissionCallbackControllerSpec
 
         val submission = Submission(
           _id = submissionId,
+          submissionType = SubmissionType.Xml,
           dprsId = "dprsId",
           operatorId = "operatorId",
           operatorName = "operatorName",
@@ -159,6 +161,7 @@ class SdesSubmissionCallbackControllerSpec
         val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen, validatedGen, approvedGen, rejectedGen).sample.value
         val submission = Submission(
           _id = submissionId,
+          submissionType = SubmissionType.Xml,
           dprsId = "dprsId",
           operatorId = "operatorId",
           operatorName = "operatorName",

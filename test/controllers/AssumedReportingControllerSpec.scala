@@ -18,6 +18,7 @@ package controllers
 
 import models.assumed.AssumingPlatformOperator
 import models.submission.Submission.State.Submitted
+import models.submission.Submission.SubmissionType
 import models.submission.{AssumedReportingSubmission, Submission}
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
@@ -91,6 +92,7 @@ class AssumedReportingControllerSpec
       val submission = Submission(
         _id = "id",
         dprsId = dprsId,
+        submissionType = SubmissionType.ManualAssumedReport,
         operatorId = "operatorId",
         operatorName = "operatorName",
         assumingOperatorName = Some("assuminOperatorName"),
@@ -132,6 +134,7 @@ class AssumedReportingControllerSpec
 
       val submission = Submission(
         _id = "id",
+        submissionType = SubmissionType.ManualAssumedReport,
         dprsId = dprsId,
         operatorId = "operatorId",
         operatorName = "operatorName",

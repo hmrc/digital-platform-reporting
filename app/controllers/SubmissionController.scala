@@ -67,6 +67,7 @@ class SubmissionController @Inject() (
 
         val submission = Submission(
           _id = uuidService.generate(),
+          submissionType = Submission.SubmissionType.Xml,
           dprsId = request.dprsId,
           operatorId = request.body.operatorId,
           operatorName = request.body.operatorName,

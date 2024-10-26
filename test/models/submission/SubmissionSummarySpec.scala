@@ -17,6 +17,7 @@
 package models.submission
 
 import models.submission.Submission.State.*
+import models.submission.Submission.SubmissionType
 import org.scalacheck.Gen
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
@@ -65,6 +66,7 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
 
       val submission = Submission(
         _id = "id",
+        submissionType = SubmissionType.Xml,
         dprsId = "dprsId",
         operatorId = "operatorId",
         operatorName = "operatorName",
@@ -100,6 +102,7 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
       
       val submission = Submission(
         _id = "id",
+        submissionType = SubmissionType.Xml,
         dprsId = "dprsId",
         operatorId = "operatorId",
         operatorName = "operatorName",
