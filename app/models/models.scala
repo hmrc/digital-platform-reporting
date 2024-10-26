@@ -21,6 +21,7 @@ import play.api.mvc.PathBindable
 
 import java.net.URL
 import java.time.Year
+import scala.language.implicitConversions
 import scala.util.{Success, Try}
 
 given urlFormat: Format[URL] = {
@@ -49,7 +50,7 @@ given yearFormat: Format[Year] = {
   Format(reads, writes)
 }
 
-given yearPathBindable(using intBinder: PathBindable[Int]): PathBindable[Year] = new PathBindable[Year] {
+implicit def yearPathBindable(using intBinder: PathBindable[Int]): PathBindable[Year] = new PathBindable[Year] {
   
   override def bind(key: String, value: String): Either[String, Year] =
     intBinder.bind(key, value) match {

@@ -20,7 +20,7 @@ import controllers.actions.AuthAction
 import models.submission.AssumedReportingSubmission
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import services.SubmissionService
+import services.{AssumedReportingService, SubmissionService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.Year
@@ -31,6 +31,7 @@ import scala.concurrent.ExecutionContext
 class AssumedReportingController @Inject() (
                                              cc: ControllerComponents,
                                              submissionService: SubmissionService,
+                                             assumedReportingService: AssumedReportingService,
                                              auth: AuthAction
                                            )(using ExecutionContext) extends BackendController(cc) {
 
@@ -44,6 +45,10 @@ class AssumedReportingController @Inject() (
       ).map(submission => Ok(Json.toJson(submission)))
     }
     
-  def get(operatorId: String, reportingPeriod: Year): Action[AnyContent] =
-    ???
+  def get(operatorId: String, reportingPeriod: Year): Action[AnyContent] = auth.async { implicit request =>
+    assumedReportingService.getSubmission(request.dprsId, operatorId, reportingPeriod)
+      .map(_.map(submission => Ok(Json.toJson(submission)))
+        .getOrElse(NotFound)
+      )
+  }
 }

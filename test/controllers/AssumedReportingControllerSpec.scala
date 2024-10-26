@@ -19,8 +19,7 @@ package controllers
 import models.assumed.AssumingPlatformOperator
 import models.submission.Submission.State.Submitted
 import models.submission.{AssumedReportingSubmission, Submission}
-import org.apache.pekko.Done
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.ScalaFutures
@@ -33,7 +32,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import services.SubmissionService
+import services.{AssumedReportingService, SubmissionService}
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 
 import java.time.{Instant, Year}
@@ -49,6 +48,7 @@ class AssumedReportingControllerSpec
 
   private val mockSubmissionService = mock[SubmissionService]
   private val mockAuthConnector = mock[AuthConnector]
+  private val mockAssumedReportingService = mock[AssumedReportingService]
 
   private val now = Instant.now()
 
@@ -56,7 +56,8 @@ class AssumedReportingControllerSpec
     super.beforeEach()
     Mockito.reset(
       mockSubmissionService,
-      mockAuthConnector
+      mockAuthConnector,
+      mockAssumedReportingService
     )
   }
 
@@ -122,6 +123,70 @@ class AssumedReportingControllerSpec
       }
 
       verify(mockSubmissionService).submitAssumedReporting(any(), any(), any(), any())(using any())
+    }
+  }
+
+  "get" - {
+
+    "must return OK and a submission when one can be found" in {
+
+      val assumedReportingSubmission = AssumedReportingSubmission(
+        operatorId = "operatorId",
+        assumingOperator = AssumingPlatformOperator(
+          name = "name",
+          residentCountry = "GB",
+          tinDetails = Nil,
+          registeredCountry = "GB",
+          address = "address"
+        ),
+        reportingPeriod = Year.of(2024)
+      )
+
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
+      when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any())).thenReturn(Future.successful(Some(assumedReportingSubmission)))
+
+      val app =
+        GuiceApplicationBuilder()
+          .overrides(
+            bind[SubmissionService].toInstance(mockSubmissionService),
+            bind[AuthConnector].toInstance(mockAuthConnector),
+            bind[AssumedReportingService].toInstance(mockAssumedReportingService)
+          )
+          .build()
+
+      running(app) {
+        val request = FakeRequest(routes.AssumedReportingController.get("operatorId", Year.of(2024)))
+        val result = route(app, request).value
+
+        status(result) mustEqual OK
+        contentAsJson(result) mustEqual Json.toJson(assumedReportingSubmission)
+
+        verify(mockAssumedReportingService).getSubmission(eqTo(dprsId), eqTo("operatorId"), eqTo(Year.of(2024)))(using any())
+      }
+    }
+
+    "must return Not Found when a submission cannot be found" in {
+
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
+      when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any())).thenReturn(Future.successful(None))
+
+      val app =
+        GuiceApplicationBuilder()
+          .overrides(
+            bind[SubmissionService].toInstance(mockSubmissionService),
+            bind[AuthConnector].toInstance(mockAuthConnector),
+            bind[AssumedReportingService].toInstance(mockAssumedReportingService)
+          )
+          .build()
+
+      running(app) {
+        val request = FakeRequest(routes.AssumedReportingController.get("operatorId", Year.of(2024)))
+        val result = route(app, request).value
+
+        status(result) mustEqual NOT_FOUND
+
+        verify(mockAssumedReportingService).getSubmission(eqTo(dprsId), eqTo("operatorId"), eqTo(Year.of(2024)))(using any())
+      }
     }
   }
 }

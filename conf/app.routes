@@ -7,6 +7,8 @@ POST        /subscribe                    controllers.SubscriptionController.sub
 PUT         /subscribe                    controllers.SubscriptionController.updateSubscription()
 
 POST        /submission/assumed/submit							controllers.AssumedReportingController.submit()
+GET         /submission/assumed/:operatorId/:reportingPeriod    controllers.AssumedReportingController.get(operatorId: String, reportingPeriod: Year)
+
 PUT         /submission/start                       controllers.SubmissionController.start(id: Option[String] ?= None)
 GET         /submission/:id                         controllers.SubmissionController.get(id: String)
 POST        /submission/:id/start-upload            controllers.SubmissionController.startUpload(id: String)
