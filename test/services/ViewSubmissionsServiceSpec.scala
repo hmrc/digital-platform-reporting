@@ -19,7 +19,7 @@ package services
 import connectors.DeliveredSubmissionConnector
 import models.submission.*
 import models.submission.SubmissionStatus.*
-import models.submission.Submission.State
+import models.submission.Submission.{State, SubmissionType}
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{times, verify, when}
@@ -65,8 +65,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         )
 
         val localSubmissions = Seq(
-          Submission(_id = "id3", "dprsId", "operatorId", "operatorName", None, State.Ready, instant, instant),
-          Submission(_id = "id4", "dprsId", "operatorId", "operatorName", None, State.Uploading, instant, instant),
+          Submission(_id = "id3", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Ready, instant, instant),
+          Submission(_id = "id4", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Uploading, instant, instant),
         )
         
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(deliveredSubmissions)))
@@ -95,8 +95,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         )
 
         val localSubmissions = Seq(
-          Submission(_id = "id1", "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName", Year.of(2024)), instant, instant),
-          Submission(_id = "id2", "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName", Year.of(2024)), instant, instant),
+          Submission(_id = "id1", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName", Year.of(2024)), instant, instant),
+          Submission(_id = "id2", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName", Year.of(2024)), instant, instant),
         )
 
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(deliveredSubmissions)))
@@ -124,8 +124,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         )
 
         val localSubmissions = Seq(
-          Submission(_id = "id3", "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName3", Year.of(2024)), instant, instant),
-          Submission(_id = "id4", "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName4", Year.of(2024)), instant, instant),
+          Submission(_id = "id3", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName3", Year.of(2024)), instant, instant),
+          Submission(_id = "id4", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName4", Year.of(2024)), instant, instant),
         )
 
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(deliveredSubmissions)))
@@ -146,8 +146,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
       "when there are no delivered submissions and some Submitted local submissions" in {
 
         val localSubmissions = Seq(
-          Submission(_id = "id3", "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName3", Year.of(2024)), instant, instant),
-          Submission(_id = "id4", "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName4", Year.of(2024)), instant, instant),
+          Submission(_id = "id3", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName3", Year.of(2024)), instant, instant),
+          Submission(_id = "id4", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName4", Year.of(2024)), instant, instant),
         )
 
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(None))

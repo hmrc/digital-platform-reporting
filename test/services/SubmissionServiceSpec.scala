@@ -23,6 +23,7 @@ import models.operator.responses.PlatformOperator
 import models.operator.{AddressDetails, ContactDetails, TinDetails}
 import models.submission.Submission
 import models.submission.Submission.State.{Ready, Submitted, Validated}
+import models.submission.Submission.SubmissionType
 import models.subscription.responses.SubscriptionInfo
 import models.subscription.{Individual, IndividualContact, Organisation, OrganisationContact}
 import org.apache.pekko.Done
@@ -132,6 +133,7 @@ class SubmissionServiceSpec
 
               val submission = Submission(
                 _id = submissionId,
+                submissionType = SubmissionType.Xml,
                 dprsId = dprsId,
                 operatorId = "operatorId",
                 operatorName = "operatorName",
@@ -206,6 +208,7 @@ class SubmissionServiceSpec
 
               val submission = Submission(
                 _id = submissionId,
+                submissionType = SubmissionType.Xml,
                 dprsId = dprsId,
                 operatorId = "operatorId",
                 operatorName = "operatorName",
@@ -277,6 +280,7 @@ class SubmissionServiceSpec
 
             val submission = Submission(
               _id = submissionId,
+              submissionType = SubmissionType.Xml,
               dprsId = dprsId,
               operatorId = "operatorId",
               operatorName = "operatorName",
@@ -355,6 +359,7 @@ class SubmissionServiceSpec
 
           val submission = Submission(
             _id = submissionId,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = "operatorId",
             operatorName = "operatorName",
@@ -401,6 +406,7 @@ class SubmissionServiceSpec
 
         val submission = Submission(
           _id = "id",
+          submissionType = SubmissionType.Xml,
           dprsId = "dprsId",
           operatorId = "operatorId",
           operatorName = "operatorName",
@@ -482,6 +488,7 @@ class SubmissionServiceSpec
       val expectedFileName = s"$messageRef.xml"
       val expectedSubmission = Submission(
         _id = submissionId,
+        submissionType = SubmissionType.ManualAssumedReport,
         dprsId = dprsId,
         operatorId = operator.operatorId,
         operatorName = operator.operatorName,
@@ -598,6 +605,7 @@ class SubmissionServiceSpec
       val expectedFileName = s"$messageRef.xml"
       val expectedSubmission = Submission(
         _id = submissionId,
+        submissionType = SubmissionType.ManualAssumedReport,
         dprsId = dprsId,
         operatorId = operator.operatorId,
         operatorName = operator.operatorName,

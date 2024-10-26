@@ -16,7 +16,7 @@
 
 package controllers
 
-import models.submission.Submission.State
+import models.submission.Submission.{State, SubmissionType}
 import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
 import models.submission.*
 import org.apache.pekko.Done
@@ -116,6 +116,7 @@ class SubmissionControllerSpec
 
         val expectedSubmission = Submission(
           _id = uuid,
+          submissionType = SubmissionType.Xml,
           dprsId = dprsId,
           operatorId = operatorId,
           operatorName = operatorName,
@@ -150,6 +151,7 @@ class SubmissionControllerSpec
 
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -189,6 +191,7 @@ class SubmissionControllerSpec
           val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -243,6 +246,7 @@ class SubmissionControllerSpec
 
         val existingSubmission = Submission(
           _id = uuid,
+          submissionType = SubmissionType.Xml,
           dprsId = dprsId,
           operatorId = operatorId,
           operatorName = operatorName,
@@ -295,6 +299,7 @@ class SubmissionControllerSpec
           val state = Gen.oneOf(readyGen, uploadFailedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -332,6 +337,7 @@ class SubmissionControllerSpec
           val state = Gen.oneOf(uploadingGen, validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -397,6 +403,7 @@ class SubmissionControllerSpec
             val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
               _id = uuid,
+              submissionType = SubmissionType.Xml,
               dprsId = dprsId,
               operatorId = operatorId,
               operatorName = operatorName,
@@ -436,6 +443,7 @@ class SubmissionControllerSpec
             val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
               _id = uuid,
+              submissionType = SubmissionType.Xml,
               dprsId = dprsId,
               operatorId = operatorId,
               operatorName = operatorName,
@@ -476,6 +484,7 @@ class SubmissionControllerSpec
           val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -535,6 +544,7 @@ class SubmissionControllerSpec
           val state = Gen.oneOf(readyGen, uploadFailedGen, uploadingGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -575,6 +585,7 @@ class SubmissionControllerSpec
           val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -632,6 +643,7 @@ class SubmissionControllerSpec
 
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -671,6 +683,7 @@ class SubmissionControllerSpec
           val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
