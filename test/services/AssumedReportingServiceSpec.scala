@@ -19,13 +19,13 @@ package services
 import connectors.{DeliveredSubmissionConnector, SubmissionConnector}
 import generated.{DPI_OECD, Generated_DPI_OECDFormat}
 import models.assumed.AssumingPlatformOperator
-import models.operator.TinType.{Utr, Vrn}
+import models.operator.TinType.{Other, Utr, Vrn}
 import models.operator.responses.PlatformOperator
 import models.operator.{AddressDetails, ContactDetails, TinDetails, TinDetails as tinDetails}
 import models.submission.DeliveredSubmissionSortBy.SubmissionDate
 import models.submission.SortOrder.Descending
 import models.submission.SubmissionStatus.{Pending, Rejected, Success}
-import models.submission.{DeliveredSubmission, DeliveredSubmissionSortBy, DeliveredSubmissions, ViewSubmissionsRequest}
+import models.submission.{AssumedReportingSubmission, DeliveredSubmission, DeliveredSubmissionSortBy, DeliveredSubmissions, ViewSubmissionsRequest}
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify, when}
@@ -85,7 +85,7 @@ class AssumedReportingServiceSpec
   private lazy val assumedReportingService: AssumedReportingService = app.injector.instanceOf[AssumedReportingService]
 
   private val dprsId = "dprsId"
-
+    
   "createSubmission" - {
 
     "when there is no existing manual assumed report for that reporting period" - {
@@ -1155,6 +1155,176 @@ class AssumedReportingServiceSpec
     }
   }
 
+  "getSubmission" - {
+    
+    "must return a submission with complete data" in {
+
+      val submissions = DeliveredSubmissions(
+        submissions = Seq(
+          DeliveredSubmission(
+            conversationId = "conversationId",
+            fileName = "test.xml",
+            operatorId = "operatorId",
+            operatorName = "operatorName",
+            reportingPeriod = "2024",
+            submissionCaseId = "submissionCaseId",
+            submissionDateTime = now,
+            submissionStatus = Success,
+            assumingReporterName = Some("assumingReporterName")
+          ),
+          DeliveredSubmission(
+            conversationId = "conversationId",
+            fileName = "test2.xml",
+            operatorId = "operatorId",
+            operatorName = "operatorName",
+            reportingPeriod = "2024",
+            submissionCaseId = "submissionCaseId2",
+            submissionDateTime = now,
+            submissionStatus = Success,
+            assumingReporterName = Some("assumingReporterName2")
+          )
+        ),
+        resultsCount = 2
+      )
+
+      val existingSubmissionSource = scala.io.Source.fromFile(getClass.getResource("/assumed/update/test.xml").toURI)
+      val existingSubmission = scalaxb.fromXML[DPI_OECD](XML.loadString(existingSubmissionSource.mkString))
+      existingSubmissionSource.close()
+
+      when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
+      when(mockSubmissionConnector.getManualAssumedReportingSubmission(any())(using any())).thenReturn(Future.successful(existingSubmission))
+
+      val expectedAssumingOperator = AssumingPlatformOperator(
+        name = "assumingOperator",
+        residentCountry = "US",
+        tinDetails = Seq(
+          TinDetails(
+            tin = "tin3",
+            tinType = Other,
+            issuedBy = "GB"
+          ),
+          TinDetails(
+            tin = "tin4",
+            tinType = Other,
+            issuedBy = "GB"
+          )
+        ),
+        registeredCountry = "US",
+        address = "assumed line 1\nassumed line 2\nassumed line 3"
+      )
+      
+      val expectedAssumedReportingSubmission = AssumedReportingSubmission(
+        operatorId       = "operatorId",
+        assumingOperator = expectedAssumingOperator,
+        reportingPeriod  = Year.of(2024)
+      )
+      
+      val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
+        subscriptionId = dprsId,
+        assumedReporting = true,
+        pageNumber = 1,
+        sortBy = SubmissionDate,
+        sortOrder = Descending,
+        reportingPeriod = Some(2024),
+        operatorId = Some("operatorId"),
+        fileName = None,
+        statuses = Seq(Pending, Rejected, Success)
+      )
+
+      val result = assumedReportingService.getSubmission(dprsId, "operatorId", Year.of(2024))(using HeaderCarrier()).futureValue
+      
+      result.value mustEqual expectedAssumedReportingSubmission
+      
+      verify(mockDeliveredSubmissionConnector).get(eqTo(expectedViewSubmissionsRequest))(using any())
+      verify(mockSubmissionConnector).getManualAssumedReportingSubmission(eqTo("submissionCaseId"))(using any())
+    }
+    
+    "must return a submission with minimal data" in {
+
+      val submissions = DeliveredSubmissions(
+        submissions = Seq(
+          DeliveredSubmission(
+            conversationId = "conversationId",
+            fileName = "test.xml",
+            operatorId = "operatorId",
+            operatorName = "operatorName",
+            reportingPeriod = "2024",
+            submissionCaseId = "submissionCaseId",
+            submissionDateTime = now,
+            submissionStatus = Success,
+            assumingReporterName = Some("assumingReporterName")
+          ),
+          DeliveredSubmission(
+            conversationId = "conversationId",
+            fileName = "test2.xml",
+            operatorId = "operatorId",
+            operatorName = "operatorName",
+            reportingPeriod = "2024",
+            submissionCaseId = "submissionCaseId2",
+            submissionDateTime = now,
+            submissionStatus = Success,
+            assumingReporterName = Some("assumingReporterName2")
+          )
+        ),
+        resultsCount = 2
+      )
+
+      val existingSubmissionSource = scala.io.Source.fromFile(getClass.getResource("/assumed/update/test2.xml").toURI)
+      val existingSubmission = scalaxb.fromXML[DPI_OECD](XML.loadString(existingSubmissionSource.mkString))
+      existingSubmissionSource.close()
+
+      when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
+      when(mockSubmissionConnector.getManualAssumedReportingSubmission(any())(using any())).thenReturn(Future.successful(existingSubmission))
+
+      val expectedAssumingOperator = AssumingPlatformOperator(
+        name = "assumingOperator",
+        residentCountry = "US",
+        tinDetails = Nil,
+        registeredCountry = "US",
+        address = "assumed line 1\nassumed line 2\nassumed line 3"
+      )
+
+      val expectedAssumedReportingSubmission = AssumedReportingSubmission(
+        operatorId       = "operatorId",
+        assumingOperator = expectedAssumingOperator,
+        reportingPeriod  = Year.of(2024)
+      )
+
+      val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
+        subscriptionId = dprsId,
+        assumedReporting = true,
+        pageNumber = 1,
+        sortBy = SubmissionDate,
+        sortOrder = Descending,
+        reportingPeriod = Some(2024),
+        operatorId = Some("operatorId"),
+        fileName = None,
+        statuses = Seq(Pending, Rejected, Success)
+      )
+
+      val result = assumedReportingService.getSubmission(dprsId, "operatorId", Year.of(2024))(using HeaderCarrier()).futureValue
+
+      result.value mustEqual expectedAssumedReportingSubmission
+
+      verify(mockDeliveredSubmissionConnector).get(eqTo(expectedViewSubmissionsRequest))(using any())
+      verify(mockSubmissionConnector).getManualAssumedReportingSubmission(eqTo("submissionCaseId"))(using any())
+    }
+    
+    "must return None when there are no previous submissions" in {
+
+      val submissions = DeliveredSubmissions(
+        submissions = Seq.empty,
+        resultsCount = 0
+      )
+
+      when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
+
+      val result = assumedReportingService.getSubmission(dprsId, "operatorId", Year.of(2024))(using HeaderCarrier()).futureValue
+      
+      result must not be defined
+    }
+  }
+  
   private def validate(content: NodeSeq): Document = {
 
     val resource = Paths.get(getClass.getResource("/schemas/DPIXML_v1.08.xsd").toURI).toFile

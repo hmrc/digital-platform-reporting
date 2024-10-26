@@ -37,8 +37,8 @@
         <dpi:Address legalAddressType="OECD304">
           <dpi:CountryCode>US</dpi:CountryCode>
           <dpi:AddressFree>assumed line 1
-            assumed line 2
-            assumed line 3</dpi:AddressFree>
+assumed line 2
+assumed line 3</dpi:AddressFree>
         </dpi:Address>
         <dpi:DocSpec>
           <stf:DocTypeIndic>OECD2</stf:DocTypeIndic>

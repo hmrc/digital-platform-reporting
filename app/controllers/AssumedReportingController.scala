@@ -17,12 +17,13 @@
 package controllers
 
 import controllers.actions.AuthAction
-import models.submission.AssumedReportingSubmissionRequest
+import models.submission.AssumedReportingSubmission
 import play.api.libs.json.Json
-import play.api.mvc.{Action, ControllerComponents}
-import services.SubmissionService
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import services.{AssumedReportingService, SubmissionService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import java.time.Year
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
@@ -30,11 +31,12 @@ import scala.concurrent.ExecutionContext
 class AssumedReportingController @Inject() (
                                              cc: ControllerComponents,
                                              submissionService: SubmissionService,
+                                             assumedReportingService: AssumedReportingService,
                                              auth: AuthAction
                                            )(using ExecutionContext) extends BackendController(cc) {
 
-  def submit(): Action[AssumedReportingSubmissionRequest] =
-    auth.async(parse.json[AssumedReportingSubmissionRequest]) { implicit request =>
+  def submit(): Action[AssumedReportingSubmission] =
+    auth.async(parse.json[AssumedReportingSubmission]) { implicit request =>
       submissionService.submitAssumedReporting(
         dprsId = request.dprsId,
         operatorId = request.body.operatorId,
@@ -42,4 +44,11 @@ class AssumedReportingController @Inject() (
         reportingPeriod = request.body.reportingPeriod
       ).map(submission => Ok(Json.toJson(submission)))
     }
+    
+  def get(operatorId: String, reportingPeriod: Year): Action[AnyContent] = auth.async { implicit request =>
+    assumedReportingService.getSubmission(request.dprsId, operatorId, reportingPeriod)
+      .map(_.map(submission => Ok(Json.toJson(submission)))
+        .getOrElse(NotFound)
+      )
+  }
 }

@@ -1,3 +1,4 @@
+import play.sbt.routes.RoutesKeys
 import uk.gov.hmrc.DefaultBuildSettings
 
 ThisBuild / majorVersion := 0
@@ -16,6 +17,10 @@ lazy val microservice = Project("digital-platform-reporting", file("."))
   .settings(resolvers += Resolver.jcenterRepo)
   .settings(CodeCoverageSettings.settings *)
   .settings(PlayKeys.playDefaultPort := 20004)
+  .settings(RoutesKeys.routesImport ++= Seq(
+    "models._",
+    "java.time.Year"
+  ))
 
 lazy val it = project
   .enablePlugins(PlayScala)

@@ -22,13 +22,13 @@ import models.yearFormat
 
 import java.time.Year
 
-final case class AssumedReportingSubmissionRequest(
-                                                   operatorId: String,
-                                                   assumingOperator: AssumingPlatformOperator,
-                                                   reportingPeriod: Year
-                                                 )
+final case class AssumedReportingSubmission(
+                                             operatorId: String,
+                                             assumingOperator: AssumingPlatformOperator,
+                                             reportingPeriod: Year
+                                           )
 
-object AssumedReportingSubmissionRequest {
+object AssumedReportingSubmission {
 
-  given OFormat[AssumedReportingSubmissionRequest] = Json.format
+  given OFormat[AssumedReportingSubmission] = Json.format
 }
