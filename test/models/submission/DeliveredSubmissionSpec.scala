@@ -20,7 +20,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.*
 
-import java.time.Instant
+import java.time.{Instant, Year}
 import java.util.UUID
 
 class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
@@ -36,7 +36,7 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
         "fileName" -> "file.xml",
         "pOId" -> "operatorId",
         "pOName" -> "operatorName",
-        "reportingYear" -> "2024",
+        "reportingYear" -> 2024,
         "submissionCaseId" -> "DPI-SUB-1",
         "submissionDateTime" -> "2024-12-31T01:02:03Z",
         "submissionStatus" -> "PENDING",
@@ -48,7 +48,7 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
         fileName = "file.xml",
         operatorId = "operatorId",
         operatorName = "operatorName",
-        reportingPeriod = "2024",
+        reportingPeriod = Year.of(2024),
         submissionCaseId = "DPI-SUB-1",
         submissionDateTime = Instant.parse("2024-12-31T01:02:03Z"),
         submissionStatus = SubmissionStatus.Pending,
@@ -65,7 +65,7 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
         "fileName" -> "file.xml",
         "pOId" -> "operatorId",
         "pOName" -> "operatorName",
-        "reportingYear" -> "2024",
+        "reportingYear" -> 2024,
         "submissionCaseId" -> "DPI-SUB-1",
         "submissionDateTime" -> "2024-12-31T01:02:03Z",
         "submissionStatus" -> "PENDING"
@@ -76,7 +76,7 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
         fileName = "file.xml",
         operatorId = "operatorId",
         operatorName = "operatorName",
-        reportingPeriod = "2024",
+        reportingPeriod = Year.of(2024),
         submissionCaseId = "DPI-SUB-1",
         submissionDateTime = Instant.parse("2024-12-31T01:02:03Z"),
         submissionStatus = SubmissionStatus.Pending,

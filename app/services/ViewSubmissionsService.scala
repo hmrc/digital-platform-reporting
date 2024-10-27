@@ -26,7 +26,6 @@ import repository.SubmissionRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
 import javax.inject.Inject
-import java.time.Year
 import scala.concurrent.{ExecutionContext, Future}
 
 class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
@@ -72,7 +71,7 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
         
       consolidatedSubmissions.traverse { submission =>
         assumedReportingService
-          .getSubmission(dprsId, submission.operatorId, Year.of(submission.reportingPeriod.toInt)) // TODO: Get rid of toInt
+          .getSubmission(dprsId, submission.operatorId, submission.reportingPeriod)
           .map(_.map(assumedReport => SubmissionSummary(submission, assumedReport.isDeleted)))
       }
       .map(submissionSummaries => SubmissionsSummary(submissionSummaries.flatten, Nil))

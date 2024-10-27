@@ -16,15 +16,16 @@
 
 package models.submission
 
+import models.yearFormat
 import play.api.libs.json.{Json, OWrites}
 
-import java.time.Instant
+import java.time.{Instant, Year}
 
 final case class SubmissionSummary(submissionId: String,
                                    fileName: String,
                                    operatorId: String,
                                    operatorName: String,
-                                   reportingPeriod: String,
+                                   reportingPeriod: Year,
                                    submissionDateTime: Instant,
                                    submissionStatus: SubmissionStatus,
                                    assumingReporterName: Option[String],
@@ -57,7 +58,7 @@ object SubmissionSummary {
           state.fileName,
           submission.operatorId,
           submission.operatorName,
-          state.reportingPeriod.toString,
+          state.reportingPeriod,
           submission.updated,
           SubmissionStatus.Pending,
           submission.assumingOperatorName,
