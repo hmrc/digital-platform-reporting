@@ -16,16 +16,22 @@
 
 package services
 
+import cats.implicits.*
 import connectors.DeliveredSubmissionConnector
 import models.submission.*
+import models.submission.DeliveredSubmissionSortBy.SubmissionDate
+import models.submission.SortOrder.Descending
+import models.submission.SubmissionStatus.{Pending, Rejected, Success}
 import repository.SubmissionRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
 import javax.inject.Inject
+import java.time.Year
 import scala.concurrent.{ExecutionContext, Future}
 
 class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
-                                       repository: SubmissionRepository)
+                                       repository: SubmissionRepository,
+                                       assumedReportingService: AssumedReportingService)
                                       (implicit ec: ExecutionContext) {
 
   def getSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] =
@@ -43,4 +49,33 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
 
       SubmissionsSummary(deliveredSubmissionSummaries, undeliveredSubmissions)
     }
+
+  def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] = {
+    val request = ViewSubmissionsRequest(
+      subscriptionId = dprsId,
+      assumedReporting = true,
+      pageNumber = 1,
+      sortBy = SubmissionDate,
+      sortOrder = Descending,
+      reportingPeriod = None,
+      operatorId = None,
+      fileName = None,
+      statuses = Seq(Pending, Success, Rejected)
+    )
+
+    connector.get(request).flatMap(_.map { deliveredSubmissions =>
+      val consolidatedSubmissions = deliveredSubmissions.submissions
+        .groupBy(submission => (submission.operatorId, submission.reportingPeriod))
+        .map(_._2.sortBy(_.submissionDateTime).reverse.head)
+        .toList
+        .sortBy(_.submissionDateTime).reverse
+        
+      consolidatedSubmissions.traverse { submission =>
+        assumedReportingService
+          .getSubmission(dprsId, submission.operatorId, Year.of(submission.reportingPeriod.toInt)) // TODO: Get rid of toInt
+          .map(_.map(assumedReport => SubmissionSummary(submission, assumedReport.isDeleted)))
+      }
+      .map(submissionSummaries => SubmissionsSummary(submissionSummaries.flatten, Nil))
+    }.getOrElse(Future.successful(SubmissionsSummary(Nil, Nil))))
+  }
 }

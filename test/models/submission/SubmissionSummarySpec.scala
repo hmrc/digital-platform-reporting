@@ -46,7 +46,7 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
         assumingReporterName = Some("assumingReporter")
       )
       
-      SubmissionSummary(deliveredSubmission) mustEqual SubmissionSummary(
+      SubmissionSummary(deliveredSubmission, true) mustEqual SubmissionSummary(
         submissionId = "conversationId",
         fileName = "filename",
         operatorId = "operatorId",
@@ -55,7 +55,8 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
         submissionDateTime = now,
         submissionStatus = SubmissionStatus.Pending,
         assumingReporterName = Some("assumingReporter"),
-        submissionCaseId = Some("submissionCaseId")
+        submissionCaseId = Some("submissionCaseId"),
+        isDeleted = true
       )
     }
   }
@@ -85,7 +86,8 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
         submissionDateTime = now,
         submissionStatus = SubmissionStatus.Pending,
         assumingReporterName = Some("assumingReporter"),
-        submissionCaseId = None
+        submissionCaseId = None,
+        isDeleted = false
       )
     }
     

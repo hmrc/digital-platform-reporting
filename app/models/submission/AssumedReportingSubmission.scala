@@ -25,7 +25,8 @@ import java.time.Year
 final case class AssumedReportingSubmission(
                                              operatorId: String,
                                              assumingOperator: AssumingPlatformOperator,
-                                             reportingPeriod: Year
+                                             reportingPeriod: Year,
+                                             isDeleted: Boolean = false // TODO: Do we want a separate Request model?
                                            )
 
 object AssumedReportingSubmission {

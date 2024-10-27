@@ -75,7 +75,8 @@ class AssumedReportingService @Inject()(
           registeredCountry = assumingOperator.Address.CountryCode.toString,
           address           = address
         ),
-        reportingPeriod = reportingPeriod
+        reportingPeriod = reportingPeriod,
+        isDeleted       = isDeletion(submission)
       )
     }
 
