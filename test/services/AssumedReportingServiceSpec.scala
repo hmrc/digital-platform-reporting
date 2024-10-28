@@ -1215,8 +1215,10 @@ class AssumedReportingServiceSpec
       
       val expectedAssumedReportingSubmission = AssumedReportingSubmission(
         operatorId       = "operatorId",
+        operatorName     = "operatorName",
         assumingOperator = expectedAssumingOperator,
-        reportingPeriod  = Year.of(2024)
+        reportingPeriod  = Year.of(2024),
+        isDeleted        = false
       )
       
       val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
@@ -1286,8 +1288,10 @@ class AssumedReportingServiceSpec
 
       val expectedAssumedReportingSubmission = AssumedReportingSubmission(
         operatorId       = "operatorId",
+        operatorName     = "operatorName",
         assumingOperator = expectedAssumingOperator,
-        reportingPeriod  = Year.of(2024)
+        reportingPeriod  = Year.of(2024),
+        isDeleted        = false
       )
 
       val expectedViewSubmissionsRequest = ViewSubmissionsRequest(

@@ -191,20 +191,20 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
 
         val deliveredSubmissions = DeliveredSubmissions(
           submissions = Seq(
-            DeliveredSubmission("id1", "fileName1", "operatorId1", "operatorName", Year.of(2024), "submissionCaseId1", instant.plusSeconds(1), Success, Some("assumingName")),
-            DeliveredSubmission("id2", "fileName2", "operatorId1", "operatorName", Year.of(2024), "submissionCaseId2", instant.plusSeconds(2), Success, Some("assumingName")),
-            DeliveredSubmission("id3", "fileName3", "operatorId1", "operatorName", Year.of(2025), "submissionCaseId3", instant.plusSeconds(3), Success, Some("assumingName")),
-            DeliveredSubmission("id4", "fileName4", "operatorId2", "operatorName", Year.of(2024), "submissionCaseId4", instant.plusSeconds(4), Success, Some("assumingName")),
-            DeliveredSubmission("id5", "fileName5", "operatorId2", "operatorName", Year.of(2024), "submissionCaseId5", instant.plusSeconds(5), Success, Some("assumingName")),
-            DeliveredSubmission("id6", "fileName6", "operatorId3", "operatorName", Year.of(2024), "submissionCaseId6", instant.plusSeconds(6), Success, Some("assumingName"))
+            DeliveredSubmission("id1", "fileName1", "operatorId1", "operatorName1", Year.of(2024), "submissionCaseId1", instant.plusSeconds(1), Success, Some("assumingName")),
+            DeliveredSubmission("id2", "fileName2", "operatorId1", "operatorName1", Year.of(2024), "submissionCaseId2", instant.plusSeconds(2), Success, Some("assumingName")),
+            DeliveredSubmission("id3", "fileName3", "operatorId1", "operatorName1", Year.of(2025), "submissionCaseId3", instant.plusSeconds(3), Success, Some("assumingName")),
+            DeliveredSubmission("id4", "fileName4", "operatorId2", "operatorName2", Year.of(2024), "submissionCaseId4", instant.plusSeconds(4), Success, Some("assumingName")),
+            DeliveredSubmission("id5", "fileName5", "operatorId2", "operatorName2", Year.of(2024), "submissionCaseId5", instant.plusSeconds(5), Success, Some("assumingName")),
+            DeliveredSubmission("id6", "fileName6", "operatorId3", "operatorName3", Year.of(2024), "submissionCaseId6", instant.plusSeconds(6), Success, Some("assumingName"))
           ),
           resultsCount = 6
         )
 
-        val assumedReport2 = AssumedReportingSubmission("operatorId1", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2024), true)
-        val assumedReport3 = AssumedReportingSubmission("operatorId1", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2025), true)
-        val assumedReport5 = AssumedReportingSubmission("operatorId2", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2024), false)
-        val assumedReport6 = AssumedReportingSubmission("operatorId3", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2024), false)
+        val assumedReport2 = AssumedReportingSubmission("operatorId1", "operatorName1", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2024), true)
+        val assumedReport3 = AssumedReportingSubmission("operatorId1", "operatorName1", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2025), true)
+        val assumedReport5 = AssumedReportingSubmission("operatorId2", "operatorName2", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2024), false)
+        val assumedReport6 = AssumedReportingSubmission("operatorId3", "operatorName3", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2024), false)
 
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(deliveredSubmissions)))
         when(mockAssumedReportingService.getSubmission(any(), eqTo("operatorId1"), eqTo(Year.of(2024)))(using any())).thenReturn(Future.successful(Some(assumedReport2)))
@@ -215,10 +215,10 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val result = service.getAssumedReports("dprsId").futureValue
 
         result.deliveredSubmissions must contain theSameElementsInOrderAs Seq(
-          SubmissionSummary("id6", "fileName6", "operatorId3", "operatorName", Year.of(2024), instant.plusSeconds(6), Success, Some("assumingName"), Some("submissionCaseId6"), false),
-          SubmissionSummary("id5", "fileName5", "operatorId2", "operatorName", Year.of(2024), instant.plusSeconds(5), Success, Some("assumingName"), Some("submissionCaseId5"), false),
-          SubmissionSummary("id3", "fileName3", "operatorId1", "operatorName", Year.of(2025), instant.plusSeconds(3), Success, Some("assumingName"), Some("submissionCaseId3"), true),
-          SubmissionSummary("id2", "fileName2", "operatorId1", "operatorName", Year.of(2024), instant.plusSeconds(2), Success, Some("assumingName"), Some("submissionCaseId2"), true)
+          SubmissionSummary("id6", "fileName6", "operatorId3", "operatorName3", Year.of(2024), instant.plusSeconds(6), Success, Some("assumingName"), Some("submissionCaseId6"), false),
+          SubmissionSummary("id5", "fileName5", "operatorId2", "operatorName2", Year.of(2024), instant.plusSeconds(5), Success, Some("assumingName"), Some("submissionCaseId5"), false),
+          SubmissionSummary("id3", "fileName3", "operatorId1", "operatorName1", Year.of(2025), instant.plusSeconds(3), Success, Some("assumingName"), Some("submissionCaseId3"), true),
+          SubmissionSummary("id2", "fileName2", "operatorId1", "operatorName1", Year.of(2024), instant.plusSeconds(2), Success, Some("assumingName"), Some("submissionCaseId2"), true)
         )
         result.localSubmissions mustBe empty
       }
