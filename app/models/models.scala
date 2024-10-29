@@ -16,7 +16,7 @@
 
 package models
 
-import play.api.libs.json.{Format, Reads, Writes}
+import play.api.libs.json.*
 import play.api.mvc.PathBindable
 
 import java.net.URL
@@ -39,10 +39,22 @@ given urlFormat: Format[URL] = {
 
 given yearFormat: Format[Year] = {
 
-  val reads = Reads.of[Int].flatMap { number =>
-    Try(Year.of(number))
-      .map(Reads.pure)
-      .getOrElse(Reads.failed("error.invalid"))
+  val reads = new Reads[Year] {
+    def reads(json: JsValue): JsResult[Year] =
+      json match {
+        case JsNumber(number) =>
+          Try(Year.of(number.toInt))
+            .map(JsSuccess(_))
+            .getOrElse(JsError("error.invalid"))
+          
+        case JsString(string) =>
+          Try(Year.of(string.toInt))
+            .map(JsSuccess(_))
+            .getOrElse(JsError("error.invalid"))
+          
+        case _ =>
+          JsError("error.invalid")
+      }
   }
 
   val writes = Writes.of[Int].contramap[Year](_.getValue)
