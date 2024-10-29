@@ -78,7 +78,7 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val result = service.getSubmissions(request).futureValue
 
         result mustEqual SubmissionsSummary(
-          deliveredSubmissions.submissions.map(x => SubmissionSummary(x)),
+          deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)),
           Nil
         )
 
@@ -108,7 +108,7 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val result = service.getSubmissions(request).futureValue
 
         result mustEqual SubmissionsSummary(
-          deliveredSubmissions.submissions.map(x => SubmissionSummary(x)), Nil
+          deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)), Nil
         )
 
         verify(mockConnector, times(1)).get(eqTo(request))(any())
@@ -137,7 +137,7 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val result = service.getSubmissions(request).futureValue
 
         result mustEqual SubmissionsSummary(
-          deliveredSubmissions.submissions.map(x => SubmissionSummary(x)),
+          deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)),
           localSubmissions.flatMap(x => SubmissionSummary(x))
         )
 

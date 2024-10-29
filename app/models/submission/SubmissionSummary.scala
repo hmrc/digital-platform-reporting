@@ -36,7 +36,7 @@ object SubmissionSummary {
   
   implicit lazy val writes: OWrites[SubmissionSummary] = Json.writes
   
-  def apply(submission: DeliveredSubmission, isDeleted: Boolean = false): SubmissionSummary =
+  def apply(submission: DeliveredSubmission, isDeleted: Boolean): SubmissionSummary =
     SubmissionSummary(
       submission.conversationId,
       submission.fileName,

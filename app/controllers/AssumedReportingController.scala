@@ -60,8 +60,4 @@ class AssumedReportingController @Inject() (
         .getOrElse(NotFound)
       )
   }
-  
-  def list(): Action[AnyContent] = auth.async { implicit request =>
-    ???
-  }
 }

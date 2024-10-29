@@ -39,7 +39,7 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
       repositorySubmissions <- repository.getBySubscriptionId(request.subscriptionId)
     } yield {
 
-      val deliveredSubmissionSummaries = deliveredSubmissions.map(_.submissions.map(x => SubmissionSummary(x))).getOrElse(Nil)
+      val deliveredSubmissionSummaries = deliveredSubmissions.map(_.submissions.map(x => SubmissionSummary(x, false))).getOrElse(Nil)
       val deliveredSubmissionIds = deliveredSubmissionSummaries.map(_.submissionId)
       val undeliveredSubmissions =
         repositorySubmissions
