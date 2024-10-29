@@ -102,6 +102,18 @@ class CadxValidationErrorRepositorySpec
     }
   }
 
+  "saveBatch" - {
+
+    "must save the errors to the repository" in {
+
+      repository.saveBatch(Seq(fileError, rowError)).futureValue
+
+      val result = findAll().futureValue
+
+      result must contain only(fileError, rowError)
+    }
+  }
+
   "getErrorsForSubmission" - {
 
     "must return all errors for the given submission id" in {
