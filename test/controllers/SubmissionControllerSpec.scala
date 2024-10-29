@@ -739,11 +739,12 @@ class SubmissionControllerSpec
           fileName = "filename",
           operatorId = "operatorId",
           operatorName = "operatorName",
-          reportingPeriod = "2024",
+          reportingPeriod = Year.of(2024),
           submissionDateTime = now,
           submissionStatus = SubmissionStatus.Success,
           assumingReporterName = None,
-          submissionCaseId = Some("submissionCaseId")
+          submissionCaseId = Some("submissionCaseId"),
+          isDeleted = false
         ))
         val summary = SubmissionsSummary(deliveredSubmissions, Nil)
 
@@ -776,11 +777,12 @@ class SubmissionControllerSpec
           fileName = "filename",
           operatorId = "operatorId",
           operatorName = "operatorName",
-          reportingPeriod = "2024",
+          reportingPeriod = Year.of(2024),
           submissionDateTime = now,
           submissionStatus = SubmissionStatus.Success,
           assumingReporterName = None,
-          submissionCaseId = None
+          submissionCaseId = None,
+          isDeleted = false
         ))
         val summary = SubmissionsSummary(Nil, localSubmissions)
 
@@ -813,11 +815,12 @@ class SubmissionControllerSpec
           fileName = "filename",
           operatorId = "operatorId",
           operatorName = "operatorName",
-          reportingPeriod = "2024",
+          reportingPeriod = Year.of(2024),
           submissionDateTime = now,
           submissionStatus = SubmissionStatus.Success,
           assumingReporterName = None,
-          submissionCaseId = Some("submissionCaseId")
+          submissionCaseId = Some("submissionCaseId"),
+          isDeleted = false
         ))
 
         val localSubmissions = Seq(SubmissionSummary(
@@ -825,11 +828,12 @@ class SubmissionControllerSpec
           fileName = "filename2",
           operatorId = "operatorId",
           operatorName = "operatorName",
-          reportingPeriod = "2024",
+          reportingPeriod = Year.of(2024),
           submissionDateTime = now,
           submissionStatus = SubmissionStatus.Success,
           assumingReporterName = None,
-          submissionCaseId = None
+          submissionCaseId = None,
+          isDeleted = false
         ))
         val summary = SubmissionsSummary(deliveredSubmissions, localSubmissions)
         

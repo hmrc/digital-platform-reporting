@@ -16,16 +16,17 @@
 
 package models.submission
 
+import models.yearFormat
 import play.api.libs.functional.syntax.*
 import play.api.libs.json.*
 
-import java.time.Instant
+import java.time.{Instant, Year}
 
 final case class DeliveredSubmission(conversationId: String,
                                      fileName: String,
                                      operatorId: String,
                                      operatorName: String,
-                                     reportingPeriod: String,
+                                     reportingPeriod: Year,
                                      submissionCaseId: String,
                                      submissionDateTime: Instant,
                                      submissionStatus: SubmissionStatus,
@@ -40,7 +41,7 @@ object DeliveredSubmission {
     (__ \ "fileName").read[String] and
     (__ \ "pOId").read[String] and
     (__ \ "pOName").read[String] and
-    (__ \ "reportingYear").read[String] and
+    (__ \ "reportingYear").read[Year] and
     (__ \ "submissionCaseId").read[String] and
     (__ \ "submissionDateTime").read[Instant] and
     (__ \ "submissionStatus").read[SubmissionStatus] and

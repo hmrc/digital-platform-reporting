@@ -34,7 +34,7 @@ import services.UuidService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.WireMockSupport
 
-import java.time.{Clock, LocalDateTime, ZoneId, ZoneOffset}
+import java.time.{Clock, LocalDateTime, Year, ZoneId, ZoneOffset}
 import java.util.UUID
 
 class DeliveredSubmissionConnectorSpec extends AnyFreeSpec
@@ -109,7 +109,7 @@ class DeliveredSubmissionConnectorSpec extends AnyFreeSpec
             fileName = "file.xml",
             operatorId = "operatorId",
             operatorName = "operatorName",
-            reportingPeriod = "2024",
+            reportingPeriod = Year.of(2024),
             submissionCaseId = "DPI-SUB-1",
             submissionDateTime = instant,
             submissionStatus = SubmissionStatus.Rejected,

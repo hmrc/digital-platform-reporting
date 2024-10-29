@@ -39,23 +39,24 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
         fileName = "filename",
         operatorId = "operatorId",
         operatorName = "operatorName",
-        reportingPeriod = "reportingPeriod",
+        reportingPeriod = Year.of(2024),
         submissionCaseId = "submissionCaseId",
         submissionDateTime = now,
         submissionStatus = SubmissionStatus.Pending,
         assumingReporterName = Some("assumingReporter")
       )
       
-      SubmissionSummary(deliveredSubmission) mustEqual SubmissionSummary(
+      SubmissionSummary(deliveredSubmission, true) mustEqual SubmissionSummary(
         submissionId = "conversationId",
         fileName = "filename",
         operatorId = "operatorId",
         operatorName = "operatorName",
-        reportingPeriod = "reportingPeriod",
+        reportingPeriod = Year.of(2024),
         submissionDateTime = now,
         submissionStatus = SubmissionStatus.Pending,
         assumingReporterName = Some("assumingReporter"),
-        submissionCaseId = Some("submissionCaseId")
+        submissionCaseId = Some("submissionCaseId"),
+        isDeleted = true
       )
     }
   }
@@ -81,11 +82,12 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
         fileName = "filename",
         operatorId = "operatorId",
         operatorName = "operatorName",
-        reportingPeriod = "2024",
+        reportingPeriod = Year.of(2024),
         submissionDateTime = now,
         submissionStatus = SubmissionStatus.Pending,
         assumingReporterName = Some("assumingReporter"),
-        submissionCaseId = None
+        submissionCaseId = None,
+        isDeleted = false
       )
     }
     

@@ -58,6 +58,7 @@ class AssumedReportingService @Inject()(
       for {
         submission     <- maybeSubmission
         body           <- submission.DPIBody.headOption
+        operatorName   <- body.PlatformOperator.Name.headOption.map(_.value)
         otherOperators <- body.OtherPlatformOperators
         
         if otherOperators.otherplatformoperators_typeoption.value.isInstanceOf[OtherPlatformOperators_TypeSequence1]
@@ -68,6 +69,7 @@ class AssumedReportingService @Inject()(
         address          <- getAddress(assumingOperator.Address)
       } yield AssumedReportingSubmission(
         operatorId       = operatorId,
+        operatorName     = operatorName,
         assumingOperator = AssumingPlatformOperator(
           name              = assumingOperator.Name.value,
           residentCountry   = residentCountry.toString,
@@ -75,7 +77,8 @@ class AssumedReportingService @Inject()(
           registeredCountry = assumingOperator.Address.CountryCode.toString,
           address           = address
         ),
-        reportingPeriod = reportingPeriod
+        reportingPeriod = reportingPeriod,
+        isDeleted       = isDeletion(submission)
       )
     }
 

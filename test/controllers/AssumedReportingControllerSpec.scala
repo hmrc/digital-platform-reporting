@@ -19,7 +19,7 @@ package controllers
 import models.assumed.AssumingPlatformOperator
 import models.submission.Submission.State.Submitted
 import models.submission.Submission.SubmissionType
-import models.submission.{AssumedReportingSubmission, Submission}
+import models.submission.{AssumedReportingSubmission, AssumedReportingSubmissionRequest, Submission}
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{verify, when}
@@ -77,7 +77,7 @@ class AssumedReportingControllerSpec
 
     "must submit an assumed reporting submission and return the submission details" in {
 
-      val requestBody = AssumedReportingSubmission(
+      val requestBody = AssumedReportingSubmissionRequest(
         operatorId = "operatorId",
         assumingOperator = AssumingPlatformOperator(
           name = "assumingOperator",
@@ -176,6 +176,7 @@ class AssumedReportingControllerSpec
 
       val assumedReportingSubmission = AssumedReportingSubmission(
         operatorId = "operatorId",
+        operatorName = "operatorName",
         assumingOperator = AssumingPlatformOperator(
           name = "name",
           residentCountry = "GB",
@@ -183,7 +184,8 @@ class AssumedReportingControllerSpec
           registeredCountry = "GB",
           address = "address"
         ),
-        reportingPeriod = Year.of(2024)
+        reportingPeriod = Year.of(2024),
+        isDeleted = false
       )
 
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))

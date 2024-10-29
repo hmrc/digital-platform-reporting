@@ -16,25 +16,27 @@
 
 package models.submission
 
+import models.yearFormat
 import play.api.libs.json.{Json, OWrites}
 
-import java.time.Instant
+import java.time.{Instant, Year}
 
 final case class SubmissionSummary(submissionId: String,
                                    fileName: String,
                                    operatorId: String,
                                    operatorName: String,
-                                   reportingPeriod: String,
+                                   reportingPeriod: Year,
                                    submissionDateTime: Instant,
                                    submissionStatus: SubmissionStatus,
                                    assumingReporterName: Option[String],
-                                   submissionCaseId: Option[String])
+                                   submissionCaseId: Option[String],
+                                   isDeleted: Boolean)
 
 object SubmissionSummary {
   
   implicit lazy val writes: OWrites[SubmissionSummary] = Json.writes
   
-  def apply(submission: DeliveredSubmission): SubmissionSummary =
+  def apply(submission: DeliveredSubmission, isDeleted: Boolean): SubmissionSummary =
     SubmissionSummary(
       submission.conversationId,
       submission.fileName,
@@ -44,7 +46,8 @@ object SubmissionSummary {
       submission.submissionDateTime,
       submission.submissionStatus,
       submission.assumingReporterName,
-      Some(submission.submissionCaseId)
+      Some(submission.submissionCaseId),
+      isDeleted
     )
     
   def apply(submission: Submission): Option[SubmissionSummary] =
@@ -55,11 +58,12 @@ object SubmissionSummary {
           state.fileName,
           submission.operatorId,
           submission.operatorName,
-          state.reportingPeriod.toString,
+          state.reportingPeriod,
           submission.updated,
           SubmissionStatus.Pending,
           submission.assumingOperatorName,
-          None
+          None,
+          isDeleted = false
         ))
 
       case _ => None
