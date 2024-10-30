@@ -21,8 +21,11 @@ import models.submission.Submission.{State, SubmissionType}
 import models.submission.Submission.State.{Approved, Ready, Submitted}
 import models.submission.{CadxValidationError, Submission}
 import org.apache.pekko.Done
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito.{never, verify, when}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
@@ -37,6 +40,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
+import services.CadxResultService
 import utils.DateTimeFormats
 
 import java.time.temporal.ChronoUnit
@@ -55,29 +59,24 @@ class SubmissionResultCallbackControllerSpec
   private val now = Instant.now()
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
 
-  private val mockSubmissionRepository = mock[SubmissionRepository]
-  private val mockCadxValidationErrorRepository = mock[CadxValidationErrorRepository]
+  private val mockCadxResultService = mock[CadxResultService]
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
     .configure(
       "cadx.incoming-bearer-token" -> "token"
     )
     .overrides(
-      bind[SubmissionRepository].toInstance(mockSubmissionRepository),
-      bind[CadxValidationErrorRepository].toInstance(mockCadxValidationErrorRepository),
+      bind[CadxResultService].toInstance(mockCadxResultService),
       bind[Clock].toInstance(clock)
     )
     .build()
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset(mockSubmissionRepository)
+    Mockito.reset(mockCadxResultService)
   }
 
   private val conversationId = "conversationId"
-  private val dprsId = "dprsId"
-  private val operatorId = "operatorId"
-  private val operatorName = "operatorName"
 
   private val approvedRequest = BREResponse_Type(
     requestCommon = RequestCommon_Type(
@@ -107,146 +106,11 @@ class SubmissionResultCallbackControllerSpec
 
         val correlationId = "correlationId"
 
-        "when there is a submission in a submitted state" - {
+        "when the request indicates the submission was successful" - {
 
-          val submission = Submission(
-            _id = conversationId,
-            submissionType = SubmissionType.Xml,
-            dprsId = dprsId,
-            operatorId = operatorId,
-            operatorName = operatorName,
-            assumingOperatorName = None,
-            state = Submitted("test.xml", Year.of(2024)),
-            created = now.minus(1, ChronoUnit.DAYS),
-            updated = now.minus(1, ChronoUnit.DAYS)
-          )
+          "must update the submission to Approved and return NO_CONTENT" in {
 
-          "when the request indicates the submission was successful" - {
-
-            "must update the submission to Approved and return NO_CONTENT" in {
-
-              val request = FakeRequest(routes.SubmissionResultCallbackController.callback())
-                .withHeaders(
-                  "Authorization" -> "Bearer token",
-                  "X-Correlation-Id" -> correlationId,
-                  "X-Conversation-Id" -> conversationId,
-                  "Content-Type" -> "application/xml;charset=UTF-8"
-                )
-                .withBody(scalaxb.toXML(approvedRequest, "BREResponse", generated.defaultScope))
-
-              val expectedSubmission = submission.copy(state = Approved(
-                fileName = "test.xml",
-                reportingPeriod = Year.of(2024)
-              ), updated = now)
-
-              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
-              when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
-
-              val result = route(app, request).value
-
-              status(result) mustEqual NO_CONTENT
-
-              verify(mockSubmissionRepository).getById(conversationId)
-              verify(mockSubmissionRepository).save(expectedSubmission)
-            }
-          }
-
-          "when the request indicates the submission was rejected" - {
-
-            val requestBody = BREResponse_Type(
-              requestCommon = RequestCommon_Type(
-                receiptDate = scalaxb.Helper.toCalendar(DateTimeFormats.ISO8601Formatter.format(now)),
-                regime = AEOI,
-                conversationID = conversationId,
-                schemaVersion = "1.0.0"
-              ),
-              requestDetail = RequestDetail_Type(
-                GenericStatusMessage = GenericStatusMessage_Type(
-                  ValidationErrors = ValidationErrors_Type(
-                    FileError = Seq(FileError_Type(
-                      Code = "001",
-                      Details = Some(ErrorDetail_Type("detail"))
-                    )),
-                    RecordError = Seq(RecordError_Type(
-                      Code = "002",
-                      Details = Some(ErrorDetail_Type("detail 2")),
-                      DocRefIDInError = Seq("1", "2")
-                    ))
-                  ),
-                  ValidationResult = ValidationResult_Type(
-                    Status = Rejected
-                  )
-                )
-              )
-            )
-
-            "must update the submission to Rejected, add the failures, and return NO_CONTENT" in {
-
-              val request = FakeRequest(routes.SubmissionResultCallbackController.callback())
-                .withHeaders(
-                  "Authorization" -> "Bearer token",
-                  "X-Correlation-Id" -> correlationId,
-                  "X-Conversation-Id" -> conversationId,
-                  "Content-Type" -> "application/xml;charset=UTF-8"
-                )
-                .withBody(scalaxb.toXML(requestBody, "BREResponse", generated.defaultScope))
-
-              val expectedSubmission = submission.copy(state = State.Rejected(
-                fileName = "test.xml",
-                reportingPeriod = Year.of(2024)
-              ), updated = now)
-
-              val expectedFileError: CadxValidationError.FileError = CadxValidationError.FileError(
-                submissionId = submission._id,
-                dprsId = dprsId,
-                code = "001",
-                detail = Some("detail"),
-                created = now
-              )
-
-              val expectedRowError1: CadxValidationError.RowError = CadxValidationError.RowError(
-                submissionId = submission._id,
-                dprsId = dprsId,
-                code = "002",
-                detail = Some("detail 2"),
-                docRef = "1",
-                created = now
-              )
-
-              val expectedRowError2 = expectedRowError1.copy(docRef = "2")
-
-              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
-              when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
-              when(mockCadxValidationErrorRepository.save(any())).thenReturn(Future.successful(Done))
-
-              val result = route(app, request).value
-
-              status(result) mustEqual NO_CONTENT
-
-              verify(mockSubmissionRepository).getById(conversationId)
-              verify(mockSubmissionRepository).save(expectedSubmission)
-              verify(mockCadxValidationErrorRepository).save(expectedFileError)
-              verify(mockCadxValidationErrorRepository).save(expectedRowError1)
-              verify(mockCadxValidationErrorRepository).save(expectedRowError2)
-            }
-          }
-        }
-
-        "when the submission is not in a submitted state" - {
-
-          val submission = Submission(
-            _id = conversationId,
-            submissionType = SubmissionType.Xml,
-            dprsId = dprsId,
-            operatorId = operatorId,
-            operatorName = operatorName,
-            assumingOperatorName = None,
-            state = Ready,
-            created = now.minus(1, ChronoUnit.DAYS),
-            updated = now.minus(1, ChronoUnit.DAYS)
-          )
-
-          "must return NOT_FOUND" in {
+            val requestBody = scalaxb.toXML(approvedRequest, "BREResponse", generated.defaultScope)
 
             val request = FakeRequest(routes.SubmissionResultCallbackController.callback())
               .withHeaders(
@@ -255,22 +119,21 @@ class SubmissionResultCallbackControllerSpec
                 "X-Conversation-Id" -> conversationId,
                 "Content-Type" -> "application/xml;charset=UTF-8"
               )
-              .withBody(scalaxb.toXML(approvedRequest, "BREResponse", generated.defaultScope))
+              .withBody(requestBody)
 
-            val expectedSubmission = submission.copy(state = State.Rejected(
-              fileName = "test.xml",
-              reportingPeriod = Year.of(2024)
-            ), updated = now)
-
-            when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
-            when(mockSubmissionRepository.save(any())).thenReturn(Future.failed(new RuntimeException()))
+            when(mockCadxResultService.processResult(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
 
-            status(result) mustEqual NOT_FOUND
+            status(result) mustEqual NO_CONTENT
 
-            verify(mockSubmissionRepository).getById(conversationId)
-            verify(mockSubmissionRepository, never()).save(expectedSubmission)
+            val captor: ArgumentCaptor[Source[ByteString, ?]] = ArgumentCaptor.forClass(classOf[Source[ByteString, ?]])
+            verify(mockCadxResultService).processResult(captor.capture())
+
+            given Materializer = app.materializer
+            val receivedBody = captor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue.utf8String
+
+            receivedBody mustEqual requestBody.toString
           }
         }
 
@@ -286,115 +149,33 @@ class SubmissionResultCallbackControllerSpec
               )
               .withBody(scalaxb.toXML(approvedRequest, "BREResponse", generated.defaultScope))
 
-            when(mockSubmissionRepository.getById(any())).thenReturn(Future.failed(new RuntimeException()))
-            when(mockSubmissionRepository.save(any())).thenReturn(Future.failed(new RuntimeException()))
-
             val result = route(app, request).value
 
             status(result) mustEqual BAD_REQUEST
 
-            verify(mockSubmissionRepository, never()).getById(any())
-            verify(mockSubmissionRepository, never()).save(any())
-          }
-        }
-
-        "when the body is not XML" - {
-
-          "must return UNSUPPORTED_MEDIA_TYPE" in {
-
-            val request = FakeRequest(routes.SubmissionResultCallbackController.callback())
-              .withHeaders(
-                "Authorization" -> "Bearer token",
-                "X-Correlation-Id" -> correlationId,
-                "X-Conversation-Id" -> conversationId
-              )
-              .withBody(Json.obj())
-
-            when(mockSubmissionRepository.getById(any())).thenReturn(Future.failed(new RuntimeException()))
-            when(mockSubmissionRepository.save(any())).thenReturn(Future.failed(new RuntimeException()))
-
-            val result = route(app, request).value
-
-            status(result) mustEqual UNSUPPORTED_MEDIA_TYPE
-
-            verify(mockSubmissionRepository, never()).getById(any())
-            verify(mockSubmissionRepository, never()).save(any())
-          }
-        }
-
-        "when the body is invalid XML" - {
-
-          "must return BAD_REQUEST" in {
-
-            val request = FakeRequest(routes.SubmissionResultCallbackController.callback())
-              .withHeaders(
-                "Authorization" -> "Bearer token",
-                "X-Correlation-Id" -> correlationId,
-                "X-Conversation-Id" -> conversationId,
-                "Content-Type" -> "application/xml"
-              )
-              .withBody(Json.obj())
-
-            when(mockSubmissionRepository.getById(any())).thenReturn(Future.failed(new RuntimeException()))
-            when(mockSubmissionRepository.save(any())).thenReturn(Future.failed(new RuntimeException()))
-
-            val result = route(app, request).value
-
-            status(result) mustEqual BAD_REQUEST
-
-            verify(mockSubmissionRepository, never()).getById(any())
-            verify(mockSubmissionRepository, never()).save(any())
-          }
-        }
-
-        "when the body is not valid" - {
-
-          "must return BAD_REQUEST" in {
-
-            val request = FakeRequest(routes.SubmissionResultCallbackController.callback())
-              .withHeaders(
-                "Authorization" -> "Bearer token",
-                "X-Correlation-Id" -> correlationId,
-                "X-Conversation-Id" -> conversationId,
-                "Content-Type" -> "application/xml"
-              )
-              .withXmlBody(<foo></foo>)
-
-            when(mockSubmissionRepository.getById(any())).thenReturn(Future.failed(new RuntimeException()))
-            when(mockSubmissionRepository.save(any())).thenReturn(Future.failed(new RuntimeException()))
-
-            val result = route(app, request).value
-
-            status(result) mustEqual BAD_REQUEST
-
-            verify(mockSubmissionRepository, never()).getById(any())
-            verify(mockSubmissionRepository, never()).save(any())
+            verify(mockCadxResultService, never()).processResult(any())
           }
         }
       }
+    }
 
-      "when the conversation id is missing" - {
+    "when the conversation id is missing" - {
 
-        "must return BAD_REQUEST" in {
+      "must return BAD_REQUEST" in {
 
-          val request = FakeRequest(routes.SubmissionResultCallbackController.callback())
-            .withHeaders(
-              "Authorization" -> "Bearer token",
-              "X-Conversation-Id" -> conversationId,
-              "Content-Type" -> "application/xml"
-            )
-            .withBody(scalaxb.toXML(approvedRequest, "BREResponse", generated.defaultScope))
+        val request = FakeRequest(routes.SubmissionResultCallbackController.callback())
+          .withHeaders(
+            "Authorization" -> "Bearer token",
+            "X-Conversation-Id" -> conversationId,
+            "Content-Type" -> "application/xml"
+          )
+          .withBody(scalaxb.toXML(approvedRequest, "BREResponse", generated.defaultScope))
 
-          when(mockSubmissionRepository.getById(any())).thenReturn(Future.failed(new RuntimeException()))
-          when(mockSubmissionRepository.save(any())).thenReturn(Future.failed(new RuntimeException()))
+        val result = route(app, request).value
 
-          val result = route(app, request).value
+        status(result) mustEqual BAD_REQUEST
 
-          status(result) mustEqual BAD_REQUEST
-
-          verify(mockSubmissionRepository, never()).getById(any())
-          verify(mockSubmissionRepository, never()).save(any())
-        }
+        verify(mockCadxResultService, never()).processResult(any())
       }
     }
   }
