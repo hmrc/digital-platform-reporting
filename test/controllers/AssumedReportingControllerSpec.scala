@@ -19,7 +19,7 @@ package controllers
 import models.assumed.AssumingPlatformOperator
 import models.submission.Submission.State.Submitted
 import models.submission.Submission.SubmissionType
-import models.submission.{AssumedReportingSubmission, AssumedReportingSubmissionRequest, Submission}
+import models.submission.{AssumedReportingSubmission, AssumedReportingSubmissionRequest, Submission, SubmissionStatus, SubmissionSummary}
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{verify, when}
@@ -33,7 +33,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import services.{AssumedReportingService, SubmissionService}
+import services.{AssumedReportingService, SubmissionService, ViewSubmissionsService}
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 
 import java.time.{Instant, Year}
@@ -50,6 +50,7 @@ class AssumedReportingControllerSpec
   private val mockSubmissionService = mock[SubmissionService]
   private val mockAuthConnector = mock[AuthConnector]
   private val mockAssumedReportingService = mock[AssumedReportingService]
+  private val mockViewSubmissionsService = mock[ViewSubmissionsService]
 
   private val now = Instant.now()
 
@@ -58,7 +59,8 @@ class AssumedReportingControllerSpec
     Mockito.reset(
       mockSubmissionService,
       mockAuthConnector,
-      mockAssumedReportingService
+      mockAssumedReportingService,
+      mockViewSubmissionsService
     )
   }
 
@@ -232,6 +234,78 @@ class AssumedReportingControllerSpec
         status(result) mustEqual NOT_FOUND
 
         verify(mockAssumedReportingService).getSubmission(eqTo(dprsId), eqTo("operatorId"), eqTo(Year.of(2024)))(using any())
+      }
+    }
+  }
+
+  "list" - {
+
+    "must return OK and a list of submissions when some can be found" in {
+
+      val submission1 = SubmissionSummary(
+        submissionId = "id1",
+        fileName = "filename1",
+        operatorId = "operatorId",
+        operatorName = "operatorName",
+        reportingPeriod = Year.of(2024),
+        submissionDateTime = now,
+        submissionStatus = SubmissionStatus.Success,
+        assumingReporterName = Some("assumingOperator"),
+        submissionCaseId = Some("caseId1"),
+        isDeleted = false
+      )
+      val submission2 = SubmissionSummary(
+        submissionId = "id2",
+        fileName = "filename2",
+        operatorId = "operatorId2",
+        operatorName = "operatorName2",
+        reportingPeriod = Year.of(2024),
+        submissionDateTime = now,
+        submissionStatus = SubmissionStatus.Success,
+        assumingReporterName = Some("assumingOperator2"),
+        submissionCaseId = Some("caseId2"),
+        isDeleted = false
+      )
+
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
+      when(mockViewSubmissionsService.getAssumedReports(any())(using any())).thenReturn(Future.successful(Seq(submission1, submission2)))
+
+      val app =
+        GuiceApplicationBuilder()
+          .overrides(
+            bind[AuthConnector].toInstance(mockAuthConnector),
+            bind[ViewSubmissionsService].toInstance(mockViewSubmissionsService)
+          )
+          .build()
+
+      running(app) {
+        val request = FakeRequest(routes.AssumedReportingController.list())
+        val result = route(app, request).value
+
+        status(result) mustEqual OK
+        contentAsJson(result) mustEqual Json.toJson(Seq(submission1, submission2))
+      }
+    }
+
+    "must return OK when no submissions can be found" in {
+
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
+      when(mockViewSubmissionsService.getAssumedReports(any())(using any())).thenReturn(Future.successful(Nil))
+
+      val app =
+        GuiceApplicationBuilder()
+          .overrides(
+            bind[AuthConnector].toInstance(mockAuthConnector),
+            bind[ViewSubmissionsService].toInstance(mockViewSubmissionsService)
+          )
+          .build()
+
+      running(app) {
+        val request = FakeRequest(routes.AssumedReportingController.list())
+        val result = route(app, request).value
+
+        status(result) mustEqual OK
+        contentAsJson(result) mustEqual Json.arr()
       }
     }
   }

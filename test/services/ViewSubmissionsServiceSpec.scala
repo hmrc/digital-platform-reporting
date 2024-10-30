@@ -214,13 +214,12 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
 
         val result = service.getAssumedReports("dprsId").futureValue
 
-        result.deliveredSubmissions must contain theSameElementsInOrderAs Seq(
+        result must contain theSameElementsInOrderAs Seq(
           SubmissionSummary("id6", "fileName6", "operatorId3", "operatorName3", Year.of(2024), instant.plusSeconds(6), Success, Some("assumingName"), Some("submissionCaseId6"), false),
           SubmissionSummary("id5", "fileName5", "operatorId2", "operatorName2", Year.of(2024), instant.plusSeconds(5), Success, Some("assumingName"), Some("submissionCaseId5"), false),
           SubmissionSummary("id3", "fileName3", "operatorId1", "operatorName1", Year.of(2025), instant.plusSeconds(3), Success, Some("assumingName"), Some("submissionCaseId3"), true),
           SubmissionSummary("id2", "fileName2", "operatorId1", "operatorName1", Year.of(2024), instant.plusSeconds(2), Success, Some("assumingName"), Some("submissionCaseId2"), true)
         )
-        result.localSubmissions mustBe empty
       }
     }
     
@@ -232,8 +231,7 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         
         val result = service.getAssumedReports("dprsId").futureValue
         
-        result.deliveredSubmissions mustBe empty
-        result.localSubmissions mustBe empty
+        result mustBe empty
       }
     }
   }

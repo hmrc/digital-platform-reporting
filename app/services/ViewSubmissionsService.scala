@@ -49,7 +49,7 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
       SubmissionsSummary(deliveredSubmissionSummaries, undeliveredSubmissions)
     }
 
-  def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] = {
+  def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] = {
     val request = ViewSubmissionsRequest(
       subscriptionId = dprsId,
       assumedReporting = true,
@@ -74,7 +74,7 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
           .getSubmission(dprsId, submission.operatorId, submission.reportingPeriod)
           .map(_.map(assumedReport => SubmissionSummary(submission, assumedReport.isDeleted)))
       }
-      .map(submissionSummaries => SubmissionsSummary(submissionSummaries.flatten, Nil))
-    }.getOrElse(Future.successful(SubmissionsSummary(Nil, Nil))))
+      .map(_.flatten)
+    }.getOrElse(Future.successful(Nil)))
   }
 }
