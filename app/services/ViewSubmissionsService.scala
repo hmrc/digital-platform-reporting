@@ -50,20 +50,8 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
     }
 
   def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] = {
-    val request = ViewSubmissionsRequest(
-      subscriptionId = dprsId,
-      assumedReporting = true,
-      pageNumber = 1,
-      sortBy = SubmissionDate,
-      sortOrder = Descending,
-      reportingPeriod = None,
-      operatorId = None,
-      fileName = None,
-      statuses = Seq(Pending, Success, Rejected)
-    )
-
-    connector.get(request).flatMap(_.map { deliveredSubmissions =>
-      val consolidatedSubmissions = deliveredSubmissions.submissions
+    getAllSubmissions(dprsId).flatMap { deliveredSubmissions =>
+      val consolidatedSubmissions = deliveredSubmissions
         .groupBy(submission => (submission.operatorId, submission.reportingPeriod))
         .map(_._2.sortBy(_.submissionDateTime).reverse.head)
         .toList
@@ -75,6 +63,34 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
           .map(_.map(assumedReport => SubmissionSummary(submission, assumedReport.isDeleted)))
       }
       .map(_.flatten)
-    }.getOrElse(Future.successful(Nil)))
+    }
   }
+
+  private def getAllSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[DeliveredSubmission]] =
+    connector.get(buildRequest(dprsId, 1)).flatMap(_.map { page1 =>
+      if (page1.resultsCount <= 10) {
+        Future.successful(page1.submissions)
+      } else {
+        val numberOfPages = (page1.resultsCount + 9) / 10
+
+        (2 to numberOfPages).toList.traverse { page =>
+          connector.get(buildRequest(dprsId, page)).flatMap(_.map { result =>
+            Future.successful(result.submissions)
+          }.getOrElse(Future.successful(Nil)))
+        }.map(_.flatten ++ page1.submissions)
+      }
+    }.getOrElse(Future.successful(Nil)))
+
+  private def buildRequest(dprsId: String, page: Int): ViewSubmissionsRequest =
+    ViewSubmissionsRequest(
+      subscriptionId = dprsId,
+      assumedReporting = true,
+      pageNumber = page,
+      sortBy = SubmissionDate,
+      sortOrder = Descending,
+      reportingPeriod = None,
+      operatorId = None,
+      fileName = None,
+      statuses = Seq(Pending, Success, Rejected)
+    )
 }

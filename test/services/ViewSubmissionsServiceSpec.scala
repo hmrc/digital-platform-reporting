@@ -19,6 +19,8 @@ package services
 import connectors.DeliveredSubmissionConnector
 import models.assumed.AssumingPlatformOperator
 import models.submission.*
+import models.submission.DeliveredSubmissionSortBy.SubmissionDate
+import models.submission.SortOrder.Descending
 import models.submission.SubmissionStatus.*
 import models.submission.Submission.{State, SubmissionType}
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
@@ -43,7 +45,7 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
   private val mockAssumedReportingService = mock[AssumedReportingService]
 
   override def beforeEach(): Unit = {
-    Mockito.reset(mockConnector, mockRepository)
+    Mockito.reset(mockConnector, mockRepository, mockAssumedReportingService)
     super.beforeEach()
   }
   
@@ -232,6 +234,55 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val result = service.getAssumedReports("dprsId").futureValue
         
         result mustBe empty
+      }
+    }
+
+    "when there are multiple pages of results" - {
+
+      "must call subsequent pages until all results are included" in {
+
+        val submission = DeliveredSubmission("1", "fileName", "operatorId", "operatorName", Year.of(2024), "submissionCaseId", instant.plusSeconds(1), Success, Some("assumingName"))
+
+        val page1Submissions = (1 to 10).map(i => submission.copy(conversationId = i.toString, submissionDateTime = instant.plusSeconds(i), reportingPeriod = Year.of(2024)))
+        val page2Submissions = (11 to 20).map(i => submission.copy(conversationId = i.toString, submissionDateTime = instant.plusSeconds(i), reportingPeriod = Year.of(2025)))
+        val page3Submissions = (21 to 25).map(i => submission.copy(conversationId = i.toString, submissionDateTime = instant.plusSeconds(i), reportingPeriod = Year.of(2026)))
+        val page1 = DeliveredSubmissions(page1Submissions, 25)
+        val page2 = DeliveredSubmissions(page2Submissions, 25)
+        val page3 = DeliveredSubmissions(page3Submissions, 25)
+
+        val assumedReport1 = AssumedReportingSubmission("operatorId", "operatorName", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2024), true)
+        val assumedReport2 = AssumedReportingSubmission("operatorId", "operatorName", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2025), true)
+        val assumedReport3 = AssumedReportingSubmission("operatorId", "operatorName", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2026), false)
+
+        when(mockConnector.get(any())(any())).thenReturn(
+          Future.successful(Some(page1)),
+          Future.successful(Some(page2)),
+          Future.successful(Some(page3))
+        )
+
+        when(mockAssumedReportingService.getSubmission(any(), eqTo("operatorId"), eqTo(Year.of(2024)))(using any())).thenReturn(Future.successful(Some(assumedReport1)))
+        when(mockAssumedReportingService.getSubmission(any(), eqTo("operatorId"), eqTo(Year.of(2025)))(using any())).thenReturn(Future.successful(Some(assumedReport2)))
+        when(mockAssumedReportingService.getSubmission(any(), eqTo("operatorId"), eqTo(Year.of(2026)))(using any())).thenReturn(Future.successful(Some(assumedReport3)))
+
+        val result = service.getAssumedReports("dprsId").futureValue
+
+        result must contain theSameElementsInOrderAs Seq(
+          SubmissionSummary("25", "fileName", "operatorId", "operatorName", Year.of(2026), instant.plusSeconds(25), Success, Some("assumingName"), Some("submissionCaseId"), false),
+          SubmissionSummary("20", "fileName", "operatorId", "operatorName", Year.of(2025), instant.plusSeconds(20), Success, Some("assumingName"), Some("submissionCaseId"), true),
+          SubmissionSummary("10", "fileName", "operatorId", "operatorName", Year.of(2024), instant.plusSeconds(10), Success, Some("assumingName"), Some("submissionCaseId"), true),
+        )
+
+        val expectedRequest1 = ViewSubmissionsRequest("dprsId", true, 1, SubmissionDate, Descending, None, None, None, Seq(Pending, Success, Rejected))
+        val expectedRequest2 = ViewSubmissionsRequest("dprsId", true, 2, SubmissionDate, Descending, None, None, None, Seq(Pending, Success, Rejected))
+        val expectedRequest3 = ViewSubmissionsRequest("dprsId", true, 3, SubmissionDate, Descending, None, None, None, Seq(Pending, Success, Rejected))
+
+        verify(mockConnector).get(eqTo(expectedRequest1))(any())
+        verify(mockConnector).get(eqTo(expectedRequest2))(any())
+        verify(mockConnector).get(eqTo(expectedRequest3))(any())
+
+        verify(mockAssumedReportingService).getSubmission(eqTo("dprsId"), eqTo("operatorId"), eqTo(Year.of(2024)))(using any())
+        verify(mockAssumedReportingService).getSubmission(eqTo("dprsId"), eqTo("operatorId"), eqTo(Year.of(2025)))(using any())
+        verify(mockAssumedReportingService).getSubmission(eqTo("dprsId"), eqTo("operatorId"), eqTo(Year.of(2026)))(using any())
       }
     }
   }
