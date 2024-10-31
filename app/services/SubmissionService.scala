@@ -34,6 +34,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import utils.DateTimeFormats
 import utils.FileUtils.stripExtension
 
+import java.io.ByteArrayInputStream
 import java.time.{Clock, Year}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -151,6 +152,7 @@ class SubmissionService @Inject() (
         {requestAdditionalDetail(fileName, subscription, isManual)}
     </cadx:DPISubmissionRequest>
 
+
   private def requestCommon(submissionId: String): Elem =
     <requestCommon>
       <receiptDate>{DateTimeFormats.ISO8601Formatter.format(clock.instant())}</receiptDate>
@@ -161,7 +163,7 @@ class SubmissionService @Inject() (
 
   private def requestDetail(body: ByteString): Elem =
     <requestDetail>
-      {scala.xml.XML.loadString(body.utf8String)}
+      {scala.xml.XML.load(new ByteArrayInputStream(body.toArray))}
     </requestDetail>
 
   private def requestAdditionalDetail(fileName: String, subscription: SubscriptionInfo, isManual: Boolean): Elem =
