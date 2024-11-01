@@ -21,7 +21,7 @@ import models.submission.CadxValidationError.{FileError, RowError}
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Submitted}
 import models.submission.{CadxValidationError, Submission}
-import org.apache.pekko.stream.connectors.xml.ParseEvent
+import org.apache.pekko.stream.connectors.xml.{ParseEvent, StartElement}
 import org.apache.pekko.stream.connectors.xml.scaladsl.XmlParsing
 import org.apache.pekko.stream.scaladsl.{Broadcast, Flow, GraphDSL, Keep, Merge, Sink, Source}
 import org.apache.pekko.stream.{FlowShape, Materializer, OverflowStrategy, SinkShape}
@@ -57,7 +57,7 @@ class CadxResultService @Inject()(
 
   private def getImpliedStatus: Flow[ParseEvent, FileAcceptanceStatus_EnumType, NotUsed] =
     XmlParsing.subslice(Seq("BREResponse", "requestDetail", "GenericStatusMessage", "ValidationErrors"))
-      .map(_ => Rejected)
+      .collect({ case e: StartElement if Set("FileError", "RecordError").contains(e.localName) => Rejected })
 
   private def getStatusSink = Sink.fromGraph(GraphDSL.createGraph(Sink.head[FileAcceptanceStatus_EnumType]) { implicit b => sink =>
     import GraphDSL.Implicits._
