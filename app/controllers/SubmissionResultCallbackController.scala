@@ -23,10 +23,14 @@ import logging.Logging
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Rejected, Submitted}
 import models.submission.{CadxValidationError, Submission}
-import org.apache.pekko.Done
+import org.apache.pekko.{Done, NotUsed}
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import play.api.Configuration
-import play.api.mvc.{Action, ControllerComponents, Request, Result}
+import play.api.libs.streams.Accumulator
+import play.api.mvc.{Action, AnyContent, BodyParser, ControllerComponents, Request, Result}
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
+import services.CadxResultService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.{Clock, Instant}
@@ -36,9 +40,7 @@ import scala.xml.NodeSeq
 
 @Singleton
 class SubmissionResultCallbackController @Inject()(cc: ControllerComponents,
-                                                   submissionRepository: SubmissionRepository,
-                                                   cadxValidationErrorRepository: CadxValidationErrorRepository,
-                                                   clock: Clock,
+                                                   cadxResultService: CadxResultService,
                                                    configuration: Configuration)
                                                   (using ExecutionContext) extends BackendController(cc) with Logging {
 
@@ -49,24 +51,14 @@ class SubmissionResultCallbackController @Inject()(cc: ControllerComponents,
 
     val result = for {
       _ <- checkAuth
-      correlationId <- validateCorrelationId
-      conversationId <- validateConversationId
-      breResponse <- parseBody(correlationId)
-      submission <- getSubmission(conversationId)
-      _ <- handleBreResponse(breResponse, submission)
+      _ <- validateCorrelationId
+      _ <- validateConversationId
+      body = Source.single(ByteString.fromString(request.body.toString))
+      _ <- EitherT.liftF(cadxResultService.processResult(body))
     } yield NoContent
 
     result.merge
   }
-
-  private def parseBody(correlationId: String)(using request: Request[NodeSeq]): EitherT[Future, Result, BREResponse_Type] =
-    EitherT.fromEither {
-      scalaxb.fromXMLEither[BREResponse_Type](request.body)
-        .left.map { error =>
-          logger.error(s"Failed to parse result response, correlationId: $correlationId, error: $error")
-          BadRequest
-        }
-    }
 
   private def checkAuth(using request: Request[?]): EitherT[Future, Result, String] =
     OptionT.fromOption(request.headers.get("AUTHORIZATION").filter(_ == expectedAuthHeader)).toRight(Forbidden)
@@ -76,51 +68,4 @@ class SubmissionResultCallbackController @Inject()(cc: ControllerComponents,
 
   private def validateConversationId(using request: Request[?]): EitherT[Future, Result, String] =
     EitherT.fromEither(request.headers.get("X-CONVERSATION-ID").toRight(BadRequest))
-
-  private def getSubmission(submissionId: String): EitherT[Future, Result, Submission] =
-    OptionT(submissionRepository.getById(submissionId)).toRight(NotFound)
-
-  private def handleBreResponse(breResponse: BREResponse_Type, submission: Submission): EitherT[Future, Result, Done] = {
-    val now = clock.instant()
-    submission.state match {
-      case state: Submitted =>
-        if (breResponse.requestDetail.GenericStatusMessage.ValidationResult.Status == generated.Accepted) {
-          EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Approved(state.fileName, state.reportingPeriod), updated = now)))
-        } else {
-          for {
-            _ <- EitherT.right[Result].apply(submissionRepository.save(submission.copy(state = Rejected(state.fileName, state.reportingPeriod), updated = now)))
-            _ <- saveErrors(submission._id, submission.dprsId, breResponse.requestDetail.GenericStatusMessage.ValidationErrors, now)
-          } yield Done
-        }
-      case _ =>
-        EitherT.left(Future.successful(NotFound))
-    }
-  }
-
-  private def saveErrors(submissionId: String, dprsId: String, validationErrors: ValidationErrors_Type, timestamp: Instant): EitherT[Future, Result, Done] = {
-
-    val fileErrors = validationErrors.FileError.map { error =>
-      CadxValidationError.FileError(
-        submissionId = submissionId,
-        dprsId = dprsId,
-        code = error.Code,
-        detail = error.Details.map(_.value),
-        created = timestamp
-      )
-    }
-
-    val rowErrors = for {
-      error <- validationErrors.RecordError
-      docRef <- error.DocRefIDInError
-    } yield CadxValidationError.RowError(
-      submissionId = submissionId,
-      dprsId = dprsId,
-      code = error.Code,
-      detail = error.Details.map(_.value),
-      docRef = docRef,
-      created = timestamp
-    )
-
-    EitherT.right((fileErrors ++ rowErrors).traverse(cadxValidationErrorRepository.save).as(Done))
-  }
 }
