@@ -86,6 +86,8 @@ class CadxResultServiceSpec
 
           "must update the submission" in {
 
+            val z = """<BREResponse xmlns:dpi="urn:oecd:ties:dpi:v1" xmlns:gsm="http://www.hmrc.gsi.gov.uk/gsm" xmlns:iso="urn:oecd:ties:isodpitypes:v1" xmlns:stf="urn:oecd:ties:dpistf:v1" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><requestCommon><receiptDate>2024-11-01T12:24:12Z</receiptDate><regime>AEOI</regime><conversationID>submissionId</conversationID><schemaVersion>1.0.0</schemaVersion></requestCommon><requestDetail><GenericStatusMessage><ValidationErrors/><ValidationResult><Status>Accepted</Status></ValidationResult></GenericStatusMessage></requestDetail></BREResponse>""".stripMargin
+
             val submission = Submission(
               _id = "submissionId",
               submissionType = SubmissionType.Xml,
@@ -132,6 +134,45 @@ class CadxResultServiceSpec
             val source = Source.single {
               ByteString.fromString(Utility.trim(scalaxb.toXML(approvedResponse, "BREResponse", generated.defaultScope).head).toString)
             }
+
+            when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
+            when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+            when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
+
+            cadxResultService.processResult(source).futureValue
+
+            verify(mockSubmissionRepository).getById(submission._id)
+            verify(mockSubmissionRepository).save(expectedSubmission)
+            verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
+          }
+
+          "when there is unexpected content in the ValidationErrors element" in {
+
+            val submission = Submission(
+              _id = "submissionId",
+              submissionType = SubmissionType.Xml,
+              dprsId = "dprsId",
+              operatorId = "operatorId",
+              operatorName = "operatorName",
+              assumingOperatorName = None,
+              state = State.Submitted(
+                fileName = "test.xml",
+                reportingPeriod = Year.of(2024)
+              ),
+              created = now.minus(1, ChronoUnit.DAYS),
+              updated = now.minus(1, ChronoUnit.DAYS)
+            )
+
+            val expectedSubmission = submission.copy(
+              state = State.Approved(
+                fileName = "test.xml",
+                reportingPeriod = Year.of(2024)
+              ),
+              updated = now
+            )
+
+            val response = """<BREResponse xmlns:dpi="urn:oecd:ties:dpi:v1" xmlns:gsm="http://www.hmrc.gsi.gov.uk/gsm" xmlns:iso="urn:oecd:ties:isodpitypes:v1" xmlns:stf="urn:oecd:ties:dpistf:v1" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><requestCommon><receiptDate>2024-11-01T12:24:12Z</receiptDate><regime>AEOI</regime><conversationID>submissionId</conversationID><schemaVersion>1.0.0</schemaVersion></requestCommon><requestDetail><GenericStatusMessage><ValidationErrors>   </ValidationErrors><ValidationResult><Status>Accepted</Status></ValidationResult></GenericStatusMessage></requestDetail></BREResponse>""".stripMargin
+            val source = Source.single(ByteString.fromString(response))
 
             when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
