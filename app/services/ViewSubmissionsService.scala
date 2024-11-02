@@ -40,13 +40,14 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
     } yield {
 
       val deliveredSubmissionSummaries = deliveredSubmissions.map(_.submissions.map(x => SubmissionSummary(x, false))).getOrElse(Nil)
+      val deliveredSubmissionsCount = deliveredSubmissions.map(_.resultsCount).getOrElse(0)
       val deliveredSubmissionIds = deliveredSubmissionSummaries.map(_.submissionId)
       val undeliveredSubmissions =
         repositorySubmissions
           .filter(x => !deliveredSubmissionIds.contains(x._id))
           .flatMap(x => SubmissionSummary(x))
 
-      SubmissionsSummary(deliveredSubmissionSummaries, undeliveredSubmissions)
+      SubmissionsSummary(deliveredSubmissionSummaries, undeliveredSubmissions, deliveredSubmissionsCount)
     }
 
   def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] = {

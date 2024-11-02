@@ -81,7 +81,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
 
         result mustEqual SubmissionsSummary(
           deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)),
-          Nil
+          Nil,
+          2
         )
 
         verify(mockConnector, times(1)).get(eqTo(request))(any())
@@ -110,7 +111,7 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val result = service.getSubmissions(request).futureValue
 
         result mustEqual SubmissionsSummary(
-          deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)), Nil
+          deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)), Nil, 2
         )
 
         verify(mockConnector, times(1)).get(eqTo(request))(any())
@@ -140,7 +141,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
 
         result mustEqual SubmissionsSummary(
           deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)),
-          localSubmissions.flatMap(x => SubmissionSummary(x))
+          localSubmissions.flatMap(x => SubmissionSummary(x)),
+          2
         )
 
         verify(mockConnector, times(1)).get(eqTo(request))(any())
@@ -162,7 +164,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
 
         result mustEqual SubmissionsSummary(
           Nil,
-          localSubmissions.flatMap(x => SubmissionSummary(x))
+          localSubmissions.flatMap(x => SubmissionSummary(x)),
+          0
         )
 
         verify(mockConnector, times(1)).get(eqTo(request))(any())
@@ -178,7 +181,7 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
       val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
       val result = service.getSubmissions(request).futureValue
 
-      result mustEqual SubmissionsSummary(Nil, Nil)
+      result mustEqual SubmissionsSummary(Nil, Nil, 0)
 
       verify(mockConnector, times(1)).get(eqTo(request))(any())
       verify(mockRepository, times(1)).getBySubscriptionId("dprsId")
