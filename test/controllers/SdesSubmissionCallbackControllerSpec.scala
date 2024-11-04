@@ -16,7 +16,7 @@
 
 package controllers
 
-import connectors.{DownloadConnector, SdesConnector}
+import connectors.{DownloadConnector, SdesConnector, SdesDownloadConnector}
 import models.sdes.list.SdesFile
 import models.sdes.{NotificationCallback, NotificationType}
 import models.submission.{CadxValidationError, Submission}
@@ -67,7 +67,7 @@ class SdesSubmissionCallbackControllerSpec
   private val mockCadxValidationErrorRepository = mock[CadxValidationErrorRepository]
   private val mockCadxResultService = mock[CadxResultService]
   private val mockSdesConnector = mock[SdesConnector]
-  private val mockDownloadConnector = mock[DownloadConnector]
+  private val mockDownloadConnector = mock[SdesDownloadConnector]
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
     .overrides(
@@ -77,7 +77,7 @@ class SdesSubmissionCallbackControllerSpec
       bind[Clock].toInstance(clock),
       bind[CadxResultService].toInstance(mockCadxResultService),
       bind[SdesConnector].toInstance(mockSdesConnector),
-      bind[DownloadConnector].toInstance(mockDownloadConnector)
+      bind[SdesDownloadConnector].toInstance(mockDownloadConnector)
     )
     .configure(
       "sdes.cadx-result.information-type" -> "cadx-result"

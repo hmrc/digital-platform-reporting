@@ -17,8 +17,7 @@
 package controllers
 
 import cats.data.{EitherT, OptionT}
-import cats.syntax.all.*
-import connectors.{DownloadConnector, SdesConnector}
+import connectors.{SdesConnector, SdesDownloadConnector}
 import logging.Logging
 import models.sdes.list.SdesFile
 import models.sdes.{NotificationCallback, NotificationType}
@@ -43,7 +42,7 @@ class SdesSubmissionCallbackController @Inject()(
                                                   cadxValidationErrorRepository: CadxValidationErrorRepository,
                                                   sdesConnector: SdesConnector,
                                                   cadxResultService: CadxResultService,
-                                                  downloadConnector: DownloadConnector,
+                                                  downloadConnector: SdesDownloadConnector,
                                                   clock: Clock,
                                                   configuration: Configuration
                                                 )(using ExecutionContext) extends BackendController(cc) with Logging {
