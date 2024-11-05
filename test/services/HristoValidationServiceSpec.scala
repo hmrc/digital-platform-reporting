@@ -63,9 +63,12 @@ class HristoValidationServiceSpec extends AnyFreeSpec
 
   "validateXml" - {
     "hristo" in {
+      val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Personal Services-deletion.xml"
+      //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Personal Services-correction.xml"
+      //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Personal Services-new.xml"
       //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Property Rental-new.xml"
       //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Property Rental-correction.xml"
-      val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Property Rental-deletion.xml"
+      //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Property Rental-deletion.xml"
       //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Sale of Goods-new.xml"
       //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Sale of Goods-correction.xml"
       //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Sale of Goods-deletion.xml"
