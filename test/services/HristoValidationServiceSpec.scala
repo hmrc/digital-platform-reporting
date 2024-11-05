@@ -63,12 +63,15 @@ class HristoValidationServiceSpec extends AnyFreeSpec
 
   "validateXml" - {
     "hristo" in {
-//      val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Sale of Goods-new.xml"
-//      val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Sale of Goods-correction.xml"
-//      val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Sale of Goods-deletion.xml"
-//      val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Transportation Rental-new.xml"
-//      val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Transportation Rental-correction.xml"
-      val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Transportation Rental-deletion.xml"
+      //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Property Rental-new.xml"
+      //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Property Rental-correction.xml"
+      val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Property Rental-deletion.xml"
+      //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Sale of Goods-new.xml"
+      //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Sale of Goods-correction.xml"
+      //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Sale of Goods-deletion.xml"
+      //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Transportation Rental-new.xml"
+      //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Transportation Rental-correction.xml"
+      //  val fileName = "Digital Platform Reporting Sample GB Submission XML v1.1 - Transportation Rental-deletion.xml"
       val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream(s"/hristo/$fileName"))
 
       when(mockDownloadConnector.download(any())).thenReturn(Future.successful(source))
