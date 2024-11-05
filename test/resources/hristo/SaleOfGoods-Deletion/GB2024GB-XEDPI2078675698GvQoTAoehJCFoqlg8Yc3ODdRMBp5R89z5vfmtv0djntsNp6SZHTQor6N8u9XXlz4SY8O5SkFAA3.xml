@@ -7,7 +7,7 @@
     <dpi:ReceivingCountry>GB</dpi:ReceivingCountry>
     <dpi:MessageType>DPI</dpi:MessageType>
     <dpi:MessageRefId>
-      GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFAA3
+      GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFQQ3
     </dpi:MessageRefId>
     <dpi:MessageTypeIndic>DPI402</dpi:MessageTypeIndic>
     <dpi:ReportingPeriod>2024-12-31</dpi:ReportingPeriod>
@@ -19,7 +19,7 @@
       <dpi:TIN issuedBy="GB" unknown="false">Test digital platform operator TIN</dpi:TIN>
       <dpi:Name>Test digital platform operator organisation name 1</dpi:Name>
       <dpi:PlatformBusinessName>Test digital platform operator trading or business name 1</dpi:PlatformBusinessName>
-      <dpi:Address legalAddressType="OECD303">
+      <dpi:Address legalAddressType="OECD304">
         <dpi:CountryCode>GB</dpi:CountryCode>
         <dpi:AddressFree>Test platform operator address 1</dpi:AddressFree>
       </dpi:Address>
@@ -27,7 +27,7 @@
       <dpi:DocSpec>
         <stf:DocTypeIndic xmlns:stf="urn:oecd:ties:dpistf:v1">OECD1</stf:DocTypeIndic>
         <stf:DocRefId xmlns:stf="urn:oecd:ties:dpistf:v1">
-          GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFAA3_kutV9x7bpaEQHTw7RJirpD0s0V9z1Wjvd3U7ybyBDiqPGPTvH4Sc6UjguczPWC
+          GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFQQ3_kutV9x7bpaEQHTw7RJirpD0s0V9z1Wjvd3U7ybyBDiqPGPTvH4Sc6UjguczPWC
         </stf:DocRefId>
       </dpi:DocSpec>
     </dpi:PlatformOperator>
@@ -83,10 +83,10 @@
       <dpi:DocSpec>
         <stf:DocTypeIndic xmlns:stf="urn:oecd:ties:dpistf:v1">OECD3</stf:DocTypeIndic>
         <stf:DocRefId xmlns:stf="urn:oecd:ties:dpistf:v1">
-          GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFAA3_3YwhCkNZLlLausD2fMvlawradq4fvHLb9pmaPrjs1Jt7JaDeck2DnQejJW9hgV
+          GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFQQ3_3YwhCkNZLlLausD2fMvlawradq4fvHLb9pmaPrjs1Jt7JaDeck2DnQejJW9hgV
         </stf:DocRefId>
         <stf:CorrDocRefId xmlns:stf="urn:oecd:ties:dpistf:v1">
-          GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFAA2_3YwhCkNZLlLausD2fMvlawradq4fvHLb9pmaPrjs1Jt7JaDeck2DnQejJW9hgU
+          GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFAC2_3YwhCkNZLlLausD2fMvlawradq4fvHLb9pmaPrjs1Jt7JaDeck2DnQejJW9hgU
         </stf:CorrDocRefId>
       </dpi:DocSpec>
     </dpi:ReportableSeller>
