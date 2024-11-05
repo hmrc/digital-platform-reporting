@@ -746,7 +746,7 @@ class SubmissionControllerSpec
           submissionCaseId = Some("submissionCaseId"),
           isDeleted = false
         ))
-        val summary = SubmissionsSummary(deliveredSubmissions, Nil)
+        val summary = SubmissionsSummary(deliveredSubmissions, Nil, 1, true)
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
         when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(summary))
@@ -784,7 +784,7 @@ class SubmissionControllerSpec
           submissionCaseId = None,
           isDeleted = false
         ))
-        val summary = SubmissionsSummary(Nil, localSubmissions)
+        val summary = SubmissionsSummary(Nil, localSubmissions, 0, false)
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
         when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(summary))
@@ -835,7 +835,7 @@ class SubmissionControllerSpec
           submissionCaseId = None,
           isDeleted = false
         ))
-        val summary = SubmissionsSummary(deliveredSubmissions, localSubmissions)
+        val summary = SubmissionsSummary(deliveredSubmissions, localSubmissions, 1, true)
         
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
         when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(summary))
@@ -862,7 +862,7 @@ class SubmissionControllerSpec
       "must return NOT_FOUND" in {
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-        when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(SubmissionsSummary(Nil, Nil)))
+        when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(SubmissionsSummary(Nil, Nil, 0, false)))
 
         val requestJson = Json.obj(
           "assumedReporting" -> false

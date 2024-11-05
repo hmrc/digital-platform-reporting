@@ -206,7 +206,7 @@ class SubmissionController @Inject() (
       val outboundRequest = ViewSubmissionsRequest(request.dprsId, request.body)
 
       viewSubmissionsService.getSubmissions(outboundRequest).map { response =>
-        if (response.nonEmpty) Ok(Json.toJson(response)) else NotFound
+        if (response.submissionsExist) Ok(Json.toJson(response)) else NotFound
       }
   }
 }

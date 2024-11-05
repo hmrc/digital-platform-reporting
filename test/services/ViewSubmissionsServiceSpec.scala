@@ -80,8 +80,10 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val result = service.getSubmissions(request).futureValue
 
         result mustEqual SubmissionsSummary(
-          deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)),
-          Nil
+          deliveredSubmissions = deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)),
+          localSubmissions = Nil,
+          deliveredSubmissionRecordCount =  2,
+          deliveredSubmissionsExist =  true
         )
 
         verify(mockConnector, times(1)).get(eqTo(request))(any())
@@ -110,7 +112,7 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val result = service.getSubmissions(request).futureValue
 
         result mustEqual SubmissionsSummary(
-          deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)), Nil
+          deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)), Nil, 2, true
         )
 
         verify(mockConnector, times(1)).get(eqTo(request))(any())
@@ -139,8 +141,10 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val result = service.getSubmissions(request).futureValue
 
         result mustEqual SubmissionsSummary(
-          deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)),
-          localSubmissions.flatMap(x => SubmissionSummary(x))
+          deliveredSubmissions = deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)),
+          localSubmissions =  localSubmissions.flatMap(x => SubmissionSummary(x)),
+          deliveredSubmissionRecordCount =  2,
+          deliveredSubmissionsExist =  true
         )
 
         verify(mockConnector, times(1)).get(eqTo(request))(any())
@@ -161,15 +165,17 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         val result = service.getSubmissions(request).futureValue
 
         result mustEqual SubmissionsSummary(
-          Nil,
-          localSubmissions.flatMap(x => SubmissionSummary(x))
+          deliveredSubmissions = Nil,
+          localSubmissions = localSubmissions.flatMap(x => SubmissionSummary(x)),
+          deliveredSubmissionRecordCount =  0,
+          deliveredSubmissionsExist = false
         )
 
         verify(mockConnector, times(1)).get(eqTo(request))(any())
         verify(mockRepository, times(1)).getBySubscriptionId("dprsId")
       }
     }
-    
+
     "must return an empty submission summary when there are no delivered submissions or Submitted local submissions" in {
 
       when(mockConnector.get(any())(any())).thenReturn(Future.successful(None))
@@ -178,7 +184,21 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
       val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
       val result = service.getSubmissions(request).futureValue
 
-      result mustEqual SubmissionsSummary(Nil, Nil)
+      result mustEqual SubmissionsSummary(Nil, Nil, 0, false)
+
+      verify(mockConnector, times(1)).get(eqTo(request))(any())
+      verify(mockRepository, times(1)).getBySubscriptionId("dprsId")
+    }
+
+    "must return an empty submission summary, with `deliveredSubmissionsExist` as true, when no delivered submissions are returned but the connector response indicates that some exist" in {
+
+      when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(DeliveredSubmissions(Nil, 0))))
+      when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(Nil))
+
+      val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
+      val result = service.getSubmissions(request).futureValue
+
+      result mustEqual SubmissionsSummary(Nil, Nil, 0, true)
 
       verify(mockConnector, times(1)).get(eqTo(request))(any())
       verify(mockRepository, times(1)).getBySubscriptionId("dprsId")

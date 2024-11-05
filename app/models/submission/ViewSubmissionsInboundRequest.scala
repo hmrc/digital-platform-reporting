@@ -19,7 +19,7 @@ package models.submission
 import play.api.libs.json.{Json, Reads}
 
 final case class ViewSubmissionsInboundRequest(assumedReporting: Boolean,
-                                               pageNumber: Int = 1, // TODO: Check if this is 0-based
+                                               pageNumber: Int = 1,
                                                sortBy: DeliveredSubmissionSortBy = DeliveredSubmissionSortBy.SubmissionDate,
                                                sortOrder: SortOrder = SortOrder.Descending,
                                                reportingPeriod: Option[Int] = None,
