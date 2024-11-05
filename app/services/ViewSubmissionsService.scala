@@ -47,7 +47,12 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
           .filter(x => !deliveredSubmissionIds.contains(x._id))
           .flatMap(x => SubmissionSummary(x))
 
-      SubmissionsSummary(deliveredSubmissionSummaries, undeliveredSubmissions, deliveredSubmissionsCount)
+      SubmissionsSummary(
+        deliveredSubmissionSummaries,
+        undeliveredSubmissions,
+        deliveredSubmissionsCount,
+        deliveredSubmissions.nonEmpty
+      )
     }
 
   def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] = {
