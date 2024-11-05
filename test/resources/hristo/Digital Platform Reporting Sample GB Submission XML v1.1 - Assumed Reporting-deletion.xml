@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<dpi:DPI_OECD version="1.0" xmlns:dpi="urn:oecd:ties:dpi:v1"
+              xmlns:stf="urn:oecd:ties:dpistf:v1">
+  <dpi:MessageSpec>
+    <!-- Platform operator ID generated in the HMRC digital service -->
+    <dpi:SendingEntityIN>XEDPI2078675698</dpi:SendingEntityIN>
+    <dpi:TransmittingCountry>GB</dpi:TransmittingCountry>
+    <dpi:ReceivingCountry>GB</dpi:ReceivingCountry>
+    <dpi:MessageType>DPI</dpi:MessageType>
+    <dpi:MessageRefId>
+      GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFAC2
+    </dpi:MessageRefId>
+    <dpi:MessageTypeIndic>DPI402</dpi:MessageTypeIndic>
+    <dpi:ReportingPeriod>2024-12-31</dpi:ReportingPeriod>
+    <dpi:Timestamp>2024-10-03T11:13:29.397Z</dpi:Timestamp>
+  </dpi:MessageSpec>
+  <dpi:DPIBody>
+    <dpi:PlatformOperator>
+      <dpi:ResCountryCode>GB</dpi:ResCountryCode>
+      <dpi:TIN issuedBy="GB" unknown="false">Test digital platform operator TIN</dpi:TIN>
+      <dpi:Name>Test digital platform operator organisation name 1</dpi:Name>
+      <dpi:PlatformBusinessName>Test digital platform operator trading or business name 1</dpi:PlatformBusinessName>
+      <dpi:Address legalAddressType="OECD304">
+        <dpi:CountryCode>GB</dpi:CountryCode>
+        <dpi:AddressFree>Test platform operator address 1</dpi:AddressFree>
+      </dpi:Address>
+      <dpi:AssumedReporting>true</dpi:AssumedReporting>
+      <dpi:DocSpec>
+        <stf:DocTypeIndic>OECD3</stf:DocTypeIndic>
+        <stf:DocRefId>
+          GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFAC2_kutV9x7bpaEQHTw7RJirpD0s0V9z1Wjvd3U7ybyBDiqPGPTvH4Sc6UjguczPWD
+        </stf:DocRefId>
+        <stf:CorrDocRefId>
+          GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFAC2_kutV9x7bpaEQHTw7RJirpD0s0V9z1Wjvd3U7ybyBDiqPGPTvH4Sc6UjguczPWC
+        </stf:CorrDocRefId>
+      </dpi:DocSpec>
+    </dpi:PlatformOperator>
+    <dpi:OtherPlatformOperators>
+      <dpi:AssumingPlatformOperator>
+        <dpi:ResCountryCode>GB</dpi:ResCountryCode>
+        <dpi:TIN issuedBy="GB" unknown="false">Test digital platform operator TIN 2 - updated</dpi:TIN>
+        <dpi:Name>Test digital platform operator 2 (who will report on behalf of test platform 1) - updated</dpi:Name>
+        <dpi:Address legalAddressType="OECD303">
+          <dpi:CountryCode>GB</dpi:CountryCode>
+          <dpi:AddressFree>Test digital platform operator address 2 - updated</dpi:AddressFree>
+        </dpi:Address>
+        <dpi:DocSpec>
+          <stf:DocTypeIndic>OECD3</stf:DocTypeIndic>
+          <stf:DocRefId>
+            GB2024GB-VGDPI3933000956GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFuQ5_w5BOI8lhlJ49Neq5QofOMZqs5xjyyk1DOiIA5V64TfA5buvzODalVEvyjxcpCK
+          </stf:DocRefId>
+          <stf:CorrDocRefId>
+            GB2024GB-VGDPI3933000956GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFuQ5_w5BOI8lhlJ49Neq5QofOMZqs5xjyyk1DOiIA5V64TfA5buvzODalVEvyjxcpCJ
+          </stf:CorrDocRefId>
+        </dpi:DocSpec>
+      </dpi:AssumingPlatformOperator>
+    </dpi:OtherPlatformOperators>
+  </dpi:DPIBody>
+</dpi:DPI_OECD>
