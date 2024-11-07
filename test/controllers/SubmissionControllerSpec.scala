@@ -746,10 +746,10 @@ class SubmissionControllerSpec
           submissionCaseId = Some("submissionCaseId"),
           isDeleted = false
         ))
-        val summary = SubmissionsSummary(deliveredSubmissions, Nil, 1, true)
+        val summary = SubmissionsSummary(deliveredSubmissions, 0, 1, true)
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-        when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(summary))
+        when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
 
         val requestJson = Json.obj(
           "assumedReporting" -> false
@@ -764,30 +764,18 @@ class SubmissionControllerSpec
 
         val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
         val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
-        verify(mockViewSubmissionsService, times(1)).getSubmissions(eqTo(expectedRequest))(any())
+        verify(mockViewSubmissionsService, times(1)).getDeliveredSubmissions(eqTo(expectedRequest))(any())
       }
     }
 
     "when there are local submissions" - {
 
       "must return OK with the submissions in the body" in {
-
-        val localSubmissions = Seq(SubmissionSummary(
-          submissionId = "id",
-          fileName = "filename",
-          operatorId = "operatorId",
-          operatorName = "operatorName",
-          reportingPeriod = Year.of(2024),
-          submissionDateTime = now,
-          submissionStatus = SubmissionStatus.Success,
-          assumingReporterName = None,
-          submissionCaseId = None,
-          isDeleted = false
-        ))
-        val summary = SubmissionsSummary(Nil, localSubmissions, 0, false)
+        
+        val summary = SubmissionsSummary(Nil, 1, 0, false)
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-        when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(summary))
+        when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
 
         val requestJson = Json.obj(
           "assumedReporting" -> false
@@ -802,7 +790,7 @@ class SubmissionControllerSpec
 
         val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
         val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
-        verify(mockViewSubmissionsService, times(1)).getSubmissions(eqTo(expectedRequest))(any())
+        verify(mockViewSubmissionsService, times(1)).getDeliveredSubmissions(eqTo(expectedRequest))(any())
       }
     }
     
@@ -823,22 +811,10 @@ class SubmissionControllerSpec
           isDeleted = false
         ))
 
-        val localSubmissions = Seq(SubmissionSummary(
-          submissionId = "id2",
-          fileName = "filename2",
-          operatorId = "operatorId",
-          operatorName = "operatorName",
-          reportingPeriod = Year.of(2024),
-          submissionDateTime = now,
-          submissionStatus = SubmissionStatus.Success,
-          assumingReporterName = None,
-          submissionCaseId = None,
-          isDeleted = false
-        ))
-        val summary = SubmissionsSummary(deliveredSubmissions, localSubmissions, 1, true)
+        val summary = SubmissionsSummary(deliveredSubmissions, 1, 1, true)
         
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-        when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(summary))
+        when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
 
         val requestJson = Json.obj(
           "assumedReporting" -> false
@@ -853,7 +829,7 @@ class SubmissionControllerSpec
 
         val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
         val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
-        verify(mockViewSubmissionsService, times(1)).getSubmissions(eqTo(expectedRequest))(any())
+        verify(mockViewSubmissionsService, times(1)).getDeliveredSubmissions(eqTo(expectedRequest))(any())
       }
     }
 
@@ -862,7 +838,7 @@ class SubmissionControllerSpec
       "must return NOT_FOUND" in {
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-        when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(SubmissionsSummary(Nil, Nil, 0, false)))
+        when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(SubmissionsSummary(Nil, 0, 0, false)))
 
         val requestJson = Json.obj(
           "assumedReporting" -> false
@@ -876,7 +852,7 @@ class SubmissionControllerSpec
         
         val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
         val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
-        verify(mockViewSubmissionsService, times(1)).getSubmissions(eqTo(expectedRequest))(any())
+        verify(mockViewSubmissionsService, times(1)).getDeliveredSubmissions(eqTo(expectedRequest))(any())
       }
     }
   }

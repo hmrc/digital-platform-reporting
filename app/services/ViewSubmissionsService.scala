@@ -33,7 +33,7 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
                                        assumedReportingService: AssumedReportingService)
                                       (implicit ec: ExecutionContext) {
 
-  def getSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] =
+  def getDeliveredSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] =
     for {
       deliveredSubmissions  <- connector.get(request)
       repositorySubmissions <- repository.getBySubscriptionId(request.subscriptionId)
@@ -41,15 +41,16 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
 
       val deliveredSubmissionSummaries = deliveredSubmissions.map(_.submissions.map(x => SubmissionSummary(x, false))).getOrElse(Nil)
       val deliveredSubmissionsCount = deliveredSubmissions.map(_.resultsCount).getOrElse(0)
-      val deliveredSubmissionIds = deliveredSubmissionSummaries.map(_.submissionId)
-      val undeliveredSubmissions =
+      val undeliveredSubmissionCount =
         repositorySubmissions
-          .filter(x => !deliveredSubmissionIds.contains(x._id))
-          .flatMap(x => SubmissionSummary(x))
+          .count { submission => submission.state match {
+            case _: Submission.State.Submitted => true
+            case _                             => false
+          }}
 
       SubmissionsSummary(
         deliveredSubmissionSummaries,
-        undeliveredSubmissions,
+        undeliveredSubmissionCount,
         deliveredSubmissionsCount,
         deliveredSubmissions.nonEmpty
       )

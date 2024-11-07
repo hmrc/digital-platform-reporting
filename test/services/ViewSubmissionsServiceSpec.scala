@@ -56,7 +56,7 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
   
   ".getSubmissions" - {
     
-    "must return submission summaries for delivered submissions and `Submitted` local submissions that have no corresponding delivered submission" - {
+    "must return submission summaries for delivered submissions and `Submitted` local submissions" - {
       
       "when there are delivered submissions and no Submitted local submissions" in {        
         
@@ -77,11 +77,11 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(localSubmissions))
 
         val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
-        val result = service.getSubmissions(request).futureValue
+        val result = service.getDeliveredSubmissions(request).futureValue
 
         result mustEqual SubmissionsSummary(
           deliveredSubmissions = deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)),
-          localSubmissions = Nil,
+          undeliveredSubmissionCount = 0,
           deliveredSubmissionRecordCount =  2,
           deliveredSubmissionsExist =  true
         )
@@ -90,36 +90,7 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         verify(mockRepository, times(1)).getBySubscriptionId("dprsId")
       }
       
-      "when there are delivered submissions and all Submitted local submissions have a matching delivered submission" in {
-
-        val deliveredSubmissions = DeliveredSubmissions(
-          submissions = Seq(
-            DeliveredSubmission("id1", "fileName", "operatorId", "operatorName", Year.of(2024), "submissionCaseId", instant, Success, None),
-            DeliveredSubmission("id2", "fileName2", "operatorId", "operatorName", Year.of(2024), "submissionCaseId", instant, Success, None)
-          ),
-          resultsCount = 2
-        )
-
-        val localSubmissions = Seq(
-          Submission(_id = "id1", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName", Year.of(2024)), instant, instant),
-          Submission(_id = "id2", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName", Year.of(2024)), instant, instant),
-        )
-
-        when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(deliveredSubmissions)))
-        when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(localSubmissions))
-
-        val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
-        val result = service.getSubmissions(request).futureValue
-
-        result mustEqual SubmissionsSummary(
-          deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)), Nil, 2, true
-        )
-
-        verify(mockConnector, times(1)).get(eqTo(request))(any())
-        verify(mockRepository, times(1)).getBySubscriptionId("dprsId")
-      }
-      
-      "when there are delivered submissions and some Submitted local submissions do not have a matching delivered submission" in {
+      "when there are delivered submissions and some Submitted local submissions" in {
 
         val deliveredSubmissions = DeliveredSubmissions(
           submissions = Seq(
@@ -138,11 +109,11 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(localSubmissions))
 
         val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
-        val result = service.getSubmissions(request).futureValue
+        val result = service.getDeliveredSubmissions(request).futureValue
 
         result mustEqual SubmissionsSummary(
           deliveredSubmissions = deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)),
-          localSubmissions =  localSubmissions.flatMap(x => SubmissionSummary(x)),
+          undeliveredSubmissionCount = 2,
           deliveredSubmissionRecordCount =  2,
           deliveredSubmissionsExist =  true
         )
@@ -162,11 +133,11 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(localSubmissions))
 
         val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
-        val result = service.getSubmissions(request).futureValue
+        val result = service.getDeliveredSubmissions(request).futureValue
 
         result mustEqual SubmissionsSummary(
           deliveredSubmissions = Nil,
-          localSubmissions = localSubmissions.flatMap(x => SubmissionSummary(x)),
+          undeliveredSubmissionCount = 2,
           deliveredSubmissionRecordCount =  0,
           deliveredSubmissionsExist = false
         )
@@ -182,9 +153,9 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
       when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(Nil))
 
       val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
-      val result = service.getSubmissions(request).futureValue
+      val result = service.getDeliveredSubmissions(request).futureValue
 
-      result mustEqual SubmissionsSummary(Nil, Nil, 0, false)
+      result mustEqual SubmissionsSummary(Nil, 0, 0, false)
 
       verify(mockConnector, times(1)).get(eqTo(request))(any())
       verify(mockRepository, times(1)).getBySubscriptionId("dprsId")
@@ -196,9 +167,9 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
       when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(Nil))
 
       val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
-      val result = service.getSubmissions(request).futureValue
+      val result = service.getDeliveredSubmissions(request).futureValue
 
-      result mustEqual SubmissionsSummary(Nil, Nil, 0, true)
+      result mustEqual SubmissionsSummary(Nil, 0, 0, true)
 
       verify(mockConnector, times(1)).get(eqTo(request))(any())
       verify(mockRepository, times(1)).getBySubscriptionId("dprsId")
