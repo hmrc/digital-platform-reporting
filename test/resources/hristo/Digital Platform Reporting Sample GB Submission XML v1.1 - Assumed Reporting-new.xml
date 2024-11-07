@@ -42,7 +42,7 @@
         </dpi:Address>
         <dpi:DocSpec>
           <stf:DocTypeIndic xmlns:stf="urn:oecd:ties:dpistf:v1">OECD1</stf:DocTypeIndic>
-          <stf:DocRefId xmlns:stf="urn:oecd:ties:dpistf:v1">GB2024GB-VGDPI3933000956GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFuQ5_w5BOI8lhlJ49Neq5QofOMZqs5xjyyk1DOiIA5V64TfA5buvzODalVEvyjxcpCI</stf:DocRefId>
+          <stf:DocRefId xmlns:stf="urn:oecd:ties:dpistf:v1">GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFuQ5_w5BOI8lhlJ49Neq5QofOMZqs5xjyyk1DOiIA5V64TfA5buvzODalVEvyjxcpCI</stf:DocRefId>
         </dpi:DocSpec>
       </dpi:AssumingPlatformOperator>
     </dpi:OtherPlatformOperators>
