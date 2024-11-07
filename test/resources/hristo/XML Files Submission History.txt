@@ -1,0 +1,13 @@
+Sale of Goods		-New		-FAB1	-Success (06 Nov 2024)
+Sale of Goods		-Correction	-FAC2	-Success (06 Nov 2024)
+Sale of Goods		-Deletion	-QA3	-Success (06 Nov 2024)
+
+Assumed Reporting 	-New 		-v001 	-Success (07 Nov 2024)
+Assumed Reporting 	-Correction 	-v001 	-Success (07 Nov 2024)
+
+Personal Services 	-New 		-v001	-Success (07 Nov 2024)
+Personal Services 	-Correction	-v001	-Success (07 Nov 2024)
+Personal Services 	-Deletion	-v001	-Success (07 Nov 2024)
+
+Property Rentals	-New		-v001	-Failure (07 Nov 2024) 
+					-v002	-x

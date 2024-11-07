@@ -85,7 +85,6 @@
               <dpi:TaxQ4 currCode="GBP">200</dpi:TaxQ4>
             </dpi:Taxes>
             <dpi:PropertyType>DPI904</dpi:PropertyType>
-            <dpi:OtherPropertyType>a</dpi:OtherPropertyType>
             <dpi:RentedDays>365</dpi:RentedDays>
           </dpi:PropertyListing>
         </dpi:ImmovableProperty>
@@ -151,7 +150,6 @@
               <dpi:TaxQ4 currCode="GBP">250</dpi:TaxQ4>
             </dpi:Taxes>
             <dpi:PropertyType>DPI904</dpi:PropertyType>
-            <dpi:OtherPropertyType>a</dpi:OtherPropertyType>
             <dpi:RentedDays>365</dpi:RentedDays>
           </dpi:PropertyListing>
         </dpi:ImmovableProperty>

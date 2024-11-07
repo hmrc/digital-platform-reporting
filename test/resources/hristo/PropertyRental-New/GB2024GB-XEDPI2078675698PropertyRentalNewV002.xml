@@ -1,0 +1,167 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<dpi:DPI_OECD version="1.0" xmlns:dpi="urn:oecd:ties:dpi:v1">
+  <dpi:MessageSpec xmlns:dpi="urn:oecd:ties:dpi:v1">
+    <!-- Platform operator ID generated in the HMRC digital service -->
+    <dpi:SendingEntityIN>XEDPI2078675698</dpi:SendingEntityIN>
+    <dpi:TransmittingCountry>GB</dpi:TransmittingCountry>
+    <dpi:ReceivingCountry>GB</dpi:ReceivingCountry>
+    <dpi:MessageType>DPI</dpi:MessageType>
+    <dpi:MessageRefId>
+      GB2024GB-XEDPI2078675698PropertyRentalNewV002
+    </dpi:MessageRefId>
+    <dpi:MessageTypeIndic>DPI401</dpi:MessageTypeIndic>
+    <dpi:ReportingPeriod>2024-12-31</dpi:ReportingPeriod>
+    <dpi:Timestamp>2024-10-02T11:13:29.397Z</dpi:Timestamp>
+  </dpi:MessageSpec>
+  <dpi:DPIBody xmlns:dpi="urn:oecd:ties:dpi:v1">
+    <dpi:PlatformOperator>
+      <dpi:ResCountryCode>GB</dpi:ResCountryCode>
+      <dpi:TIN issuedBy="GB" unknown="false">Test digital platform operator TIN</dpi:TIN>
+      <dpi:Name>Test digital platform operator organisation name 1</dpi:Name>
+      <dpi:PlatformBusinessName>Test digital platform operator trading or business name 1</dpi:PlatformBusinessName>
+      <dpi:Address legalAddressType="OECD304">
+        <dpi:CountryCode>GB</dpi:CountryCode>
+        <dpi:AddressFree>Test platform operator address 1</dpi:AddressFree>
+      </dpi:Address>
+      <dpi:AssumedReporting>false</dpi:AssumedReporting>
+      <dpi:DocSpec>
+        <stf:DocTypeIndic xmlns:stf="urn:oecd:ties:dpistf:v1">OECD1</stf:DocTypeIndic>
+        <stf:DocRefId xmlns:stf="urn:oecd:ties:dpistf:v1">
+          GB2024GB-XEDPI2078675698PropertyRentalNewV002_PlatformOperator001
+        </stf:DocRefId>
+      </dpi:DocSpec>
+    </dpi:PlatformOperator>
+    <dpi:ReportableSeller>
+      <dpi:Identity>
+        <dpi:EntitySeller>
+          <dpi:Standard>
+            <dpi:EntSellerID>
+              <dpi:ResCountryCode>GB</dpi:ResCountryCode>
+              <dpi:TIN issuedBy="GB" unknown="false">Test Seller TIN 1</dpi:TIN>
+              <dpi:Name>Test seller 1</dpi:Name>
+              <dpi:Address legalAddressType="OECD303">
+                <dpi:CountryCode>GB</dpi:CountryCode>
+                <dpi:AddressFree>Test seller address 1</dpi:AddressFree>
+              </dpi:Address>
+            </dpi:EntSellerID>
+            <dpi:FinancialIdentifier>
+              <dpi:Identifier AccountNumberType="a">Test seller payment bank account number 1</dpi:Identifier>
+              <dpi:AccountHolderName>Test seller payment bank account name</dpi:AccountHolderName>
+              <dpi:OtherInfo>Test seller other information 1</dpi:OtherInfo>
+            </dpi:FinancialIdentifier>
+          </dpi:Standard>
+        </dpi:EntitySeller>
+      </dpi:Identity>
+      <dpi:RelevantActivities>
+        <dpi:ImmovableProperty>
+          <dpi:PropertyListing>
+            <dpi:Address legalAddressType="OECD301">
+              <dpi:CountryCode>GB</dpi:CountryCode>
+              <dpi:AddressFree>Test Seller property address 1</dpi:AddressFree>
+            </dpi:Address>
+            <dpi:LandRegistrationNumber>Test Seller property land registry number 1</dpi:LandRegistrationNumber>
+            <dpi:Consideration>
+              <dpi:ConsQ1 currCode="GBP">2000</dpi:ConsQ1>
+              <dpi:ConsQ2 currCode="GBP">2000</dpi:ConsQ2>
+              <dpi:ConsQ3 currCode="GBP">2000</dpi:ConsQ3>
+              <dpi:ConsQ4 currCode="GBP">2000</dpi:ConsQ4>
+            </dpi:Consideration>
+            <dpi:NumberOfActivities>
+              <dpi:NumbQ1>1</dpi:NumbQ1>
+              <dpi:NumbQ2>1</dpi:NumbQ2>
+              <dpi:NumbQ3>1</dpi:NumbQ3>
+              <dpi:NumbQ4>1</dpi:NumbQ4>
+            </dpi:NumberOfActivities>
+            <dpi:Fees>
+              <dpi:FeesQ1 currCode="GBP">50</dpi:FeesQ1>
+              <dpi:FeesQ2 currCode="GBP">50</dpi:FeesQ2>
+              <dpi:FeesQ3 currCode="GBP">50</dpi:FeesQ3>
+              <dpi:FeesQ4 currCode="GBP">50</dpi:FeesQ4>
+            </dpi:Fees>
+            <dpi:Taxes>
+              <dpi:TaxQ1 currCode="GBP">200</dpi:TaxQ1>
+              <dpi:TaxQ2 currCode="GBP">200</dpi:TaxQ2>
+              <dpi:TaxQ3 currCode="GBP">200</dpi:TaxQ3>
+              <dpi:TaxQ4 currCode="GBP">200</dpi:TaxQ4>
+            </dpi:Taxes>
+            <dpi:PropertyType>DPI904</dpi:PropertyType>
+            <dpi:OtherPropertyType>a</dpi:OtherPropertyType>
+            <dpi:RentedDays>365</dpi:RentedDays>
+          </dpi:PropertyListing>
+        </dpi:ImmovableProperty>
+      </dpi:RelevantActivities>
+      <dpi:DocSpec>
+        <stf:DocTypeIndic xmlns:stf="urn:oecd:ties:dpistf:v1">OECD1</stf:DocTypeIndic>
+        <stf:DocRefId xmlns:stf="urn:oecd:ties:dpistf:v1">
+          GB2024GB-XEDPI2078675698PropertyRentalNewV002_ReportableSeller001
+        </stf:DocRefId>
+      </dpi:DocSpec>
+    </dpi:ReportableSeller>
+    <dpi:ReportableSeller>
+      <dpi:Identity>
+        <dpi:EntitySeller>
+          <dpi:Standard>
+            <dpi:EntSellerID>
+              <dpi:ResCountryCode>GB</dpi:ResCountryCode>
+              <dpi:TIN issuedBy="GB" unknown="false">Test Seller 2 TIN</dpi:TIN>
+              <dpi:Name>Test seller 2</dpi:Name>
+              <dpi:Address legalAddressType="OECD303">
+                <dpi:CountryCode>GB</dpi:CountryCode>
+                <dpi:AddressFree>Test seller 2 address</dpi:AddressFree>
+              </dpi:Address>
+            </dpi:EntSellerID>
+            <dpi:FinancialIdentifier>
+              <dpi:Identifier AccountNumberType="a">Test seller 2 payment bank account number</dpi:Identifier>
+              <dpi:AccountHolderName>Test seller 2 payment bank account name</dpi:AccountHolderName>
+              <dpi:OtherInfo>Test seller 2 other information</dpi:OtherInfo>
+            </dpi:FinancialIdentifier>
+          </dpi:Standard>
+        </dpi:EntitySeller>
+      </dpi:Identity>
+      <dpi:RelevantActivities>
+        <dpi:ImmovableProperty>
+          <dpi:PropertyListing>
+            <dpi:Address legalAddressType="OECD301">
+              <dpi:CountryCode>GB</dpi:CountryCode>
+              <dpi:AddressFree>Test Seller 2 property address</dpi:AddressFree>
+            </dpi:Address>
+            <dpi:LandRegistrationNumber>Test Seller 2 property land registry number</dpi:LandRegistrationNumber>
+            <dpi:Consideration>
+              <dpi:ConsQ1 currCode="GBP">2500</dpi:ConsQ1>
+              <dpi:ConsQ2 currCode="GBP">2500</dpi:ConsQ2>
+              <dpi:ConsQ3 currCode="GBP">2500</dpi:ConsQ3>
+              <dpi:ConsQ4 currCode="GBP">2500</dpi:ConsQ4>
+            </dpi:Consideration>
+            <dpi:NumberOfActivities>
+              <dpi:NumbQ1>2</dpi:NumbQ1>
+              <dpi:NumbQ2>2</dpi:NumbQ2>
+              <dpi:NumbQ3>2</dpi:NumbQ3>
+              <dpi:NumbQ4>2</dpi:NumbQ4>
+            </dpi:NumberOfActivities>
+            <dpi:Fees>
+              <dpi:FeesQ1 currCode="GBP">55</dpi:FeesQ1>
+              <dpi:FeesQ2 currCode="GBP">55</dpi:FeesQ2>
+              <dpi:FeesQ3 currCode="GBP">55</dpi:FeesQ3>
+              <dpi:FeesQ4 currCode="GBP">55</dpi:FeesQ4>
+            </dpi:Fees>
+            <dpi:Taxes>
+              <dpi:TaxQ1 currCode="GBP">250</dpi:TaxQ1>
+              <dpi:TaxQ2 currCode="GBP">250</dpi:TaxQ2>
+              <dpi:TaxQ3 currCode="GBP">250</dpi:TaxQ3>
+              <dpi:TaxQ4 currCode="GBP">250</dpi:TaxQ4>
+            </dpi:Taxes>
+            <dpi:PropertyType>DPI904</dpi:PropertyType>
+            <dpi:OtherPropertyType>a</dpi:OtherPropertyType>
+            <dpi:RentedDays>365</dpi:RentedDays>
+          </dpi:PropertyListing>
+        </dpi:ImmovableProperty>
+      </dpi:RelevantActivities>
+      <dpi:DocSpec>
+        <stf:DocTypeIndic xmlns:stf="urn:oecd:ties:dpistf:v1">OECD1</stf:DocTypeIndic>
+        <stf:DocRefId xmlns:stf="urn:oecd:ties:dpistf:v1">
+          GB2024GB-XEDPI2078675698PropertyRentalNewV002_ReportableSeller002
+        </stf:DocRefId>
+      </dpi:DocSpec>
+    </dpi:ReportableSeller>
+  </dpi:DPIBody>
+</dpi:DPI_OECD>
