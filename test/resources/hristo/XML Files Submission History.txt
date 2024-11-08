@@ -1,13 +1,28 @@
-Sale of Goods		-New		-FAB1	-Success (06 Nov 2024)
-Sale of Goods		-Correction	-FAC2	-Success (06 Nov 2024)
-Sale of Goods		-Deletion	-QA3	-Success (06 Nov 2024)
 
-Assumed Reporting 	-New 		-v001 	-Success (07 Nov 2024)
-Assumed Reporting 	-Correction 	-v001 	-Success (07 Nov 2024)
+This file is just for testing, to keep track of the versions sent and the returned results.
 
-Personal Services 	-New 		-v001	-Success (07 Nov 2024)
-Personal Services 	-Correction	-v001	-Success (07 Nov 2024)
-Personal Services 	-Deletion	-v001	-Success (07 Nov 2024)
+____________________________________________________________________________________________________
+|File Name			|Type		|Ver.	|Result					|Errors
 
-Property Rentals	-New		-v001	-Failure (07 Nov 2024) 
-					-v002	-x
+Sale of Goods		-New		-FAB1	-SUCCESS (06 Nov 2024)	-NA
+Sale of Goods		-Correction	-FAC2	-SUCCESS (06 Nov 2024)	-NA
+Sale of Goods		-Deletion	-QA3	-SUCCESS (06 Nov 2024)	-NA
+
+Assumed Reporting 	-New 		-v001 	-SUCCESS (07 Nov 2024)	-NA
+Assumed Reporting 	-Correction -v001 	-SUCCESS (07 Nov 2024)	-NA
+Assumed Reporting 	-Deletion	-v001 	-SUCCESS (08 Nov 2024)	-NA
+
+Personal Services 	-New 		-v001	-SUCCESS (07 Nov 2024)	-NA
+Personal Services 	-Correction	-v001	-SUCCESS (07 Nov 2024)	-NA
+Personal Services 	-Deletion	-v001	-SUCCESS (07 Nov 2024)	-NA
+
+Property Rentals	-New		-v001	-Failure (07 Nov 2024) 	-DPI Error Code 60	The PropertyListing.OtherPropertyType element must not be present if PropertyListing.PropertyType is anything other than DPI910.
+								-v002	-Failure (08 Nov 2024) 	-Same as above, made the corrections but did not save the changes. Woops.
+								-v003	-SUCCESS (08 Nov 2024)	-NA
+Property Rentals	-Correction	-v001	-SUCCESS (08 Nov 2024) 	-NA
+Property Rentals	-Deletion	-v001	-Failure (08 Nov 2024)	-DPI Error Code 60	The PropertyListing.OtherPropertyType element must not be present if PropertyListing.PropertyType is anything other than DPI910.
+								-v002	-SUCCESS (08 Nov 2024) 	-NA
+
+Transport Rentals	-New		-v001	-SUCCESS (08 Nov 2024)	-NA
+Transport Rentals	-Correction	-v001	-SUCCESS (08 Nov 2024)	-NA
+Transport Rentals	-Deletion	-v001	-SUCCESS (08 Nov 2024)	-NA
