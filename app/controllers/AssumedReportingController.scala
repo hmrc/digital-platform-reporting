@@ -64,6 +64,12 @@ class AssumedReportingController @Inject() (
   
   def list(): Action[AnyContent] = auth.async { implicit request =>
     viewSubmissionsService.getAssumedReports(request.dprsId)
-      .map(submissions => Ok(Json.toJson(submissions)))
+      .map { submissions =>
+        if (submissions.isEmpty) {
+          NotFound
+        } else {
+          Ok(Json.toJson(submissions))
+        }
+      }
   }
 }

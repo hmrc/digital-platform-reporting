@@ -59,7 +59,7 @@ object SubmissionSummary {
           submission.operatorId,
           submission.operatorName,
           state.reportingPeriod,
-          submission.updated,
+          submission.created,
           SubmissionStatus.Pending,
           submission.assumingOperatorName,
           None,

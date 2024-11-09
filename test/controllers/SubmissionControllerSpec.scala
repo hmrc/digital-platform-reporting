@@ -19,6 +19,7 @@ package controllers
 import models.submission.Submission.{State, SubmissionType}
 import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
 import models.submission.*
+import models.submission.SubmissionStatus.Pending
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
@@ -728,7 +729,7 @@ class SubmissionControllerSpec
     }
   }
 
-  "list" - {
+  "listDeliveredSubmissions" - {
 
     "when there are delivered submissions" - {
 
@@ -746,7 +747,7 @@ class SubmissionControllerSpec
           submissionCaseId = Some("submissionCaseId"),
           isDeleted = false
         ))
-        val summary = SubmissionsSummary(deliveredSubmissions, 0, 1, true)
+        val summary = SubmissionsSummary(deliveredSubmissions, 1, true, 0)
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
         when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
@@ -755,7 +756,7 @@ class SubmissionControllerSpec
           "assumedReporting" -> false
         )
 
-        val request = FakeRequest(routes.SubmissionController.list()).withJsonBody(requestJson)
+        val request = FakeRequest(routes.SubmissionController.listDeliveredSubmissions()).withJsonBody(requestJson)
 
         val result = route(app, request).value
 
@@ -772,7 +773,7 @@ class SubmissionControllerSpec
 
       "must return OK with the submissions in the body" in {
         
-        val summary = SubmissionsSummary(Nil, 1, 0, false)
+        val summary = SubmissionsSummary(Nil, 0, false, 1)
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
         when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
@@ -781,7 +782,7 @@ class SubmissionControllerSpec
           "assumedReporting" -> false
         )
 
-        val request = FakeRequest(routes.SubmissionController.list()).withJsonBody(requestJson)
+        val request = FakeRequest(routes.SubmissionController.listDeliveredSubmissions()).withJsonBody(requestJson)
 
         val result = route(app, request).value
 
@@ -811,7 +812,7 @@ class SubmissionControllerSpec
           isDeleted = false
         ))
 
-        val summary = SubmissionsSummary(deliveredSubmissions, 1, 1, true)
+        val summary = SubmissionsSummary(deliveredSubmissions, 1, true, 1)
         
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
         when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
@@ -820,7 +821,7 @@ class SubmissionControllerSpec
           "assumedReporting" -> false
         )
 
-        val request = FakeRequest(routes.SubmissionController.list()).withJsonBody(requestJson)
+        val request = FakeRequest(routes.SubmissionController.listDeliveredSubmissions()).withJsonBody(requestJson)
 
         val result = route(app, request).value
 
@@ -838,13 +839,13 @@ class SubmissionControllerSpec
       "must return NOT_FOUND" in {
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-        when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(SubmissionsSummary(Nil, 0, 0, false)))
+        when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(SubmissionsSummary(Nil, 0, false, 0)))
 
         val requestJson = Json.obj(
           "assumedReporting" -> false
         )
 
-        val request = FakeRequest(routes.SubmissionController.list()).withJsonBody(requestJson)
+        val request = FakeRequest(routes.SubmissionController.listDeliveredSubmissions()).withJsonBody(requestJson)
 
         val result = route(app, request).value
 
@@ -854,6 +855,48 @@ class SubmissionControllerSpec
         val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
         verify(mockViewSubmissionsService, times(1)).getDeliveredSubmissions(eqTo(expectedRequest))(any())
       }
+    }
+  }
+  
+  "listUndeliveredSubmissions" - {
+    
+    "must return OK and an array of submissions where there are undelivered submissions" in {
+      
+      val existingSubmission = SubmissionSummary(
+        submissionId = uuid,
+        fileName = "filename",
+        operatorId = operatorId,
+        operatorName = operatorName,
+        reportingPeriod = Year.of(2024),
+        submissionDateTime = now,
+        submissionStatus = Pending,
+        assumingReporterName = None,
+        submissionCaseId = None,
+        isDeleted = false
+      )
+      
+      when(mockViewSubmissionsService.getUndeliveredSubmissions(any())(any())).thenReturn(Future.successful(Seq(existingSubmission)))
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
+
+      val request = FakeRequest(routes.SubmissionController.listUndeliveredSubmissions())
+
+      val result = route(app, request).value
+
+      status(result) mustEqual OK
+      contentAsJson(result) mustEqual Json.toJson(Seq(existingSubmission))
+    }
+    
+    "must return OK and an empty array when there are no undelivered submissions" in {
+
+      when(mockViewSubmissionsService.getUndeliveredSubmissions(any())(any())).thenReturn(Future.successful(Nil))
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
+
+      val request = FakeRequest(routes.SubmissionController.listUndeliveredSubmissions())
+
+      val result = route(app, request).value
+
+      status(result) mustEqual OK
+      contentAsJson(result) mustEqual Json.arr()
     }
   }
 }

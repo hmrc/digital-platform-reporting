@@ -43,21 +43,35 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
       val deliveredSubmissionsCount = deliveredSubmissions.map(_.resultsCount).getOrElse(0)
       val undeliveredSubmissionCount =
         repositorySubmissions
-          .count { submission => submission.state match {
-            case _: Submission.State.Submitted => true
-            case _                             => false
-          }}
+          .filter(_.submissionType == Submission.SubmissionType.Xml)
+          .count(submitted)
 
       SubmissionsSummary(
         deliveredSubmissionSummaries,
-        undeliveredSubmissionCount,
         deliveredSubmissionsCount,
-        deliveredSubmissions.nonEmpty
+        deliveredSubmissions.nonEmpty,
+        undeliveredSubmissionCount
       )
+    }
+    
+  def getUndeliveredSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] =
+    repository.getBySubscriptionId(dprsId).map { submissions =>
+      submissions
+        .filter(_.submissionType == Submission.SubmissionType.Xml)
+        .filter(submitted)
+        .sortBy(_.created)
+        .reverse
+        .flatMap(x => SubmissionSummary(x))
+    }
+    
+  private def submitted: Submission => Boolean =
+    submission => submission.state match {
+      case _: Submission.State.Submitted => true
+      case _                             => false
     }
 
   def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] = {
-    getAllSubmissions(dprsId).flatMap { deliveredSubmissions =>
+    getAllAssumedReportingSubmissions(dprsId).flatMap { deliveredSubmissions =>
       val consolidatedSubmissions = deliveredSubmissions
         .groupBy(submission => (submission.operatorId, submission.reportingPeriod))
         .map(_._2.sortBy(_.submissionDateTime).reverse.head)
@@ -73,22 +87,22 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
     }
   }
 
-  private def getAllSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[DeliveredSubmission]] =
-    connector.get(buildRequest(dprsId, 1)).flatMap(_.map { page1 =>
+  private def getAllAssumedReportingSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[DeliveredSubmission]] =
+    connector.get(buildAssumedReportingRequest(dprsId, 1)).flatMap(_.map { page1 =>
       if (page1.resultsCount <= 10) {
         Future.successful(page1.submissions)
       } else {
         val numberOfPages = (page1.resultsCount + 9) / 10
 
         (2 to numberOfPages).toList.traverse { page =>
-          connector.get(buildRequest(dprsId, page)).flatMap(_.map { result =>
+          connector.get(buildAssumedReportingRequest(dprsId, page)).flatMap(_.map { result =>
             Future.successful(result.submissions)
           }.getOrElse(Future.successful(Nil)))
         }.map(_.flatten ++ page1.submissions)
       }
     }.getOrElse(Future.successful(Nil)))
 
-  private def buildRequest(dprsId: String, page: Int): ViewSubmissionsRequest =
+  private def buildAssumedReportingRequest(dprsId: String, page: Int): ViewSubmissionsRequest =
     ViewSubmissionsRequest(
       subscriptionId = dprsId,
       assumedReporting = true,
