@@ -306,7 +306,7 @@ class SubmissionServiceSpec
               secondaryContact = Some(organisationContact)
             )
 
-            val innerContent = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SubmissionSample.xml")).mkString
+            val innerContent = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SubmissionSampleAssumed.xml")).mkString
             val fileSource = Source.single(ByteString.fromString(innerContent))
 
             when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
