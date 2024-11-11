@@ -35,41 +35,29 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
 
   def getDeliveredSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] =
     for {
-      deliveredSubmissions  <- connector.get(request)
-      repositorySubmissions <- repository.getBySubscriptionId(request.subscriptionId)
+      deliveredSubmissions      <- connector.get(request)
+      repositorySubmissionCount <- repository.countSubmittedXmlSubmissions(request.subscriptionId)
     } yield {
 
       val deliveredSubmissionSummaries = deliveredSubmissions.map(_.submissions.map(x => SubmissionSummary(x, false))).getOrElse(Nil)
       val deliveredSubmissionsCount = deliveredSubmissions.map(_.resultsCount).getOrElse(0)
-      val undeliveredSubmissionCount =
-        repositorySubmissions
-          .filter(_.submissionType == Submission.SubmissionType.Xml)
-          .count(submitted)
 
       SubmissionsSummary(
         deliveredSubmissionSummaries,
         deliveredSubmissionsCount,
         deliveredSubmissions.nonEmpty,
-        undeliveredSubmissionCount
+        repositorySubmissionCount
       )
     }
     
   def getUndeliveredSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] =
-    repository.getBySubscriptionId(dprsId).map { submissions =>
+    repository.getSubmittedXmlSubmissions(dprsId).map { submissions =>
       submissions
-        .filter(_.submissionType == Submission.SubmissionType.Xml)
-        .filter(submitted)
         .sortBy(_.created)
         .reverse
         .flatMap(x => SubmissionSummary(x))
     }
     
-  private def submitted: Submission => Boolean =
-    submission => submission.state match {
-      case _: Submission.State.Submitted => true
-      case _                             => false
-    }
-
   def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] = {
     getAllAssumedReportingSubmissions(dprsId).flatMap { deliveredSubmissions =>
       val consolidatedSubmissions = deliveredSubmissions

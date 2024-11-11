@@ -747,7 +747,7 @@ class SubmissionControllerSpec
           submissionCaseId = Some("submissionCaseId"),
           isDeleted = false
         ))
-        val summary = SubmissionsSummary(deliveredSubmissions, 1, true, 0)
+        val summary = SubmissionsSummary(deliveredSubmissions, 1, true, 0L)
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
         when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
@@ -773,7 +773,7 @@ class SubmissionControllerSpec
 
       "must return OK with the submissions in the body" in {
         
-        val summary = SubmissionsSummary(Nil, 0, false, 1)
+        val summary = SubmissionsSummary(Nil, 0, false, 1L)
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
         when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
@@ -812,7 +812,7 @@ class SubmissionControllerSpec
           isDeleted = false
         ))
 
-        val summary = SubmissionsSummary(deliveredSubmissions, 1, true, 1)
+        val summary = SubmissionsSummary(deliveredSubmissions, 1, true, 1L)
         
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
         when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
@@ -839,7 +839,7 @@ class SubmissionControllerSpec
       "must return NOT_FOUND" in {
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-        when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(SubmissionsSummary(Nil, 0, false, 0)))
+        when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(SubmissionsSummary(Nil, 0, false, 0L)))
 
         val requestJson = Json.obj(
           "assumedReporting" -> false
