@@ -5,395 +5,190 @@
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
               xsi:schemaLocation="http://www.hmrc.gsi.gov.uk/dpi/cadx DPIXML_v1.08.xsd"
               version="1">
-  <dpi:MessageSpec>
-    <dpi:SendingEntityIN>1</dpi:SendingEntityIN>
-    <dpi:TransmittingCountry>CC</dpi:TransmittingCountry>
-    <dpi:ReceivingCountry>LY</dpi:ReceivingCountry>
-    <dpi:MessageType>DPI</dpi:MessageType>
-    <dpi:Warning>a</dpi:Warning>
-    <dpi:Contact>a</dpi:Contact>
-    <dpi:MessageRefId>a</dpi:MessageRefId>
-    <dpi:MessageTypeIndic>DPI402</dpi:MessageTypeIndic>
-    <dpi:ReportingPeriod>1957-08-13</dpi:ReportingPeriod>
-    <dpi:Timestamp>2001-12-17T09:30:47Z</dpi:Timestamp>
-  </dpi:MessageSpec>
-  <dpi:DPIBody>
-    <dpi:PlatformOperator>
-      <dpi:ResCountryCode>PE</dpi:ResCountryCode>
-      <dpi:TIN issuedBy="RU" unknown="true">a</dpi:TIN>
-      <dpi:IN issuedBy="IO" INType="Other">a</dpi:IN>
-      <dpi:VAT>a</dpi:VAT>
-      <dpi:Name>a</dpi:Name>
-      <dpi:PlatformBusinessName>a</dpi:PlatformBusinessName>
-      <dpi:Address legalAddressType="OECD301">
-        <dpi:CountryCode>DJ</dpi:CountryCode>
-        <dpi:AddressFree>a</dpi:AddressFree>
-      </dpi:Address>
-      <dpi:Nexus>RPONEX4</dpi:Nexus>
-      <dpi:AssumedReporting>true</dpi:AssumedReporting>
-      <dpi:DocSpec>
-        <stf:DocTypeIndic>OECD11</stf:DocTypeIndic>
-        <stf:DocRefId>a</stf:DocRefId>
-        <stf:CorrMessageRefId>a</stf:CorrMessageRefId>
-        <stf:CorrDocRefId>a</stf:CorrDocRefId>
-      </dpi:DocSpec>
-    </dpi:PlatformOperator>
-    <dpi:OtherPlatformOperators>
-      <dpi:AssumingPlatformOperator>
-        <dpi:ResCountryCode>BN</dpi:ResCountryCode>
-        <dpi:TIN issuedBy="CM" unknown="true">a</dpi:TIN>
-        <dpi:Name>a</dpi:Name>
-        <dpi:Address legalAddressType="OECD303">
-          <dpi:CountryCode>VG</dpi:CountryCode>
-          <dpi:AddressFree>a</dpi:AddressFree>
-        </dpi:Address>
-        <dpi:DocSpec>
-          <stf:DocTypeIndic>OECD10</stf:DocTypeIndic>
-          <stf:DocRefId>a</stf:DocRefId>
-          <stf:CorrMessageRefId>a</stf:CorrMessageRefId>
-          <stf:CorrDocRefId>a</stf:CorrDocRefId>
-        </dpi:DocSpec>
-      </dpi:AssumingPlatformOperator>
-    </dpi:OtherPlatformOperators>
-    <dpi:ReportableSeller>
-      <dpi:Identity>
-        <dpi:EntitySeller>
-          <dpi:Standard>
-            <dpi:EntSellerID>
-              <dpi:ResCountryCode>FI</dpi:ResCountryCode>
-              <dpi:TIN issuedBy="TW" unknown="true">a</dpi:TIN>
-              <dpi:IN issuedBy="SR" INType="Other">a</dpi:IN>
-              <dpi:VAT>a</dpi:VAT>
-              <dpi:Name>a</dpi:Name>
-              <dpi:PlatformBusinessName>a</dpi:PlatformBusinessName>
-              <dpi:Address legalAddressType="OECD304">
-                <dpi:CountryCode>CK</dpi:CountryCode>
-                <dpi:AddressFree>a</dpi:AddressFree>
-              </dpi:Address>
-              <dpi:Nexus>RPONEX5</dpi:Nexus>
-              <dpi:AssumedReporting>true</dpi:AssumedReporting>
-            </dpi:EntSellerID>
-            <dpi:FinancialIdentifier>
-              <dpi:Identifier AccountNumberType="a">a</dpi:Identifier>
-              <dpi:AccountHolderName>a</dpi:AccountHolderName>
-              <dpi:OtherInfo>a</dpi:OtherInfo>
-            </dpi:FinancialIdentifier>
-            <dpi:PermanentEstablishments>
-              <dpi:PermanentEstablishment>PL</dpi:PermanentEstablishment>
-            </dpi:PermanentEstablishments>
-          </dpi:Standard>
-        </dpi:EntitySeller>
-      </dpi:Identity>
-      <dpi:RelevantActivities>
-        <dpi:ImmovableProperty>
-          <dpi:PropertyListing>
+    <dpi:MessageSpec>
+        <dpi:SendingEntityIN>9</dpi:SendingEntityIN>
+        <dpi:TransmittingCountry>CC</dpi:TransmittingCountry>
+        <dpi:ReceivingCountry>LY</dpi:ReceivingCountry>
+        <dpi:MessageType>DPI</dpi:MessageType>
+        <dpi:Warning>a</dpi:Warning>
+        <dpi:Contact>a</dpi:Contact>
+        <dpi:MessageRefId>a</dpi:MessageRefId>
+        <dpi:MessageTypeIndic>DPI402</dpi:MessageTypeIndic>
+        <dpi:ReportingPeriod>1957-08-13</dpi:ReportingPeriod>
+        <dpi:Timestamp>2001-12-17T09:30:47Z</dpi:Timestamp>
+    </dpi:MessageSpec>
+    <dpi:DPIBody>
+        <dpi:PlatformOperator>
+            <dpi:ResCountryCode>PE</dpi:ResCountryCode>
+            <dpi:TIN issuedBy="RU" unknown="true">a</dpi:TIN>
+            <dpi:IN issuedBy="IO" INType="Other">a</dpi:IN>
+            <dpi:VAT>a</dpi:VAT>
+            <dpi:Name>a</dpi:Name>
+            <dpi:PlatformBusinessName>a</dpi:PlatformBusinessName>
             <dpi:Address legalAddressType="OECD301">
-              <dpi:CountryCode>TT</dpi:CountryCode>
-              <dpi:AddressFree>a</dpi:AddressFree>
-            </dpi:Address>
-            <dpi:LandRegistrationNumber>a</dpi:LandRegistrationNumber>
-            <dpi:Consideration>
-              <dpi:ConsQ1 currCode="JMD">0</dpi:ConsQ1>
-              <dpi:ConsQ2 currCode="ARS">0</dpi:ConsQ2>
-              <dpi:ConsQ3 currCode="AED">0</dpi:ConsQ3>
-              <dpi:ConsQ4 currCode="EGP">0</dpi:ConsQ4>
-            </dpi:Consideration>
-            <dpi:NumberOfActivities>
-              <dpi:NumbQ1>0</dpi:NumbQ1>
-              <dpi:NumbQ2>0</dpi:NumbQ2>
-              <dpi:NumbQ3>0</dpi:NumbQ3>
-              <dpi:NumbQ4>0</dpi:NumbQ4>
-            </dpi:NumberOfActivities>
-            <dpi:Fees>
-              <dpi:FeesQ1 currCode="BOV">0</dpi:FeesQ1>
-              <dpi:FeesQ2 currCode="RUB">0</dpi:FeesQ2>
-              <dpi:FeesQ3 currCode="BND">0</dpi:FeesQ3>
-              <dpi:FeesQ4 currCode="XPT">0</dpi:FeesQ4>
-            </dpi:Fees>
-            <dpi:Taxes>
-              <dpi:TaxQ1 currCode="BOB">0</dpi:TaxQ1>
-              <dpi:TaxQ2 currCode="SLL">0</dpi:TaxQ2>
-              <dpi:TaxQ3 currCode="LYD">0</dpi:TaxQ3>
-              <dpi:TaxQ4 currCode="PGK">0</dpi:TaxQ4>
-            </dpi:Taxes>
-            <dpi:PropertyType>DPI904</dpi:PropertyType>
-            <dpi:OtherPropertyType>a</dpi:OtherPropertyType>
-            <dpi:RentedDays>1</dpi:RentedDays>
-          </dpi:PropertyListing>
-        </dpi:ImmovableProperty>
-        <dpi:PersonalServices>
-          <dpi:Consideration>
-            <dpi:ConsQ1 currCode="BGN">0</dpi:ConsQ1>
-            <dpi:ConsQ2 currCode="XPT">0</dpi:ConsQ2>
-            <dpi:ConsQ3 currCode="SVC">0</dpi:ConsQ3>
-            <dpi:ConsQ4 currCode="CUP">0</dpi:ConsQ4>
-          </dpi:Consideration>
-          <dpi:NumberOfActivities>
-            <dpi:NumbQ1>0</dpi:NumbQ1>
-            <dpi:NumbQ2>0</dpi:NumbQ2>
-            <dpi:NumbQ3>0</dpi:NumbQ3>
-            <dpi:NumbQ4>0</dpi:NumbQ4>
-          </dpi:NumberOfActivities>
-          <dpi:Fees>
-            <dpi:FeesQ1 currCode="BRL">0</dpi:FeesQ1>
-            <dpi:FeesQ2 currCode="MNT">0</dpi:FeesQ2>
-            <dpi:FeesQ3 currCode="MNT">0</dpi:FeesQ3>
-            <dpi:FeesQ4 currCode="BGN">0</dpi:FeesQ4>
-          </dpi:Fees>
-          <dpi:Taxes>
-            <dpi:TaxQ1 currCode="KYD">0</dpi:TaxQ1>
-            <dpi:TaxQ2 currCode="SAR">0</dpi:TaxQ2>
-            <dpi:TaxQ3 currCode="USD">0</dpi:TaxQ3>
-            <dpi:TaxQ4 currCode="NZD">0</dpi:TaxQ4>
-          </dpi:Taxes>
-        </dpi:PersonalServices>
-        <dpi:SaleOfGoods>
-          <dpi:Consideration>
-            <dpi:ConsQ1 currCode="COU">0</dpi:ConsQ1>
-            <dpi:ConsQ2 currCode="KHR">0</dpi:ConsQ2>
-            <dpi:ConsQ3 currCode="KGS">0</dpi:ConsQ3>
-            <dpi:ConsQ4 currCode="PEN">0</dpi:ConsQ4>
-          </dpi:Consideration>
-          <dpi:NumberOfActivities>
-            <dpi:NumbQ1>0</dpi:NumbQ1>
-            <dpi:NumbQ2>0</dpi:NumbQ2>
-            <dpi:NumbQ3>0</dpi:NumbQ3>
-            <dpi:NumbQ4>0</dpi:NumbQ4>
-          </dpi:NumberOfActivities>
-          <dpi:Fees>
-            <dpi:FeesQ1 currCode="EUR">0</dpi:FeesQ1>
-            <dpi:FeesQ2 currCode="OMR">0</dpi:FeesQ2>
-            <dpi:FeesQ3 currCode="XFU">0</dpi:FeesQ3>
-            <dpi:FeesQ4 currCode="KMF">0</dpi:FeesQ4>
-          </dpi:Fees>
-          <dpi:Taxes>
-            <dpi:TaxQ1 currCode="CVE">0</dpi:TaxQ1>
-            <dpi:TaxQ2 currCode="HRK">0</dpi:TaxQ2>
-            <dpi:TaxQ3 currCode="XSU">0</dpi:TaxQ3>
-            <dpi:TaxQ4 currCode="BYR">0</dpi:TaxQ4>
-          </dpi:Taxes>
-        </dpi:SaleOfGoods>
-        <dpi:TransportationRental>
-          <dpi:Consideration>
-            <dpi:ConsQ1 currCode="RWF">0</dpi:ConsQ1>
-            <dpi:ConsQ2 currCode="IDR">0</dpi:ConsQ2>
-            <dpi:ConsQ3 currCode="BWP">0</dpi:ConsQ3>
-            <dpi:ConsQ4 currCode="IDR">0</dpi:ConsQ4>
-          </dpi:Consideration>
-          <dpi:NumberOfActivities>
-            <dpi:NumbQ1>0</dpi:NumbQ1>
-            <dpi:NumbQ2>0</dpi:NumbQ2>
-            <dpi:NumbQ3>0</dpi:NumbQ3>
-            <dpi:NumbQ4>0</dpi:NumbQ4>
-          </dpi:NumberOfActivities>
-          <dpi:Fees>
-            <dpi:FeesQ1 currCode="LSL">0</dpi:FeesQ1>
-            <dpi:FeesQ2 currCode="XAF">0</dpi:FeesQ2>
-            <dpi:FeesQ3 currCode="VES">0</dpi:FeesQ3>
-            <dpi:FeesQ4 currCode="PYG">0</dpi:FeesQ4>
-          </dpi:Fees>
-          <dpi:Taxes>
-            <dpi:TaxQ1 currCode="CHE">0</dpi:TaxQ1>
-            <dpi:TaxQ2 currCode="BOB">0</dpi:TaxQ2>
-            <dpi:TaxQ3 currCode="USS">0</dpi:TaxQ3>
-            <dpi:TaxQ4 currCode="CHE">0</dpi:TaxQ4>
-          </dpi:Taxes>
-        </dpi:TransportationRental>
-      </dpi:RelevantActivities>
-      <dpi:DocSpec>
-        <stf:DocTypeIndic>OECD10</stf:DocTypeIndic>
-        <stf:DocRefId>a</stf:DocRefId>
-        <stf:CorrMessageRefId>a</stf:CorrMessageRefId>
-        <stf:CorrDocRefId>a</stf:CorrDocRefId>
-      </dpi:DocSpec>
-    </dpi:ReportableSeller>
-  </dpi:DPIBody>
-  <dpi:DPIBody>
-    <dpi:PlatformOperator>
-      <dpi:ResCountryCode>AW</dpi:ResCountryCode>
-      <dpi:TIN issuedBy="NU" unknown="true">a</dpi:TIN>
-      <dpi:IN issuedBy="BF" INType="BRN">a</dpi:IN>
-      <dpi:VAT>a</dpi:VAT>
-      <dpi:Name>a</dpi:Name>
-      <dpi:PlatformBusinessName>a</dpi:PlatformBusinessName>
-      <dpi:Address legalAddressType="OECD304">
-        <dpi:CountryCode>GF</dpi:CountryCode>
-        <dpi:AddressFree>a</dpi:AddressFree>
-      </dpi:Address>
-      <dpi:Nexus>RPONEX1</dpi:Nexus>
-      <dpi:AssumedReporting>true</dpi:AssumedReporting>
-      <dpi:DocSpec>
-        <stf:DocTypeIndic>OECD12</stf:DocTypeIndic>
-        <stf:DocRefId>a</stf:DocRefId>
-        <stf:CorrDocRefId>a</stf:CorrDocRefId>
-      </dpi:DocSpec>
-    </dpi:PlatformOperator>
-    <dpi:OtherPlatformOperators>
-      <dpi:AssumingPlatformOperator>
-        <dpi:ResCountryCode>CX</dpi:ResCountryCode>
-        <dpi:TIN issuedBy="SL" unknown="true">a</dpi:TIN>
-        <dpi:Name>a</dpi:Name>
-        <dpi:Address legalAddressType="OECD302">
-          <dpi:CountryCode>GA</dpi:CountryCode>
-          <dpi:AddressFree>a</dpi:AddressFree>
-        </dpi:Address>
-        <dpi:DocSpec>
-          <stf:DocTypeIndic>OECD1</stf:DocTypeIndic>
-          <stf:DocRefId>a</stf:DocRefId>
-          <stf:CorrDocRefId>a</stf:CorrDocRefId>
-        </dpi:DocSpec>
-      </dpi:AssumingPlatformOperator>
-    </dpi:OtherPlatformOperators>
-    <dpi:ReportableSeller>
-      <dpi:Identity>
-        <dpi:EntitySeller>
-          <dpi:Standard>
-            <dpi:EntSellerID>
-              <dpi:ResCountryCode>BL</dpi:ResCountryCode>
-              <dpi:TIN issuedBy="NZ" unknown="true">a</dpi:TIN>
-              <dpi:IN issuedBy="IM" INType="Other">a</dpi:IN>
-              <dpi:VAT>a</dpi:VAT>
-              <dpi:Name>a</dpi:Name>
-              <dpi:PlatformBusinessName>a</dpi:PlatformBusinessName>
-              <dpi:Address legalAddressType="OECD304">
-                <dpi:CountryCode>BS</dpi:CountryCode>
+                <dpi:CountryCode>DJ</dpi:CountryCode>
                 <dpi:AddressFree>a</dpi:AddressFree>
-              </dpi:Address>
-              <dpi:Nexus>RPONEX2</dpi:Nexus>
-              <dpi:AssumedReporting>true</dpi:AssumedReporting>
-            </dpi:EntSellerID>
-            <dpi:FinancialIdentifier>
-              <dpi:Identifier AccountNumberType="a">a</dpi:Identifier>
-              <dpi:AccountHolderName>a</dpi:AccountHolderName>
-              <dpi:OtherInfo>a</dpi:OtherInfo>
-            </dpi:FinancialIdentifier>
-            <dpi:PermanentEstablishments>
-              <dpi:PermanentEstablishment>DK</dpi:PermanentEstablishment>
-            </dpi:PermanentEstablishments>
-          </dpi:Standard>
-        </dpi:EntitySeller>
-      </dpi:Identity>
-      <dpi:RelevantActivities>
-        <dpi:ImmovableProperty>
-          <dpi:PropertyListing>
-            <dpi:Address legalAddressType="OECD303">
-              <dpi:CountryCode>CU</dpi:CountryCode>
-              <dpi:AddressFree>a</dpi:AddressFree>
             </dpi:Address>
-            <dpi:LandRegistrationNumber>a</dpi:LandRegistrationNumber>
-            <dpi:Consideration>
-              <dpi:ConsQ1 currCode="DJF">0</dpi:ConsQ1>
-              <dpi:ConsQ2 currCode="MZN">0</dpi:ConsQ2>
-              <dpi:ConsQ3 currCode="BZD">0</dpi:ConsQ3>
-              <dpi:ConsQ4 currCode="CHE">0</dpi:ConsQ4>
-            </dpi:Consideration>
-            <dpi:NumberOfActivities>
-              <dpi:NumbQ1>0</dpi:NumbQ1>
-              <dpi:NumbQ2>0</dpi:NumbQ2>
-              <dpi:NumbQ3>0</dpi:NumbQ3>
-              <dpi:NumbQ4>0</dpi:NumbQ4>
-            </dpi:NumberOfActivities>
-            <dpi:Fees>
-              <dpi:FeesQ1 currCode="DOP">0</dpi:FeesQ1>
-              <dpi:FeesQ2 currCode="BIF">0</dpi:FeesQ2>
-              <dpi:FeesQ3 currCode="BMD">0</dpi:FeesQ3>
-              <dpi:FeesQ4 currCode="MRO">0</dpi:FeesQ4>
-            </dpi:Fees>
-            <dpi:Taxes>
-              <dpi:TaxQ1 currCode="STN">0</dpi:TaxQ1>
-              <dpi:TaxQ2 currCode="BZD">0</dpi:TaxQ2>
-              <dpi:TaxQ3 currCode="SYP">0</dpi:TaxQ3>
-              <dpi:TaxQ4 currCode="HTG">0</dpi:TaxQ4>
-            </dpi:Taxes>
-            <dpi:PropertyType>DPI908</dpi:PropertyType>
-            <dpi:OtherPropertyType>a</dpi:OtherPropertyType>
-            <dpi:RentedDays>1</dpi:RentedDays>
-          </dpi:PropertyListing>
-        </dpi:ImmovableProperty>
-        <dpi:PersonalServices>
-          <dpi:Consideration>
-            <dpi:ConsQ1 currCode="KYD">0</dpi:ConsQ1>
-            <dpi:ConsQ2 currCode="FKP">0</dpi:ConsQ2>
-            <dpi:ConsQ3 currCode="SEK">0</dpi:ConsQ3>
-            <dpi:ConsQ4 currCode="PAB">0</dpi:ConsQ4>
-          </dpi:Consideration>
-          <dpi:NumberOfActivities>
-            <dpi:NumbQ1>0</dpi:NumbQ1>
-            <dpi:NumbQ2>0</dpi:NumbQ2>
-            <dpi:NumbQ3>0</dpi:NumbQ3>
-            <dpi:NumbQ4>0</dpi:NumbQ4>
-          </dpi:NumberOfActivities>
-          <dpi:Fees>
-            <dpi:FeesQ1 currCode="JOD">0</dpi:FeesQ1>
-            <dpi:FeesQ2 currCode="PYG">0</dpi:FeesQ2>
-            <dpi:FeesQ3 currCode="VEF">0</dpi:FeesQ3>
-            <dpi:FeesQ4 currCode="SRD">0</dpi:FeesQ4>
-          </dpi:Fees>
-          <dpi:Taxes>
-            <dpi:TaxQ1 currCode="USN">0</dpi:TaxQ1>
-            <dpi:TaxQ2 currCode="UYW">0</dpi:TaxQ2>
-            <dpi:TaxQ3 currCode="PHP">0</dpi:TaxQ3>
-            <dpi:TaxQ4 currCode="TMT">0</dpi:TaxQ4>
-          </dpi:Taxes>
-        </dpi:PersonalServices>
-        <dpi:SaleOfGoods>
-          <dpi:Consideration>
-            <dpi:ConsQ1 currCode="SYP">0</dpi:ConsQ1>
-            <dpi:ConsQ2 currCode="SYP">0</dpi:ConsQ2>
-            <dpi:ConsQ3 currCode="NAD">0</dpi:ConsQ3>
-            <dpi:ConsQ4 currCode="PEN">0</dpi:ConsQ4>
-          </dpi:Consideration>
-          <dpi:NumberOfActivities>
-            <dpi:NumbQ1>0</dpi:NumbQ1>
-            <dpi:NumbQ2>0</dpi:NumbQ2>
-            <dpi:NumbQ3>0</dpi:NumbQ3>
-            <dpi:NumbQ4>0</dpi:NumbQ4>
-          </dpi:NumberOfActivities>
-          <dpi:Fees>
-            <dpi:FeesQ1 currCode="PKR">0</dpi:FeesQ1>
-            <dpi:FeesQ2 currCode="KHR">0</dpi:FeesQ2>
-            <dpi:FeesQ3 currCode="ILS">0</dpi:FeesQ3>
-            <dpi:FeesQ4 currCode="TWD">0</dpi:FeesQ4>
-          </dpi:Fees>
-          <dpi:Taxes>
-            <dpi:TaxQ1 currCode="CZK">0</dpi:TaxQ1>
-            <dpi:TaxQ2 currCode="MXN">0</dpi:TaxQ2>
-            <dpi:TaxQ3 currCode="MMK">0</dpi:TaxQ3>
-            <dpi:TaxQ4 currCode="GHS">0</dpi:TaxQ4>
-          </dpi:Taxes>
-        </dpi:SaleOfGoods>
-        <dpi:TransportationRental>
-          <dpi:Consideration>
-            <dpi:ConsQ1 currCode="CHE">0</dpi:ConsQ1>
-            <dpi:ConsQ2 currCode="VND">0</dpi:ConsQ2>
-            <dpi:ConsQ3 currCode="QAR">0</dpi:ConsQ3>
-            <dpi:ConsQ4 currCode="LVL">0</dpi:ConsQ4>
-          </dpi:Consideration>
-          <dpi:NumberOfActivities>
-            <dpi:NumbQ1>0</dpi:NumbQ1>
-            <dpi:NumbQ2>0</dpi:NumbQ2>
-            <dpi:NumbQ3>0</dpi:NumbQ3>
-            <dpi:NumbQ4>0</dpi:NumbQ4>
-          </dpi:NumberOfActivities>
-          <dpi:Fees>
-            <dpi:FeesQ1 currCode="LBP">0</dpi:FeesQ1>
-            <dpi:FeesQ2 currCode="NAD">0</dpi:FeesQ2>
-            <dpi:FeesQ3 currCode="BDT">0</dpi:FeesQ3>
-            <dpi:FeesQ4 currCode="TRY">0</dpi:FeesQ4>
-          </dpi:Fees>
-          <dpi:Taxes>
-            <dpi:TaxQ1 currCode="LTL">0</dpi:TaxQ1>
-            <dpi:TaxQ2 currCode="PAB">0</dpi:TaxQ2>
-            <dpi:TaxQ3 currCode="KYD">0</dpi:TaxQ3>
-            <dpi:TaxQ4 currCode="STN">0</dpi:TaxQ4>
-          </dpi:Taxes>
-        </dpi:TransportationRental>
-      </dpi:RelevantActivities>
-      <dpi:DocSpec>
-        <stf:DocTypeIndic>OECD2</stf:DocTypeIndic>
-        <stf:DocRefId>a</stf:DocRefId>
-        <stf:CorrDocRefId>a</stf:CorrDocRefId>
-      </dpi:DocSpec>
-    </dpi:ReportableSeller>
-  </dpi:DPIBody>
+            <dpi:Nexus>RPONEX4</dpi:Nexus>
+            <dpi:AssumedReporting>true</dpi:AssumedReporting>
+            <dpi:DocSpec>
+                <stf:DocTypeIndic>OECD11</stf:DocTypeIndic>
+                <stf:DocRefId>a</stf:DocRefId>
+                <stf:CorrMessageRefId>a</stf:CorrMessageRefId>
+                <stf:CorrDocRefId>a</stf:CorrDocRefId>
+            </dpi:DocSpec>
+        </dpi:PlatformOperator>
+        <dpi:ReportableSeller>
+            <dpi:Identity>
+                <dpi:EntitySeller>
+                    <dpi:Standard>
+                        <dpi:EntSellerID>
+                            <dpi:ResCountryCode>FI</dpi:ResCountryCode>
+                            <dpi:TIN issuedBy="TW" unknown="true">a</dpi:TIN>
+                            <dpi:IN issuedBy="SR" INType="Other">a</dpi:IN>
+                            <dpi:VAT>a</dpi:VAT>
+                            <dpi:Name>a</dpi:Name>
+                            <dpi:PlatformBusinessName>a</dpi:PlatformBusinessName>
+                            <dpi:Address legalAddressType="OECD304">
+                                <dpi:CountryCode>CK</dpi:CountryCode>
+                                <dpi:AddressFree>a</dpi:AddressFree>
+                            </dpi:Address>
+                            <dpi:Nexus>RPONEX5</dpi:Nexus>
+                            <dpi:AssumedReporting>true</dpi:AssumedReporting>
+                        </dpi:EntSellerID>
+                        <dpi:FinancialIdentifier>
+                            <dpi:Identifier AccountNumberType="a">a</dpi:Identifier>
+                            <dpi:AccountHolderName>a</dpi:AccountHolderName>
+                            <dpi:OtherInfo>a</dpi:OtherInfo>
+                        </dpi:FinancialIdentifier>
+                        <dpi:PermanentEstablishments>
+                            <dpi:PermanentEstablishment>PL</dpi:PermanentEstablishment>
+                        </dpi:PermanentEstablishments>
+                    </dpi:Standard>
+                </dpi:EntitySeller>
+            </dpi:Identity>
+            <dpi:RelevantActivities>
+                <dpi:ImmovableProperty>
+                    <dpi:PropertyListing>
+                        <dpi:Address legalAddressType="OECD301">
+                            <dpi:CountryCode>TT</dpi:CountryCode>
+                            <dpi:AddressFree>a</dpi:AddressFree>
+                        </dpi:Address>
+                        <dpi:LandRegistrationNumber>a</dpi:LandRegistrationNumber>
+                        <dpi:Consideration>
+                            <dpi:ConsQ1 currCode="JMD">0</dpi:ConsQ1>
+                            <dpi:ConsQ2 currCode="ARS">0</dpi:ConsQ2>
+                            <dpi:ConsQ3 currCode="AED">0</dpi:ConsQ3>
+                            <dpi:ConsQ4 currCode="EGP">0</dpi:ConsQ4>
+                        </dpi:Consideration>
+                        <dpi:NumberOfActivities>
+                            <dpi:NumbQ1>0</dpi:NumbQ1>
+                            <dpi:NumbQ2>0</dpi:NumbQ2>
+                            <dpi:NumbQ3>0</dpi:NumbQ3>
+                            <dpi:NumbQ4>0</dpi:NumbQ4>
+                        </dpi:NumberOfActivities>
+                        <dpi:Fees>
+                            <dpi:FeesQ1 currCode="BOV">0</dpi:FeesQ1>
+                            <dpi:FeesQ2 currCode="RUB">0</dpi:FeesQ2>
+                            <dpi:FeesQ3 currCode="BND">0</dpi:FeesQ3>
+                            <dpi:FeesQ4 currCode="XPT">0</dpi:FeesQ4>
+                        </dpi:Fees>
+                        <dpi:Taxes>
+                            <dpi:TaxQ1 currCode="BOB">0</dpi:TaxQ1>
+                            <dpi:TaxQ2 currCode="SLL">0</dpi:TaxQ2>
+                            <dpi:TaxQ3 currCode="LYD">0</dpi:TaxQ3>
+                            <dpi:TaxQ4 currCode="PGK">0</dpi:TaxQ4>
+                        </dpi:Taxes>
+                        <dpi:PropertyType>DPI904</dpi:PropertyType>
+                        <dpi:OtherPropertyType>a</dpi:OtherPropertyType>
+                        <dpi:RentedDays>1</dpi:RentedDays>
+                    </dpi:PropertyListing>
+                </dpi:ImmovableProperty>
+                <dpi:PersonalServices>
+                    <dpi:Consideration>
+                        <dpi:ConsQ1 currCode="BGN">0</dpi:ConsQ1>
+                        <dpi:ConsQ2 currCode="XPT">0</dpi:ConsQ2>
+                        <dpi:ConsQ3 currCode="SVC">0</dpi:ConsQ3>
+                        <dpi:ConsQ4 currCode="CUP">0</dpi:ConsQ4>
+                    </dpi:Consideration>
+                    <dpi:NumberOfActivities>
+                        <dpi:NumbQ1>0</dpi:NumbQ1>
+                        <dpi:NumbQ2>0</dpi:NumbQ2>
+                        <dpi:NumbQ3>0</dpi:NumbQ3>
+                        <dpi:NumbQ4>0</dpi:NumbQ4>
+                    </dpi:NumberOfActivities>
+                    <dpi:Fees>
+                        <dpi:FeesQ1 currCode="BRL">0</dpi:FeesQ1>
+                        <dpi:FeesQ2 currCode="MNT">0</dpi:FeesQ2>
+                        <dpi:FeesQ3 currCode="MNT">0</dpi:FeesQ3>
+                        <dpi:FeesQ4 currCode="BGN">0</dpi:FeesQ4>
+                    </dpi:Fees>
+                    <dpi:Taxes>
+                        <dpi:TaxQ1 currCode="KYD">0</dpi:TaxQ1>
+                        <dpi:TaxQ2 currCode="SAR">0</dpi:TaxQ2>
+                        <dpi:TaxQ3 currCode="USD">0</dpi:TaxQ3>
+                        <dpi:TaxQ4 currCode="NZD">0</dpi:TaxQ4>
+                    </dpi:Taxes>
+                </dpi:PersonalServices>
+                <dpi:SaleOfGoods>
+                    <dpi:Consideration>
+                        <dpi:ConsQ1 currCode="COU">0</dpi:ConsQ1>
+                        <dpi:ConsQ2 currCode="KHR">0</dpi:ConsQ2>
+                        <dpi:ConsQ3 currCode="KGS">0</dpi:ConsQ3>
+                        <dpi:ConsQ4 currCode="PEN">0</dpi:ConsQ4>
+                    </dpi:Consideration>
+                    <dpi:NumberOfActivities>
+                        <dpi:NumbQ1>0</dpi:NumbQ1>
+                        <dpi:NumbQ2>0</dpi:NumbQ2>
+                        <dpi:NumbQ3>0</dpi:NumbQ3>
+                        <dpi:NumbQ4>0</dpi:NumbQ4>
+                    </dpi:NumberOfActivities>
+                    <dpi:Fees>
+                        <dpi:FeesQ1 currCode="EUR">0</dpi:FeesQ1>
+                        <dpi:FeesQ2 currCode="OMR">0</dpi:FeesQ2>
+                        <dpi:FeesQ3 currCode="XFU">0</dpi:FeesQ3>
+                        <dpi:FeesQ4 currCode="KMF">0</dpi:FeesQ4>
+                    </dpi:Fees>
+                    <dpi:Taxes>
+                        <dpi:TaxQ1 currCode="CVE">0</dpi:TaxQ1>
+                        <dpi:TaxQ2 currCode="HRK">0</dpi:TaxQ2>
+                        <dpi:TaxQ3 currCode="XSU">0</dpi:TaxQ3>
+                        <dpi:TaxQ4 currCode="BYR">0</dpi:TaxQ4>
+                    </dpi:Taxes>
+                </dpi:SaleOfGoods>
+                <dpi:TransportationRental>
+                    <dpi:Consideration>
+                        <dpi:ConsQ1 currCode="RWF">0</dpi:ConsQ1>
+                        <dpi:ConsQ2 currCode="IDR">0</dpi:ConsQ2>
+                        <dpi:ConsQ3 currCode="BWP">0</dpi:ConsQ3>
+                        <dpi:ConsQ4 currCode="IDR">0</dpi:ConsQ4>
+                    </dpi:Consideration>
+                    <dpi:NumberOfActivities>
+                        <dpi:NumbQ1>0</dpi:NumbQ1>
+                        <dpi:NumbQ2>0</dpi:NumbQ2>
+                        <dpi:NumbQ3>0</dpi:NumbQ3>
+                        <dpi:NumbQ4>0</dpi:NumbQ4>
+                    </dpi:NumberOfActivities>
+                    <dpi:Fees>
+                        <dpi:FeesQ1 currCode="LSL">0</dpi:FeesQ1>
+                        <dpi:FeesQ2 currCode="XAF">0</dpi:FeesQ2>
+                        <dpi:FeesQ3 currCode="VES">0</dpi:FeesQ3>
+                        <dpi:FeesQ4 currCode="PYG">0</dpi:FeesQ4>
+                    </dpi:Fees>
+                    <dpi:Taxes>
+                        <dpi:TaxQ1 currCode="CHE">0</dpi:TaxQ1>
+                        <dpi:TaxQ2 currCode="BOB">0</dpi:TaxQ2>
+                        <dpi:TaxQ3 currCode="USS">0</dpi:TaxQ3>
+                        <dpi:TaxQ4 currCode="CHE">0</dpi:TaxQ4>
+                    </dpi:Taxes>
+                </dpi:TransportationRental>
+            </dpi:RelevantActivities>
+            <dpi:DocSpec>
+                <stf:DocTypeIndic>OECD10</stf:DocTypeIndic>
+                <stf:DocRefId>a</stf:DocRefId>
+                <stf:CorrMessageRefId>a</stf:CorrMessageRefId>
+                <stf:CorrDocRefId>a</stf:CorrDocRefId>
+            </dpi:DocSpec>
+        </dpi:ReportableSeller>
+    </dpi:DPIBody>
 </dpi:DPI_OECD>

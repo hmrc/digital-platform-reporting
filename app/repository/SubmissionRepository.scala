@@ -17,6 +17,7 @@
 package repository
 
 import models.submission.Submission
+import models.submission.Submission.SubmissionType
 import org.apache.pekko.Done
 import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import org.mongodb.scala.model.*
@@ -74,6 +75,25 @@ class SubmissionRepository @Inject() (
       filter = Filters.eq("_id", id)
     ).limit(1).headOption()
   }
+  
+  def countSubmittedXmlSubmissions(dprsId: String): Future[Long] = Mdc.preservingMdc {
+    collection.countDocuments(
+      filter = submittedXmlSubmissionsFilter(dprsId)
+    ).toFuture()
+  }
+  
+  def getSubmittedXmlSubmissions(dprsId: String): Future[Seq[Submission]] = Mdc.preservingMdc {
+    collection.find(
+      filter = submittedXmlSubmissionsFilter(dprsId)
+    ).toFuture()
+  }
+  
+  private def submittedXmlSubmissionsFilter(dprsId: String) =
+    Filters.and(
+      Filters.eq("dprsId", dprsId),
+      Filters.eq("submissionType", SubmissionType.Xml.toString),
+      Filters.eq("state.type", "Submitted")
+    )
 }
 
 object SubmissionRepository {

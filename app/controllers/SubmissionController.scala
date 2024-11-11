@@ -201,12 +201,18 @@ class SubmissionController @Inject() (
     }
   }
 
-  def list(): Action[ViewSubmissionsInboundRequest] = auth(parse.json[ViewSubmissionsInboundRequest]).async {
+  def listDeliveredSubmissions(): Action[ViewSubmissionsInboundRequest] = auth(parse.json[ViewSubmissionsInboundRequest]).async {
     implicit request =>
       val outboundRequest = ViewSubmissionsRequest(request.dprsId, request.body)
 
-      viewSubmissionsService.getSubmissions(outboundRequest).map { response =>
+      viewSubmissionsService.getDeliveredSubmissions(outboundRequest).map { response =>
         if (response.submissionsExist) Ok(Json.toJson(response)) else NotFound
       }
+  }
+  
+  def listUndeliveredSubmissions(): Action[AnyContent] = auth.async { implicit request =>
+    viewSubmissionsService.getUndeliveredSubmissions(request.dprsId).map { response =>
+      Ok(Json.toJson(response))
+    }
   }
 }

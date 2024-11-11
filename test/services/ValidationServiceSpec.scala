@@ -73,7 +73,7 @@ class ValidationServiceSpec
 
     "must return the reporting period when the given file is valid" in {
 
-      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSample.xml"))
+      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSampleAssumed.xml"))
 
       when(mockDownloadConnector.download(any()))
         .thenReturn(Future.successful(source))
@@ -112,7 +112,7 @@ class ValidationServiceSpec
 
     "must return an error when the given file does not match the POID of the submission" in {
 
-      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSample.xml"))
+      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSampleAssumed.xml"))
 
       when(mockDownloadConnector.download(any()))
         .thenReturn(Future.successful(source))

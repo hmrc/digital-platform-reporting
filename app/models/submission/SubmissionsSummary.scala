@@ -19,11 +19,11 @@ package models.submission
 import play.api.libs.json.{Json, OWrites}
 
 final case class SubmissionsSummary(deliveredSubmissions: Seq[SubmissionSummary],
-                                    localSubmissions: Seq[SubmissionSummary],
                                     deliveredSubmissionRecordCount: Int,
-                                    deliveredSubmissionsExist: Boolean) {
+                                    deliveredSubmissionsExist: Boolean,
+                                    undeliveredSubmissionCount: Long) {
 
-  lazy val submissionsExist: Boolean = deliveredSubmissionsExist || localSubmissions.nonEmpty
+  lazy val submissionsExist: Boolean = deliveredSubmissionsExist || undeliveredSubmissionCount > 0
 }
 
 object SubmissionsSummary {

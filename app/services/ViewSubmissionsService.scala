@@ -33,30 +33,33 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
                                        assumedReportingService: AssumedReportingService)
                                       (implicit ec: ExecutionContext) {
 
-  def getSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] =
+  def getDeliveredSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] =
     for {
-      deliveredSubmissions  <- connector.get(request)
-      repositorySubmissions <- repository.getBySubscriptionId(request.subscriptionId)
+      deliveredSubmissions      <- connector.get(request)
+      repositorySubmissionCount <- repository.countSubmittedXmlSubmissions(request.subscriptionId)
     } yield {
 
       val deliveredSubmissionSummaries = deliveredSubmissions.map(_.submissions.map(x => SubmissionSummary(x, false))).getOrElse(Nil)
       val deliveredSubmissionsCount = deliveredSubmissions.map(_.resultsCount).getOrElse(0)
-      val deliveredSubmissionIds = deliveredSubmissionSummaries.map(_.submissionId)
-      val undeliveredSubmissions =
-        repositorySubmissions
-          .filter(x => !deliveredSubmissionIds.contains(x._id))
-          .flatMap(x => SubmissionSummary(x))
 
       SubmissionsSummary(
         deliveredSubmissionSummaries,
-        undeliveredSubmissions,
         deliveredSubmissionsCount,
-        deliveredSubmissions.nonEmpty
+        deliveredSubmissions.nonEmpty,
+        repositorySubmissionCount
       )
     }
-
+    
+  def getUndeliveredSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] =
+    repository.getSubmittedXmlSubmissions(dprsId).map { submissions =>
+      submissions
+        .sortBy(_.created)
+        .reverse
+        .flatMap(x => SubmissionSummary(x))
+    }
+    
   def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] = {
-    getAllSubmissions(dprsId).flatMap { deliveredSubmissions =>
+    getAllAssumedReportingSubmissions(dprsId).flatMap { deliveredSubmissions =>
       val consolidatedSubmissions = deliveredSubmissions
         .groupBy(submission => (submission.operatorId, submission.reportingPeriod))
         .map(_._2.sortBy(_.submissionDateTime).reverse.head)
@@ -72,22 +75,22 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
     }
   }
 
-  private def getAllSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[DeliveredSubmission]] =
-    connector.get(buildRequest(dprsId, 1)).flatMap(_.map { page1 =>
+  private def getAllAssumedReportingSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[DeliveredSubmission]] =
+    connector.get(buildAssumedReportingRequest(dprsId, 1)).flatMap(_.map { page1 =>
       if (page1.resultsCount <= 10) {
         Future.successful(page1.submissions)
       } else {
         val numberOfPages = (page1.resultsCount + 9) / 10
 
         (2 to numberOfPages).toList.traverse { page =>
-          connector.get(buildRequest(dprsId, page)).flatMap(_.map { result =>
+          connector.get(buildAssumedReportingRequest(dprsId, page)).flatMap(_.map { result =>
             Future.successful(result.submissions)
           }.getOrElse(Future.successful(Nil)))
         }.map(_.flatten ++ page1.submissions)
       }
     }.getOrElse(Future.successful(Nil)))
 
-  private def buildRequest(dprsId: String, page: Int): ViewSubmissionsRequest =
+  private def buildAssumedReportingRequest(dprsId: String, page: Int): ViewSubmissionsRequest =
     ViewSubmissionsRequest(
       subscriptionId = dprsId,
       assumedReporting = true,

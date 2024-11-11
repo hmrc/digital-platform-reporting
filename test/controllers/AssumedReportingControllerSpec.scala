@@ -287,7 +287,7 @@ class AssumedReportingControllerSpec
       }
     }
 
-    "must return OK when no submissions can be found" in {
+    "must return NOT_FOUND when no submissions can be found" in {
 
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
       when(mockViewSubmissionsService.getAssumedReports(any())(using any())).thenReturn(Future.successful(Nil))
@@ -304,8 +304,7 @@ class AssumedReportingControllerSpec
         val request = FakeRequest(routes.AssumedReportingController.list())
         val result = route(app, request).value
 
-        status(result) mustEqual OK
-        contentAsJson(result) mustEqual Json.arr()
+        status(result) mustEqual NOT_FOUND
       }
     }
   }
