@@ -7,7 +7,7 @@
     <dpi:ReceivingCountry>GB</dpi:ReceivingCountry>
     <dpi:MessageType>DPI</dpi:MessageType>
     <dpi:MessageRefId>
-      GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFQA3
+      GB2024GB-XEDPI2078675698SaleOfGoodsCorrectionV001
     </dpi:MessageRefId>
     <dpi:MessageTypeIndic>DPI402</dpi:MessageTypeIndic>
     <dpi:ReportingPeriod>2024-12-31</dpi:ReportingPeriod>
@@ -27,10 +27,10 @@
       <dpi:DocSpec>
         <stf:DocTypeIndic xmlns:stf="urn:oecd:ties:dpistf:v1">OECD2</stf:DocTypeIndic>
         <stf:DocRefId xmlns:stf="urn:oecd:ties:dpistf:v1">
-          GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFQA3_kutV9x7bpaEQHTw7RJirpD0s0V9z1Wjvd3U7ybyBDiqPGPTvH4Sc6UjguczPWC
+          GB2024GB-XEDPI2078675698SaleOfGoodsCorrectionV001_PlatformOperator001
         </stf:DocRefId>
         <stf:CorrDocRefId xmlns:stf="urn:oecd:ties:dpistf:v1">
-          GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFAC2_kutV9x7bpaEQHTw7RJirpD0s0V9z1Wjvd3U7ybyBDiqPGPTvH4Sc6UjguczPWC
+          GB2024GB-XEDPI2078675698SaleOfGoodsNewV001_PlatformOperator001
         </stf:CorrDocRefId>
       </dpi:DocSpec>
     </dpi:PlatformOperator>
@@ -84,12 +84,12 @@
         </dpi:SaleOfGoods>
       </dpi:RelevantActivities>
       <dpi:DocSpec>
-        <stf:DocTypeIndic xmlns:stf="urn:oecd:ties:dpistf:v1">OECD3</stf:DocTypeIndic>
+        <stf:DocTypeIndic xmlns:stf="urn:oecd:ties:dpistf:v1">OECD2</stf:DocTypeIndic>
         <stf:DocRefId xmlns:stf="urn:oecd:ties:dpistf:v1">
-          GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFQA3_3YwhCkNZLlLausD2fMvlawradq4fvHLb9pmaPrjs1Jt7JaDeck2DnQejJW9hgV
+          GB2024GB-XEDPI2078675698SaleOfGoodsCorrectionV001_ReportableSeller002
         </stf:DocRefId>
         <stf:CorrDocRefId xmlns:stf="urn:oecd:ties:dpistf:v1">
-          GB2024GB-XEDPI2078675698GvQoTAoehJCFoqlg8Yc3ODdRMBp5R89z5vfmtv0djntsNp6SZHTQor6N8u9XXlz4SY8O5SkFAC2_3YwhCkNZLlLausD2fMvlawradq4fvHLb9pmaPrjs1Jt7JaDeck2DnQejJW9hgU
+          GB2024GB-XEDPI2078675698SaleOfGoodsNewV001_ReportableSeller002
         </stf:CorrDocRefId>
       </dpi:DocSpec>
     </dpi:ReportableSeller>
