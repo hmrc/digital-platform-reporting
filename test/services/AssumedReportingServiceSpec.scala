@@ -1331,7 +1331,7 @@ class AssumedReportingServiceSpec
   
   private def validate(content: NodeSeq): Document = {
 
-    val resource = Paths.get(getClass.getResource("/schemas/DPIXML_v1.08.xsd").toURI).toFile
+    val resource = Paths.get(getClass.getResource("/schemas/DPIXML_v1.0.xsd").toURI).toFile
     val schemaFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
     val schemaFile = new StreamSource(resource)
     val schema = schemaFactory.newSchema(schemaFile)

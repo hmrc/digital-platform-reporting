@@ -52,7 +52,7 @@ class ValidationServiceSpec
   override def fakeApplication(): Application =
     new GuiceApplicationBuilder()
       .configure(
-        "validation.schema-path" -> "schemas/DPIXML_v1.08.xsd"
+        "validation.schema-path" -> "schemas/DPIXML_v1.0.xsd"
       )
       .overrides(
         bind[DownloadConnector].toInstance(mockDownloadConnector)

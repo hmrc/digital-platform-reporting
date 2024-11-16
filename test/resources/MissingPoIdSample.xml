@@ -3,7 +3,7 @@
 <dpi:DPI_OECD xmlns:dpi="urn:oecd:ties:dpi:v1" xmlns:stf="urn:oecd:ties:dpistf:v1"
               xmlns:cadx="http://www.hmrc.gsi.gov.uk/dpi/cadx"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xsi:schemaLocation="http://www.hmrc.gsi.gov.uk/dpi/cadx DPIXML_v1.08.xsd"
+              xsi:schemaLocation="http://www.hmrc.gsi.gov.uk/dpi/cadx DPIXML_v1.0.xsd"
               version="1">
   <dpi:MessageSpec>
     <dpi:TransmittingCountry>CC</dpi:TransmittingCountry>
