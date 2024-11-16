@@ -20,7 +20,7 @@ import connectors.SdesCircuitBreakerProvider
 import connectors.SdesConnector.SdesCircuitBreaker
 import play.api.inject.Binding
 import play.api.{Configuration, Environment}
-import workers.SdesSubmissionWorker
+import workers.{CadxResultWorker, SdesSubmissionWorker}
 
 import java.time.Clock
 
@@ -31,6 +31,7 @@ class Module extends play.api.inject.Module {
       bind[AppConfig].toSelf.eagerly(),
       bind[Clock].toInstance(Clock.systemUTC()),
       bind[SdesCircuitBreaker].toProvider[SdesCircuitBreakerProvider],
-      bind[SdesSubmissionWorker].toSelf.eagerly()
+      bind[SdesSubmissionWorker].toSelf.eagerly(),
+      bind[CadxResultWorker].toSelf.eagerly()
     )
 }
