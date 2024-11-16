@@ -557,5 +557,64 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       }
     }
 
+    "when the reason is EntityTooSmall" - {
+
+      val json = Json.obj(
+        "type" -> "EntityTooSmall"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual EntityTooSmall
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](EntityTooSmall) mustEqual json
+      }
+    }
+
+    "when the reason is EntityTooLarge" - {
+
+      val json = Json.obj(
+        "type" -> "EntityTooLarge"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual EntityTooLarge
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](EntityTooLarge) mustEqual json
+      }
+    }
+
+    "when the reason is InvalidArgument" - {
+
+      val json = Json.obj(
+        "type" -> "InvalidArgument"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual InvalidArgument
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](InvalidArgument) mustEqual json
+      }
+    }
+    
+    "when the reason is UnknownFailure" - {
+
+      val json = Json.obj(
+        "type" -> "UnknownFailure"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual UnknownFailure
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](UnknownFailure) mustEqual json
+      }
+    }
   }
 }

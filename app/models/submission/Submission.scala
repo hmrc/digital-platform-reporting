@@ -74,6 +74,10 @@ object Submission {
     final case class PlatformOperatorIdMismatch(expectedId: String, actualId: String) extends UploadFailureReason
     case object ReportingPeriodInvalid extends UploadFailureReason
     final case class UpscanError(failureReason: UpscanFailureReason) extends UploadFailureReason
+    case object EntityTooLarge extends UploadFailureReason
+    case object EntityTooSmall extends UploadFailureReason
+    case object InvalidArgument extends UploadFailureReason
+    case object UnknownFailure extends UploadFailureReason
     
     private given OFormat[NotXml.type] = singletonOFormat(NotXml)
     private given OFormat[SchemaValidationError.type] = singletonOFormat(SchemaValidationError)
@@ -82,6 +86,10 @@ object Submission {
     private given OFormat[PlatformOperatorIdMismatch] = Json.format
     private given OFormat[ReportingPeriodInvalid.type] = singletonOFormat(ReportingPeriodInvalid)
     private given OFormat[UpscanError] = Json.format
+    private given OFormat[EntityTooSmall.type] = singletonOFormat(EntityTooSmall)
+    private given OFormat[EntityTooLarge.type] = singletonOFormat(EntityTooLarge)
+    private given OFormat[InvalidArgument.type] = singletonOFormat(InvalidArgument)
+    private given OFormat[UnknownFailure.type] = singletonOFormat(UnknownFailure)
     
     private given JsonConfiguration = JsonConfiguration(
       discriminator = "type",
