@@ -42,7 +42,7 @@ class SdesService @Inject()(
                            )(using ExecutionContext) {
 
   private val retryTimeout: Duration = configuration.get[Duration]("sdes.submission.retry-after")
-  private val informationType: String = configuration.get[String]("sdes.information-type")
+  private val informationType: String = configuration.get[String]("sdes.submission.information-type")
   private val recipientOrSender: String = configuration.get[String]("sdes.recipient-or-sender")
 
   def enqueueSubmission(submissionId: String, state: Validated, subscription: SubscriptionInfo): Future[Done] = {

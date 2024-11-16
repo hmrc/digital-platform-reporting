@@ -70,7 +70,7 @@ class SdesServiceSpec
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
       .configure(
-        "sdes.information-type" -> "information-type",
+        "sdes.submission.information-type" -> "information-type",
         "sdes.recipient-or-sender" -> "recipient-or-sender",
         "sdes.submission.retry-after" -> "30m"
       )
