@@ -19,6 +19,8 @@ package services
 import connectors.DownloadConnector
 import models.assumed.AssumingPlatformOperator
 import models.submission.AssumedReportingSubmission
+import models.submission.Submission.UploadFailureReason
+import models.submission.Submission.UploadFailureReason.*
 import org.apache.pekko.stream.scaladsl.StreamConverters
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
@@ -32,7 +34,6 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import services.ValidationService.ValidationError
 import uk.gov.hmrc.http.StringContextOps
 
 import java.time.Year
@@ -146,7 +147,7 @@ class ValidationServiceSpec
           .thenReturn(Future.successful(Some(manualAssumedReport)))
 
         val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
-        result.left.value mustEqual ValidationError("assumedReport.exists")
+        result.left.value mustEqual ManualAssumedReportExists
 
         verify(mockDownloadConnector).download(downloadUrl)
       }
@@ -162,7 +163,7 @@ class ValidationServiceSpec
         .thenReturn(Future.successful(None))
 
       val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
-      result.left.value mustEqual ValidationError("schema")
+      result.left.value mustEqual SchemaValidationError
 
       verify(mockDownloadConnector).download(downloadUrl)
     }
@@ -177,7 +178,7 @@ class ValidationServiceSpec
         .thenReturn(Future.successful(None))
 
       val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
-      result.left.value mustEqual ValidationError("not-xml")
+      result.left.value mustEqual NotXml
 
       verify(mockDownloadConnector).download(downloadUrl)
     }
@@ -192,7 +193,7 @@ class ValidationServiceSpec
         .thenReturn(Future.successful(None))
 
       val result = validationService.validateXml(dprsId, downloadUrl, "a-different-poid").futureValue
-      result.left.value mustEqual ValidationError("poid.incorrect")
+      result.left.value mustEqual PlatformOperatorIdMismatch("a-different-poid", poid)
 
       verify(mockDownloadConnector).download(downloadUrl)
     }
@@ -207,7 +208,7 @@ class ValidationServiceSpec
         .thenReturn(Future.successful(None))
 
       val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
-      result.left.value mustEqual ValidationError("poid.missing")
+      result.left.value mustEqual PlatformOperatorIdMissing
 
       verify(mockDownloadConnector).download(downloadUrl)
     }

@@ -123,9 +123,9 @@ class SubmissionController @Inject() (
 
           validationService.validateXml(request.body.dprsId, request.body.downloadUrl, submission.operatorId).flatMap { maybeReportingPeriod =>
 
-            val updatedSubmission = maybeReportingPeriod.left.map { error =>
+            val updatedSubmission = maybeReportingPeriod.left.map { failureReason =>
               submission.copy(
-                state = UploadFailed(error.reason),
+                state = UploadFailed(failureReason),
                 updated = clock.instant()
               )
             }.map { reportingPeriod =>

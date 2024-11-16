@@ -16,9 +16,10 @@
 
 package controllers
 
-import models.submission.Submission.{State, SubmissionType}
+import models.submission.Submission.{State, SubmissionType, UploadFailureReason}
 import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
-import models.submission.*
+import models.submission.{UpscanFailureReason, *}
+import models.submission.Submission.UploadFailureReason.{NotXml, PlatformOperatorIdMissing, ReportingPeriodInvalid, SchemaValidationError, UpscanError}
 import models.submission.SubmissionStatus.Pending
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
@@ -38,7 +39,6 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import repository.SubmissionRepository
-import services.ValidationService.ValidationError
 import services.{SubmissionService, UuidService, ValidationService, ViewSubmissionsService}
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.StringContextOps
@@ -86,7 +86,8 @@ class SubmissionControllerSpec
 
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
-  private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
+  private val uploadFailureReasonGen: Gen[UploadFailureReason] = Gen.oneOf(NotXml, SchemaValidationError, PlatformOperatorIdMissing, ReportingPeriodInvalid)
+  private val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason))
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
   private val submittedGen: Gen[Submitted] = Gen.const(Submitted("test.xml", Year.of(2024)))
   private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
@@ -415,12 +416,12 @@ class SubmissionControllerSpec
             )
 
             val expectedSubmission = existingSubmission.copy(
-              state = UploadFailed("error"),
+              state = UploadFailed(SchemaValidationError),
               updated = now
             )
 
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockValidationService.validateXml(any(), any(), any())).thenReturn(Future.successful(Left(ValidationError("error"))))
+            when(mockValidationService.validateXml(any(), any(), any())).thenReturn(Future.successful(Left(SchemaValidationError)))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
@@ -539,7 +540,7 @@ class SubmissionControllerSpec
           val request = FakeRequest(routes.SubmissionController.uploadFailed(uuid))
             .withBody(Json.toJson(UploadFailedRequest(
               dprsId = dprsId,
-              reason = "some reason"
+              reason = UpscanError(UpscanFailureReason.Rejected)
             )))
 
           val state = Gen.oneOf(readyGen, uploadFailedGen, uploadingGen).sample.value
@@ -556,7 +557,7 @@ class SubmissionControllerSpec
           )
 
           val expectedSubmission = existingSubmission.copy(
-            state = UploadFailed("some reason"),
+            state = UploadFailed(UpscanError(UpscanFailureReason.Rejected)),
             updated = now
           )
 
@@ -580,7 +581,7 @@ class SubmissionControllerSpec
           val request = FakeRequest(routes.SubmissionController.uploadFailed(uuid))
             .withBody(Json.toJson(UploadFailedRequest(
               dprsId = dprsId,
-              reason = "some reason"
+              reason = SchemaValidationError
             )))
 
           val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
@@ -616,7 +617,7 @@ class SubmissionControllerSpec
         val request = FakeRequest(routes.SubmissionController.uploadFailed(uuid))
           .withBody(Json.toJson(UploadFailedRequest(
             dprsId = dprsId,
-            reason = "some reason"
+            reason = SchemaValidationError
           )))
 
         when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))

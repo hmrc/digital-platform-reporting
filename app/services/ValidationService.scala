@@ -18,6 +18,8 @@ package services
 
 import cats.data.EitherT
 import connectors.DownloadConnector
+import models.submission.Submission.UploadFailureReason
+import models.submission.Submission.UploadFailureReason.*
 import org.apache.pekko.Done
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.StreamConverters
@@ -25,7 +27,6 @@ import org.xml.sax.Attributes
 import org.xml.sax.helpers.DefaultHandler
 import play.api.{Configuration, Environment}
 import services.ValidatingSaxHandler.{FatalSaxParsingException, platformOperatorPath, reportingPeriodPath}
-import services.ValidationService.ValidationError
 import uk.gov.hmrc.http.HeaderCarrier
 
 import java.net.URL
@@ -67,7 +68,7 @@ class ValidationService @Inject() (
   parserFactory.setNamespaceAware(true)
   parserFactory.setSchema(schema)
 
-  def validateXml(dprsId: String, downloadUrl: URL, platformOperatorId: String): Future[Either[ValidationError, Year]] = {
+  def validateXml(dprsId: String, downloadUrl: URL, platformOperatorId: String): Future[Either[UploadFailureReason, Year]] = {
     val parser = parserFactory.newSAXParser()
     // TODO use blocking execution context
     downloadConnector.download(downloadUrl).flatMap { source =>
@@ -85,14 +86,14 @@ class ValidationService @Inject() (
         result.value
       } catch {
         case _: FatalSaxParsingException =>
-          Future.successful(Left(ValidationError("not-xml")))
+          Future.successful(Left(NotXml))
         case _: SAXParseException =>
-          Future.successful(Left(ValidationError("schema")))
+          Future.successful(Left(SchemaValidationError))
       }
     }
   }
 
-  private def checkForManualAssumedReport(dprsId: String, operatorId: String, reportingPeriod: Year): EitherT[Future, ValidationError, Done] = {
+  private def checkForManualAssumedReport(dprsId: String, operatorId: String, reportingPeriod: Year): EitherT[Future, UploadFailureReason, Done] = {
 
     given hc: HeaderCarrier = HeaderCarrier()
     
@@ -101,16 +102,11 @@ class ValidationService @Inject() (
         if (assumedReport.isDeleted) {
           Right(Done)
         } else {
-          Left(ValidationError("assumedReport.exists"))
+          Left(ManualAssumedReportExists)
         }
       }.getOrElse(Right(Done))
     ))
   }
-}
-
-object ValidationService {
-
-  final case class ValidationError(reason: String)
 }
 
 final class ValidatingSaxHandler(platformOperatorId: String) extends DefaultHandler {
@@ -138,19 +134,19 @@ final class ValidatingSaxHandler(platformOperatorId: String) extends DefaultHand
       case _ => ()
     }
 
-  def getPlatformOperatorId(using ExecutionContext): EitherT[Future, ValidationError, String] =
+  def getPlatformOperatorId(using ExecutionContext): EitherT[Future, UploadFailureReason, String] =
     EitherT.fromEither(if (platformOperatorBuilder.length == 0) {
-      Left(ValidationError("poid.missing"))
+      Left(PlatformOperatorIdMissing)
     } else if (platformOperatorBuilder.toString != platformOperatorId) {
-      Left(ValidationError("poid.incorrect"))
+      Left(PlatformOperatorIdMismatch(platformOperatorId, platformOperatorBuilder.toString))
     } else {
       Right(platformOperatorBuilder.toString)
     })
 
-  def getReportingPeriod(using ExecutionContext): EitherT[Future, ValidationError, Year] =
+  def getReportingPeriod(using ExecutionContext): EitherT[Future, UploadFailureReason, Year] =
     EitherT.fromEither(Try(Year.from(DateTimeFormatter.ISO_DATE.parse(reportingPeriodBuilder.toString)))
       .toEither
-      .left.map(_ => ValidationError("reporting-period.invalid")))
+      .left.map(_ => ReportingPeriodInvalid))
 }
 
 object ValidatingSaxHandler {
