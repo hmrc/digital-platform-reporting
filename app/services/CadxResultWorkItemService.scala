@@ -22,6 +22,7 @@ import models.sdes.list.SdesFile
 import org.apache.pekko.Done
 import play.api.Configuration
 import repository.CadxResultWorkItemRepository
+import services.CadxResultWorkItemService.ResultFileNotFound
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.workitem.{ProcessingStatus, WorkItem}
 
@@ -77,7 +78,7 @@ class CadxResultWorkItemService @Inject()(
   private def findUrl(files: Seq[SdesFile], fileName: String): Future[URL] =
     files.find(_.fileName == fileName).map { file =>
       Future.successful(file.downloadUrl)
-    }.getOrElse(Future.failed(???))
+    }.getOrElse(Future.failed(ResultFileNotFound(fileName)))
 
   def processAllResults(): Future[Done] =
     processNextResult().flatMap {
@@ -86,4 +87,11 @@ class CadxResultWorkItemService @Inject()(
       case false =>
         Future.successful(Done)
     }
+}
+
+object CadxResultWorkItemService {
+
+  final case class ResultFileNotFound(fileName: String) extends Throwable {
+    override def getMessage: String = s"File with name $fileName not found in result file list"
+  }
 }
