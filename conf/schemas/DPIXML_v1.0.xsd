@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- edited with XMLSpy v2021 (x64) (http://www.altova.com) by Romane Dragozis (ARHS Developments S.A.) -->
+<!-- edited with XMLSpy v2021 (x64) (http://www.altova.com) by Parker Hart (OECD) -->
 <xsd:schema xmlns:dpi="urn:oecd:ties:dpi:v1" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:stf="urn:oecd:ties:dpistf:v1" xmlns:iso="urn:oecd:ties:isodpitypes:v1" targetNamespace="urn:oecd:ties:dpi:v1" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0">
 	<xsd:import namespace="urn:oecd:ties:isodpitypes:v1" schemaLocation="isodpitypes_v1.0.xsd"/>
 	<xsd:import namespace="urn:oecd:ties:dpistf:v1" schemaLocation="oecddpitypes_v1.0.xsd"/>
@@ -14,6 +14,11 @@
 			<xsd:enumeration value="DPI">
 				<xsd:annotation>
 					<xsd:documentation>This type defines the messages to be exchanged under the OECD Model Rules and [EU Specific] [EU DIR2021/514].</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="DAC7">
+				<xsd:annotation>
+					<xsd:documentation>[EU Specific] The only allowable entry in this field for messages exchanged under [EU DIR2021/514] is “DAC7”.</xsd:documentation>
 				</xsd:annotation>
 			</xsd:enumeration>
 		</xsd:restriction>

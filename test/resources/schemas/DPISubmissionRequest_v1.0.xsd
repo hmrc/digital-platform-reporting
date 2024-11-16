@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XMLSpy v2020 rel. 2 sp1 (x64) (http://www.altova.com) by  (HMRC) -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:cadx="http://www.hmrc.gsi.gov.uk/dpi/cadx" xmlns:dpi="urn:oecd:ties:dpi:v1" targetNamespace="http://www.hmrc.gsi.gov.uk/dpi/cadx">
-	<xs:import namespace="urn:oecd:ties:dpi:v1" schemaLocation="DPIXML_v1.08.xsd"/>
+	<xs:import namespace="urn:oecd:ties:dpi:v1" schemaLocation="DPIXML_v1.0.xsd"/>
 	<xs:element name="DPISubmissionRequest" type="cadx:DPISubmissionRequest_Type"/>
 	<xs:complexType name="DPISubmissionRequest_Type">
 		<xs:sequence>
