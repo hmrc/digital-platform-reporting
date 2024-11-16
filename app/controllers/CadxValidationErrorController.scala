@@ -19,6 +19,7 @@ package controllers
 import controllers.actions.AuthAction
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.util.ByteString
+import play.api.Configuration
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.CadxValidationErrorRepository
@@ -31,13 +32,16 @@ import scala.concurrent.ExecutionContext
 class CadxValidationErrorController @Inject()(
                                                cc: ControllerComponents,
                                                cadxValidationErrorRepository: CadxValidationErrorRepository,
-                                               auth: AuthAction
+                                               auth: AuthAction,
+                                               configuration: Configuration
                                              )(using Materializer, ExecutionContext) extends BackendController(cc) {
+
+  private val errorLimit = configuration.get[Int]("cadx.max-errors")
 
   def getCadxValidationErrors(submissionId: String): Action[AnyContent] =
     auth { implicit request =>
 
-      val source = cadxValidationErrorRepository.getErrorsForSubmission(request.dprsId, submissionId)
+      val source = cadxValidationErrorRepository.getErrorsForSubmission(request.dprsId, submissionId, errorLimit)
         .map { error =>
           ByteString.fromString {
             Json.toJson(error).toString + "\n"
