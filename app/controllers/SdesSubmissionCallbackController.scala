@@ -26,7 +26,7 @@ import models.submission.Submission.State.{Rejected, Submitted}
 import play.api.Configuration
 import play.api.mvc.{Action, ControllerComponents, Result}
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
-import services.CadxResultService
+import services.{CadxResultService, CadxResultWorkItemService}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -40,14 +40,9 @@ class SdesSubmissionCallbackController @Inject()(
                                                   cc: ControllerComponents,
                                                   submissionRepository: SubmissionRepository,
                                                   cadxValidationErrorRepository: CadxValidationErrorRepository,
-                                                  sdesConnector: SdesConnector,
-                                                  cadxResultService: CadxResultService,
-                                                  downloadConnector: SdesDownloadConnector,
+                                                  cadxResultWorkItemService: CadxResultWorkItemService,
                                                   clock: Clock,
-                                                  configuration: Configuration
                                                 )(using ExecutionContext) extends BackendController(cc) with Logging {
-
-  private val cadxResultInformationType: String = configuration.get[String]("sdes.cadx-result.information-type")
 
   def callback(): Action[NotificationCallback] = Action.async(parse.json[NotificationCallback]) { implicit request =>
     request.body.notification match {
@@ -87,17 +82,7 @@ class SdesSubmissionCallbackController @Inject()(
         }
       }.getOrElse(Ok)
 
-  private def handleFileReady(callback: NotificationCallback)(using HeaderCarrier): Future[Result] = {
-    for {
-      files   <- EitherT.liftF(sdesConnector.listFiles(cadxResultInformationType))
-      fileUrl <- EitherT.fromEither(findUrl(files, callback.filename))
-      source  <- EitherT.liftF(downloadConnector.download(fileUrl))
-      _       <- EitherT.liftF(cadxResultService.processResult(source))
-    } yield Ok
-  }.merge
-
-  private def findUrl(files: Seq[SdesFile], fileName: String): Either[Result, URL] =
-    files.find(_.fileName == fileName).map { file =>
-      file.downloadUrl
-    }.toRight(Conflict)
+  private def handleFileReady(callback: NotificationCallback)(using HeaderCarrier): Future[Result] =
+    cadxResultWorkItemService.enqueueResult(callback.filename)
+      .map { _ => Ok }
 }

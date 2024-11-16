@@ -16,18 +16,13 @@
 
 package controllers
 
-import connectors.{DownloadConnector, SdesConnector, SdesDownloadConnector}
-import models.sdes.list.SdesFile
 import models.sdes.{NotificationCallback, NotificationType}
-import models.submission.{CadxValidationError, Submission}
-import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
+import models.submission.Submission.State.*
 import models.submission.Submission.SubmissionType
-import org.apache.pekko.stream.Materializer
-import org.apache.pekko.{Done, NotUsed}
-import org.apache.pekko.stream.scaladsl.{Sink, Source}
-import org.apache.pekko.util.ByteString
-import org.mockito.ArgumentMatchers.{any, eq as eqTo}
-import org.mockito.{ArgumentCaptor, Mockito}
+import models.submission.{CadxValidationError, Submission}
+import org.apache.pekko.Done
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify, when}
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
@@ -43,7 +38,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
-import services.{CadxResultService, SdesService}
+import services.{CadxResultWorkItemService, SdesService}
 import uk.gov.hmrc.http.StringContextOps
 
 import java.time.temporal.ChronoUnit
@@ -65,22 +60,15 @@ class SdesSubmissionCallbackControllerSpec
   private val mockSdesService = mock[SdesService]
   private val mockSubmissionRepository = mock[SubmissionRepository]
   private val mockCadxValidationErrorRepository = mock[CadxValidationErrorRepository]
-  private val mockCadxResultService = mock[CadxResultService]
-  private val mockSdesConnector = mock[SdesConnector]
-  private val mockDownloadConnector = mock[SdesDownloadConnector]
+  private val mockCadxResultWorkItemService = mock[CadxResultWorkItemService]
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
     .overrides(
       bind[SdesService].toInstance(mockSdesService),
       bind[SubmissionRepository].toInstance(mockSubmissionRepository),
       bind[CadxValidationErrorRepository].toInstance(mockCadxValidationErrorRepository),
+      bind[CadxResultWorkItemService].toInstance(mockCadxResultWorkItemService),
       bind[Clock].toInstance(clock),
-      bind[CadxResultService].toInstance(mockCadxResultService),
-      bind[SdesConnector].toInstance(mockSdesConnector),
-      bind[SdesDownloadConnector].toInstance(mockDownloadConnector)
-    )
-    .configure(
-      "sdes.cadx-result.information-type" -> "cadx-result"
     )
     .build()
 
@@ -89,9 +77,8 @@ class SdesSubmissionCallbackControllerSpec
     Mockito.reset(
       mockSdesService,
       mockSubmissionRepository,
-      mockSdesConnector,
-      mockCadxResultService,
-      mockDownloadConnector
+      mockCadxValidationErrorRepository,
+      mockCadxResultWorkItemService,
     )
   }
 
@@ -218,70 +205,18 @@ class SdesSubmissionCallbackControllerSpec
         failureReason = None
       )
 
-      "must retrieve the file from SDES and process it" in {
+      "must enqueue the result file in the CadxResultWorkItemRepository and return OK" in {
 
-        val files = Seq(
-          SdesFile(
-            fileName = "test.xml",
-            fileSize = 1337,
-            downloadUrl = url"http://example.com/test.xml",
-            metadata = Seq.empty
-          ),
-          SdesFile(
-            fileName = "test2.xml",
-            fileSize = 1337,
-            downloadUrl = url"http://example.com/test2.xml",
-            metadata = Seq.empty
-          )
-        )
-
-        val requestedFileContents = "foobar"
+        when(mockCadxResultWorkItemService.enqueueResult(any())).thenReturn(Future.successful(Done))
 
         val request = FakeRequest(routes.SdesSubmissionCallbackController.callback())
           .withBody(Json.toJson(notificationCallback))
-
-        when(mockSdesConnector.listFiles(any())(using any())).thenReturn(Future.successful(files))
-        when(mockDownloadConnector.download(any())).thenReturn(Future.successful(Source.single(ByteString.fromString(requestedFileContents))))
-        when(mockCadxResultService.processResult(any())).thenReturn(Future.successful(Done))
 
         val result = route(app, request).value
 
         status(result) mustBe OK
 
-        val captor: ArgumentCaptor[Source[ByteString, ?]] = ArgumentCaptor.forClass(classOf[Source[ByteString, NotUsed]])
-
-        verify(mockSdesConnector).listFiles(eqTo("cadx-result"))(using any())
-        verify(mockDownloadConnector).download(url"http://example.com/test.xml")
-        verify(mockCadxResultService).processResult(captor.capture())
-
-        given Materializer = app.materializer
-
-        val receivedFile = captor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue.utf8String
-        receivedFile mustEqual requestedFileContents
-      }
-
-      "must return CONFLICT if the file cannot be retrieved from SDES" in {
-
-        val files = Seq(
-          SdesFile(
-            fileName = "test2.xml",
-            fileSize = 1337,
-            downloadUrl = url"http://example.com/test2.xml",
-            metadata = Seq.empty
-          )
-        )
-
-        val request = FakeRequest(routes.SdesSubmissionCallbackController.callback())
-          .withBody(Json.toJson(notificationCallback))
-
-        when(mockSdesConnector.listFiles(any())(using any())).thenReturn(Future.successful(files))
-
-        val result = route(app, request).value
-        status(result) mustBe CONFLICT
-
-        verify(mockSdesConnector).listFiles(eqTo("cadx-result"))(using any())
-        verify(mockDownloadConnector, never()).download(any())
-        verify(mockCadxResultService, never()).processResult(any())
+        verify(mockCadxResultWorkItemService).enqueueResult("test.xml")
       }
     }
 
