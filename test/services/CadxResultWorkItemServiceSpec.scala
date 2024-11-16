@@ -45,6 +45,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers.{route, status}
 import repository.{CadxResultWorkItemRepository, SdesSubmissionWorkItemRepository}
 import uk.gov.hmrc.http.StringContextOps
+import uk.gov.hmrc.mongo.lock.{Lock, MongoLockRepository}
 import uk.gov.hmrc.mongo.workitem.ProcessingStatus.ToDo
 import uk.gov.hmrc.mongo.workitem.{ProcessingStatus, WorkItem}
 import utils.DateTimeFormats.ISO8601Formatter
@@ -52,6 +53,7 @@ import utils.DateTimeFormats.ISO8601Formatter
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, Year, ZoneOffset}
 import scala.concurrent.Future
+import scala.concurrent.duration.given
 
 class CadxResultWorkItemServiceSpec
   extends AnyFreeSpec
@@ -68,6 +70,7 @@ class CadxResultWorkItemServiceSpec
   private val mockCadxResultService: CadxResultService = mock[CadxResultService]
   private val mockSdesConnector: SdesConnector = mock[SdesConnector]
   private val mockDownloadConnector: SdesDownloadConnector = mock[SdesDownloadConnector]
+  private val mockLockRepository: MongoLockRepository = mock[MongoLockRepository]
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -75,7 +78,8 @@ class CadxResultWorkItemServiceSpec
       mockCadxResultWorkItemRepository,
       mockCadxResultService,
       mockSdesConnector,
-      mockDownloadConnector
+      mockDownloadConnector,
+      mockLockRepository
     )
   }
 
@@ -89,6 +93,7 @@ class CadxResultWorkItemServiceSpec
         bind[CadxResultService].toInstance(mockCadxResultService),
         bind[SdesConnector].toInstance(mockSdesConnector),
         bind[SdesDownloadConnector].toInstance(mockDownloadConnector),
+        bind[MongoLockRepository].toInstance(mockLockRepository),
         bind[Clock].toInstance(clock)
       )
       .build()
@@ -313,46 +318,82 @@ class CadxResultWorkItemServiceSpec
       )
     )
 
-    "must process all submissions" in {
+    "when the lock is free" - {
 
-      when(mockSdesConnector.listFiles(any())(using any())).thenReturn(Future.successful(files))
-      when(mockDownloadConnector.download(any())).thenReturn(Future.successful(Source.single(ByteString.fromString("foobar"))))
-      when(mockCadxResultService.processResult(any())).thenReturn(Future.successful(Done))
+      val lock = Lock("id", "owner", now, now.plus(1, ChronoUnit.HOURS))
 
-      when(mockCadxResultWorkItemRepository.pullOutstanding(any(), any())).thenReturn(
-        Future.successful(Some(workItem)),
-        Future.successful(Some(workItem)),
-        Future.successful(Some(workItem)),
-        Future.successful(None)
-      )
-      when(mockCadxResultWorkItemRepository.complete(any(), any())).thenReturn(Future.successful(true))
+      "must process all submissions" in {
 
-      cadxResultWorkItemService.processAllResults().futureValue
+        when(mockLockRepository.takeLock(any(), any(), any())).thenReturn(Future.successful(Some(lock)))
+        when(mockLockRepository.releaseLock(any(), any())).thenReturn(Future.unit)
 
-      verify(mockCadxResultWorkItemRepository, times(4)).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
-      verify(mockCadxResultService, times(3)).processResult(any())
-      verify(mockCadxResultWorkItemRepository, times(3)).complete(workItem.id, ProcessingStatus.Succeeded)
+        when(mockSdesConnector.listFiles(any())(using any())).thenReturn(Future.successful(files))
+        when(mockDownloadConnector.download(any())).thenReturn(Future.successful(Source.single(ByteString.fromString("foobar"))))
+        when(mockCadxResultService.processResult(any())).thenReturn(Future.successful(Done))
+
+        when(mockCadxResultWorkItemRepository.pullOutstanding(any(), any())).thenReturn(
+          Future.successful(Some(workItem)),
+          Future.successful(Some(workItem)),
+          Future.successful(Some(workItem)),
+          Future.successful(None)
+        )
+        when(mockCadxResultWorkItemRepository.complete(any(), any())).thenReturn(Future.successful(true))
+
+        cadxResultWorkItemService.processAllResults().futureValue
+
+        verify(mockCadxResultWorkItemRepository, times(4)).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
+        verify(mockCadxResultService, times(3)).processResult(any())
+        verify(mockCadxResultWorkItemRepository, times(3)).complete(workItem.id, ProcessingStatus.Succeeded)
+      }
+
+      "must fail when one of the submissions fails" in {
+
+        when(mockLockRepository.takeLock(any(), any(), any())).thenReturn(Future.successful(Some(lock)))
+        when(mockLockRepository.releaseLock(any(), any())).thenReturn(Future.unit)
+
+        when(mockSdesConnector.listFiles(any())(using any())).thenReturn(Future.successful(files))
+        when(mockDownloadConnector.download(any())).thenReturn(Future.successful(Source.single(ByteString.fromString("foobar"))))
+        when(mockCadxResultWorkItemRepository.pullOutstanding(any(), any())).thenReturn(Future.successful(Some(workItem)))
+        when(mockCadxResultService.processResult(any())).thenReturn(
+          Future.successful(Done),
+          Future.failed(new RuntimeException())
+        )
+
+        when(mockCadxResultWorkItemRepository.markAs(any(), any(), any())).thenReturn(Future.successful(true))
+        when(mockCadxResultWorkItemRepository.complete(any(), any())).thenReturn(Future.successful(true))
+
+        cadxResultWorkItemService.processAllResults().failed.futureValue
+
+        verify(mockCadxResultWorkItemRepository, times(2)).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
+        verify(mockCadxResultService, times(2)).processResult(any())
+        verify(mockCadxResultWorkItemRepository, times(1)).complete(workItem.id, ProcessingStatus.Succeeded)
+        verify(mockCadxResultWorkItemRepository, times(1)).markAs(workItem.id, ProcessingStatus.Failed)
+      }
     }
 
-    "must fail when one of the submissions fails" in {
+    "when the lock is not free" - {
 
-      when(mockSdesConnector.listFiles(any())(using any())).thenReturn(Future.successful(files))
-      when(mockDownloadConnector.download(any())).thenReturn(Future.successful(Source.single(ByteString.fromString("foobar"))))
-      when(mockCadxResultWorkItemRepository.pullOutstanding(any(), any())).thenReturn(Future.successful(Some(workItem)))
-      when(mockCadxResultService.processResult(any())).thenReturn(
-        Future.successful(Done),
-        Future.failed(new RuntimeException())
-      )
+      "must return without processing anything" in {
 
-      when(mockCadxResultWorkItemRepository.markAs(any(), any(), any())).thenReturn(Future.successful(true))
-      when(mockCadxResultWorkItemRepository.complete(any(), any())).thenReturn(Future.successful(true))
+        when(mockLockRepository.takeLock(any(), any(), any())).thenReturn(Future.successful(None))
+        when(mockLockRepository.releaseLock(any(), any())).thenReturn(Future.unit)
 
-      cadxResultWorkItemService.processAllResults().failed.futureValue
+        when(mockSdesConnector.listFiles(any())(using any())).thenReturn(Future.successful(files))
+        when(mockDownloadConnector.download(any())).thenReturn(Future.successful(Source.single(ByteString.fromString("foobar"))))
+        when(mockCadxResultService.processResult(any())).thenReturn(Future.successful(Done))
 
-      verify(mockCadxResultWorkItemRepository, times(2)).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
-      verify(mockCadxResultService, times(2)).processResult(any())
-      verify(mockCadxResultWorkItemRepository, times(1)).complete(workItem.id, ProcessingStatus.Succeeded)
-      verify(mockCadxResultWorkItemRepository, times(1)).markAs(workItem.id, ProcessingStatus.Failed)
+        when(mockCadxResultWorkItemRepository.pullOutstanding(any(), any())).thenReturn(
+          Future.successful(Some(workItem)),
+          Future.successful(Some(workItem)),
+          Future.successful(Some(workItem)),
+          Future.successful(None)
+        )
+        when(mockCadxResultWorkItemRepository.complete(any(), any())).thenReturn(Future.successful(true))
+
+        cadxResultWorkItemService.processAllResults().futureValue
+
+        verify(mockCadxResultWorkItemRepository, never()).pullOutstanding(any(), any())
+      }
     }
   }
 }
