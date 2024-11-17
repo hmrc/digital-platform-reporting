@@ -18,6 +18,8 @@ package services
 
 import connectors.{DownloadConnector, PlatformOperatorConnector, SubmissionConnector, SubscriptionConnector}
 import models.assumed.AssumingPlatformOperator
+import models.audit.AddSubmissionEvent
+import models.audit.AddSubmissionEvent.DeliveryRoute.{Dct52A, Dprs0502}
 import models.operator.TinType.{Utr, Vrn}
 import models.operator.responses.PlatformOperator
 import models.operator.{AddressDetails, ContactDetails, TinDetails}
@@ -76,6 +78,7 @@ class SubmissionServiceSpec
   private val mockPlatformOperatorConnector: PlatformOperatorConnector = mock[PlatformOperatorConnector]
   private val mockSubmissionRepository: SubmissionRepository = mock[SubmissionRepository]
   private val mockUuidService: UuidService = mock[UuidService]
+  private val mockAuditService: AuditService = mock[AuditService]
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
@@ -91,7 +94,8 @@ class SubmissionServiceSpec
         bind[AssumedReportingService].toInstance(mockAssumedReportingService),
         bind[PlatformOperatorConnector].toInstance(mockPlatformOperatorConnector),
         bind[SubmissionRepository].toInstance(mockSubmissionRepository),
-        bind[UuidService].toInstance(mockUuidService)
+        bind[UuidService].toInstance(mockUuidService),
+        bind[AuditService].toInstance(mockAuditService)
       )
       .build()
 
@@ -109,7 +113,8 @@ class SubmissionServiceSpec
       mockAssumedReportingService,
       mockPlatformOperatorConnector,
       mockSubmissionRepository,
-      mockUuidService
+      mockUuidService,
+      mockAuditService
     )
   }
 
@@ -162,6 +167,17 @@ class SubmissionServiceSpec
               val innerContent = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SubmissionSampleNoXmlDeclaration.xml")).mkString
               val fileSource = Source.single(ByteString.fromString(innerContent))
 
+              val expectedAudit = AddSubmissionEvent(
+                conversationId = submissionId,
+                dprsId = dprsId,
+                operatorId = "operatorId",
+                operatorName = "operatorName",
+                fileName = fileName,
+                fileSize = 3_000_000L,
+                deliveryRoute = Dprs0502,
+                processedAt = now
+              )
+
               when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
               when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.failed(new RuntimeException()))
               when(mockDownloadConnector.download(any())).thenReturn(Future.successful(fileSource))
@@ -175,6 +191,7 @@ class SubmissionServiceSpec
               verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
               verify(mockSubmissionConnector).submit(eqTo(submissionId), requestBodyCaptor.capture())(using any())
               verify(mockSdesService, never()).enqueueSubmission(any(), any(), any())
+              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
 
               val result = requestBodyCaptor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
               val document = validate(result)
@@ -236,6 +253,17 @@ class SubmissionServiceSpec
               val innerContent = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SubmissionSampleNoXmlDeclaration.xml")).mkString
               val fileSource = Source.single(ByteString.fromString(innerContent))
 
+              val expectedAudit = AddSubmissionEvent(
+                conversationId = submissionId,
+                dprsId = dprsId,
+                operatorId = "operatorId",
+                operatorName = "operatorName",
+                fileName = fileName,
+                fileSize = 1337L,
+                deliveryRoute = Dprs0502,
+                processedAt = now
+              )
+
               when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
               when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.failed(new RuntimeException()))
               when(mockDownloadConnector.download(any())).thenReturn(Future.successful(fileSource))
@@ -249,6 +277,7 @@ class SubmissionServiceSpec
               verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
               verify(mockSubmissionConnector).submit(eqTo(submissionId), requestBodyCaptor.capture())(using any())
               verify(mockSdesService, never()).enqueueSubmission(any(), any(), any())
+              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
 
               val result = requestBodyCaptor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
               val document = validate(result)
@@ -385,6 +414,17 @@ class SubmissionServiceSpec
             secondaryContact = Some(organisationContact)
           )
 
+          val expectedAudit = AddSubmissionEvent(
+            conversationId = submissionId,
+            dprsId = dprsId,
+            operatorId = "operatorId",
+            operatorName = "operatorName",
+            fileName = fileName,
+            fileSize = 3_000_001L,
+            deliveryRoute = Dct52A,
+            processedAt = now
+          )
+
           when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
           when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.successful(Done))
           when(mockDownloadConnector.download(any())).thenReturn(Future.failed(new RuntimeException()))
@@ -396,6 +436,7 @@ class SubmissionServiceSpec
           verify(mockSdesService).enqueueSubmission(submissionId, submission.state.asInstanceOf[Validated], subscription)
           verify(mockDownloadConnector, never()).download(any())
           verify(mockSubmissionConnector, never()).submit(any(), any())(using any())
+          verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
         }
       }
     }

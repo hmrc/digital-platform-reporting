@@ -19,6 +19,8 @@ package services
 import cats.data.OptionT
 import connectors.{DownloadConnector, PlatformOperatorConnector, SubmissionConnector, SubscriptionConnector}
 import models.assumed.AssumingPlatformOperator
+import models.audit.AddSubmissionEvent
+import models.audit.AddSubmissionEvent.DeliveryRoute.{Dct52A, Dprs0502}
 import models.submission.Submission
 import models.submission.Submission.State.{Submitted, Validated}
 import models.subscription.responses.SubscriptionInfo
@@ -51,7 +53,8 @@ class SubmissionService @Inject() (
                                     uuidService: UuidService,
                                     platformOperatorConnector: PlatformOperatorConnector,
                                     assumedReportingService: AssumedReportingService,
-                                    submissionRepository: SubmissionRepository
+                                    submissionRepository: SubmissionRepository,
+                                    auditService: AuditService
                                   )(using Materializer, ExecutionContext) {
 
   private val sdesSubmissionThreshold: Long = configuration.get[Long]("sdes.size-threshold")
@@ -60,6 +63,20 @@ class SubmissionService @Inject() (
     submission.state match {
       case state: Validated =>
         subscriptionConnector.get(submission.dprsId).flatMap { subscription =>
+
+          val auditEvent = AddSubmissionEvent(
+            conversationId = submission._id,
+            dprsId = submission.dprsId,
+            operatorId = submission.operatorId,
+            operatorName = submission.operatorName,
+            fileName = state.fileName,
+            fileSize = state.size,
+            deliveryRoute = if (state.size <= sdesSubmissionThreshold) Dprs0502 else Dct52A,
+            processedAt = clock.instant()
+          )
+
+          auditService.audit(auditEvent)
+
           if (state.size <= sdesSubmissionThreshold) {
             submitDirect(submission, state, subscription)
           } else {
