@@ -121,11 +121,11 @@ class SubmissionController @Inject() (
       _.map { submission =>
         if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[Uploading.type] || submission.state.isInstanceOf[UploadFailed]) {
 
-          validationService.validateXml(request.body.downloadUrl, submission.operatorId).flatMap { maybeReportingPeriod =>
+          validationService.validateXml(request.body.dprsId, request.body.downloadUrl, submission.operatorId).flatMap { maybeReportingPeriod =>
 
-            val updatedSubmission = maybeReportingPeriod.left.map { error =>
+            val updatedSubmission = maybeReportingPeriod.left.map { failureReason =>
               submission.copy(
-                state = UploadFailed(error.reason),
+                state = UploadFailed(failureReason),
                 updated = clock.instant()
               )
             }.map { reportingPeriod =>

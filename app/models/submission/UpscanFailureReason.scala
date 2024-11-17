@@ -16,12 +16,17 @@
 
 package models.submission
 
-import models.submission.Submission.UploadFailureReason
-import play.api.libs.json.{Json, OFormat}
+import enumeratum.EnumEntry.Uppercase
+import enumeratum.{EnumEntry, PlayEnum}
 
-final case class UploadFailedRequest(dprsId: String, reason: UploadFailureReason)
+sealed trait UpscanFailureReason extends EnumEntry with Uppercase
 
-object UploadFailedRequest {
+object UpscanFailureReason extends PlayEnum[UpscanFailureReason] {
 
-  given OFormat[UploadFailedRequest] = Json.format
+  override lazy val values: IndexedSeq[UpscanFailureReason] = findValues
+
+  case object Quarantine extends UpscanFailureReason
+  case object Rejected extends UpscanFailureReason
+  case object Unknown extends UpscanFailureReason
+  case object Duplicate extends UpscanFailureReason
 }

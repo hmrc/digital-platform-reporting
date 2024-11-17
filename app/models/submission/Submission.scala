@@ -62,6 +62,42 @@ object Submission {
       Format(reads, writes)
     }
   }
+  
+  sealed trait UploadFailureReason
+  
+  object UploadFailureReason {
+    
+    case object NotXml extends UploadFailureReason
+    case object SchemaValidationError extends UploadFailureReason
+    case object ManualAssumedReportExists extends UploadFailureReason
+    case object PlatformOperatorIdMissing extends UploadFailureReason
+    final case class PlatformOperatorIdMismatch(expectedId: String, actualId: String) extends UploadFailureReason
+    case object ReportingPeriodInvalid extends UploadFailureReason
+    final case class UpscanError(failureReason: UpscanFailureReason) extends UploadFailureReason
+    case object EntityTooLarge extends UploadFailureReason
+    case object EntityTooSmall extends UploadFailureReason
+    case object InvalidArgument extends UploadFailureReason
+    case object UnknownFailure extends UploadFailureReason
+    
+    private given OFormat[NotXml.type] = singletonOFormat(NotXml)
+    private given OFormat[SchemaValidationError.type] = singletonOFormat(SchemaValidationError)
+    private given OFormat[ManualAssumedReportExists.type] = singletonOFormat(ManualAssumedReportExists)
+    private given OFormat[PlatformOperatorIdMissing.type] = singletonOFormat(PlatformOperatorIdMissing)
+    private given OFormat[PlatformOperatorIdMismatch] = Json.format
+    private given OFormat[ReportingPeriodInvalid.type] = singletonOFormat(ReportingPeriodInvalid)
+    private given OFormat[UpscanError] = Json.format
+    private given OFormat[EntityTooSmall.type] = singletonOFormat(EntityTooSmall)
+    private given OFormat[EntityTooLarge.type] = singletonOFormat(EntityTooLarge)
+    private given OFormat[InvalidArgument.type] = singletonOFormat(InvalidArgument)
+    private given OFormat[UnknownFailure.type] = singletonOFormat(UnknownFailure)
+    
+    private given JsonConfiguration = JsonConfiguration(
+      discriminator = "type",
+      typeNaming = _.split("\\.").last
+    )
+    
+    given OFormat[UploadFailureReason] = Json.format
+  }
 
   sealed trait State extends Product with Serializable
 
@@ -69,7 +105,7 @@ object Submission {
 
     case object Ready extends State
     case object Uploading extends State
-    final case class UploadFailed(reason: String) extends State
+    final case class UploadFailed(reason: UploadFailureReason) extends State
     final case class Validated(downloadUrl: URL, reportingPeriod: Year, fileName: String, checksum: String, size: Long) extends State
     final case class Submitted(fileName: String, reportingPeriod: Year) extends State
     final case class Approved(fileName: String, reportingPeriod: Year) extends State

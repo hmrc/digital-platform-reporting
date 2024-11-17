@@ -17,6 +17,10 @@
 package services
 
 import connectors.DownloadConnector
+import models.assumed.AssumingPlatformOperator
+import models.submission.AssumedReportingSubmission
+import models.submission.Submission.UploadFailureReason
+import models.submission.Submission.UploadFailureReason.*
 import org.apache.pekko.stream.scaladsl.StreamConverters
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
@@ -30,7 +34,6 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import services.ValidationService.ValidationError
 import uk.gov.hmrc.http.StringContextOps
 
 import java.time.Year
@@ -48,6 +51,7 @@ class ValidationServiceSpec
     with EitherValues {
 
   private val mockDownloadConnector = mock[DownloadConnector]
+  private val mockAssumedReportingService = mock[AssumedReportingService]
 
   override def fakeApplication(): Application =
     new GuiceApplicationBuilder()
@@ -55,13 +59,14 @@ class ValidationServiceSpec
         "validation.schema-path" -> "schemas/DPIXML_v1.0.xsd"
       )
       .overrides(
-        bind[DownloadConnector].toInstance(mockDownloadConnector)
+        bind[DownloadConnector].toInstance(mockDownloadConnector),
+        bind[AssumedReportingService].toInstance(mockAssumedReportingService)
       )
       .build()
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset(mockDownloadConnector)
+    Mockito.reset(mockDownloadConnector, mockAssumedReportingService)
   }
 
   private val validationService = app.injector.instanceOf[ValidationService]
@@ -70,18 +75,82 @@ class ValidationServiceSpec
 
     val downloadUrl = url"http://example.com/test.xml"
     val poid = "1"
+    val dprsId = "dprsId"
 
-    "must return the reporting period when the given file is valid" in {
+    "when the given file is valid" - {
 
-      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSampleAssumed.xml"))
+      "must return the reporting period when no manual assumed reports have been submitted for this POID and year" in {
 
-      when(mockDownloadConnector.download(any()))
-        .thenReturn(Future.successful(source))
+        val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSampleAssumed.xml"))
 
-      val result = validationService.validateXml(downloadUrl, poid).futureValue
-      result.value mustBe Year.of(1957)
+        when(mockDownloadConnector.download(any()))
+          .thenReturn(Future.successful(source))
+        when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
+          .thenReturn(Future.successful(None))
 
-      verify(mockDownloadConnector).download(downloadUrl)
+        val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
+        result.value mustBe Year.of(1957)
+
+        verify(mockDownloadConnector).download(downloadUrl)
+      }
+
+      "must return the reporting period when the manual assumed report that has been submitted for this POID and year is deleted" in {
+
+        val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSampleAssumed.xml"))
+
+        val manualAssumedReport = AssumedReportingSubmission(
+          operatorId = "operatorId",
+          operatorName = "operatorName",
+          assumingOperator = AssumingPlatformOperator(
+            name = "assumingOperatorName",
+            residentCountry = "GB",
+            tinDetails = Nil,
+            registeredCountry = "GB",
+            address = "address"
+          ),
+          reportingPeriod = Year.of(2024),
+          isDeleted = true
+        )
+        
+        when(mockDownloadConnector.download(any()))
+          .thenReturn(Future.successful(source))
+        when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
+          .thenReturn(Future.successful(Some(manualAssumedReport)))
+
+        val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
+        result.value mustBe Year.of(1957)
+
+        verify(mockDownloadConnector).download(downloadUrl)
+      }
+
+      "must return an error when the manual assumed report that has been submitted for this POID and year is not deleted" in {
+
+        val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSampleAssumed.xml"))
+
+        val manualAssumedReport = AssumedReportingSubmission(
+          operatorId = "operatorId",
+          operatorName = "operatorName",
+          assumingOperator = AssumingPlatformOperator(
+            name = "assumingOperatorName",
+            residentCountry = "GB",
+            tinDetails = Nil,
+            registeredCountry = "GB",
+            address = "address"
+          ),
+          reportingPeriod = Year.of(2024),
+          isDeleted = false
+        )
+
+        when(mockDownloadConnector.download(any()))
+          .thenReturn(Future.successful(source))
+        when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
+          .thenReturn(Future.successful(Some(manualAssumedReport)))
+
+        val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
+        result.left.value mustEqual ManualAssumedReportExists
+
+        verify(mockDownloadConnector).download(downloadUrl)
+      }
     }
 
     "must return an error when the given file fails schema validation" in {
@@ -90,9 +159,11 @@ class ValidationServiceSpec
 
       when(mockDownloadConnector.download(any()))
         .thenReturn(Future.successful(source))
+      when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
+        .thenReturn(Future.successful(None))
 
-      val result = validationService.validateXml(downloadUrl, poid).futureValue
-      result.left.value mustEqual ValidationError("schema")
+      val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
+      result.left.value mustEqual SchemaValidationError
 
       verify(mockDownloadConnector).download(downloadUrl)
     }
@@ -103,9 +174,11 @@ class ValidationServiceSpec
 
       when(mockDownloadConnector.download(any()))
         .thenReturn(Future.successful(source))
+      when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
+        .thenReturn(Future.successful(None))
 
-      val result = validationService.validateXml(downloadUrl, poid).futureValue
-      result.left.value mustEqual ValidationError("not-xml")
+      val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
+      result.left.value mustEqual NotXml
 
       verify(mockDownloadConnector).download(downloadUrl)
     }
@@ -116,9 +189,11 @@ class ValidationServiceSpec
 
       when(mockDownloadConnector.download(any()))
         .thenReturn(Future.successful(source))
+      when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
+        .thenReturn(Future.successful(None))
 
-      val result = validationService.validateXml(downloadUrl, "a-different-poid").futureValue
-      result.left.value mustEqual ValidationError("poid.incorrect")
+      val result = validationService.validateXml(dprsId, downloadUrl, "a-different-poid").futureValue
+      result.left.value mustEqual PlatformOperatorIdMismatch("a-different-poid", poid)
 
       verify(mockDownloadConnector).download(downloadUrl)
     }
@@ -129,9 +204,11 @@ class ValidationServiceSpec
 
       when(mockDownloadConnector.download(any()))
         .thenReturn(Future.successful(source))
+      when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
+        .thenReturn(Future.successful(None))
 
-      val result = validationService.validateXml(downloadUrl, poid).futureValue
-      result.left.value mustEqual ValidationError("poid.missing")
+      val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
+      result.left.value mustEqual PlatformOperatorIdMissing
 
       verify(mockDownloadConnector).download(downloadUrl)
     }

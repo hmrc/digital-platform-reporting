@@ -18,10 +18,15 @@ package controllers
 
 import models.sdes.{NotificationCallback, NotificationType}
 import models.submission.Submission.State.*
-import models.submission.Submission.SubmissionType
 import models.submission.{CadxValidationError, Submission}
-import org.apache.pekko.Done
-import org.mockito.ArgumentMatchers.any
+import models.submission.Submission.{SubmissionType, UploadFailureReason}
+import models.submission.Submission.UploadFailureReason.{NotXml, PlatformOperatorIdMissing, ReportingPeriodInvalid, SchemaValidationError}
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.{Done, NotUsed}
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.util.ByteString
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify, when}
 import org.scalacheck.Gen
@@ -84,7 +89,8 @@ class SdesSubmissionCallbackControllerSpec
 
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
-  private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
+  private val uploadFailureReasonGen: Gen[UploadFailureReason] = Gen.oneOf(NotXml, SchemaValidationError, PlatformOperatorIdMissing, ReportingPeriodInvalid)
+  private val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason))
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
   private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
   private val rejectedGen: Gen[Rejected] = Gen.const(Rejected("test.xml", Year.of(2024)))
