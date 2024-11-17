@@ -17,15 +17,16 @@
 package services
 
 import generated.{AEOI, Accepted, BREResponse_Type, ErrorDetail_Type, FileError_Type, Generated_BREResponse_TypeFormat, GenericStatusMessage_Type, RecordError_Type, Rejected, RequestCommon_Type, RequestDetail_Type, ValidationErrors_Type, ValidationResult_Type}
-import models.submission.Submission.State.Submitted
+import models.audit.CadxSubmissionResponseEvent
+import models.audit.CadxSubmissionResponseEvent.FileStatus.{Failed, Passed}
 import models.submission.Submission.{State, SubmissionType}
 import models.submission.{CadxValidationError, Submission}
 import org.apache.pekko.Done
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.Mockito.{never, times, verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
-import org.mockito.Mockito.{atLeastOnce, never, times, verify, when}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
@@ -56,18 +57,21 @@ class CadxResultServiceSpec
     super.beforeEach()
     Mockito.reset(
       mockSubmissionRepository,
-      mockCadxValidationErrorRepository
+      mockCadxValidationErrorRepository,
+      mockAuditService
     )
   }
 
   private val mockSubmissionRepository: SubmissionRepository = mock[SubmissionRepository]
   private val mockCadxValidationErrorRepository: CadxValidationErrorRepository = mock[CadxValidationErrorRepository]
+  private val mockAuditService: AuditService = mock[AuditService]
   private val clock = Clock.fixed(Instant.now(), ZoneOffset.UTC)
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
     .overrides(
       bind[SubmissionRepository].toInstance(mockSubmissionRepository),
       bind[CadxValidationErrorRepository].toInstance(mockCadxValidationErrorRepository),
+      bind[AuditService].toInstance(mockAuditService),
       bind[Clock].toInstance(clock)
     )
     .build()
@@ -85,8 +89,6 @@ class CadxResultServiceSpec
         "when the response indicates that the submission was approved" - {
 
           "must update the submission" in {
-
-            val z = """<BREResponse xmlns:dpi="urn:oecd:ties:dpi:v1" xmlns:gsm="http://www.hmrc.gsi.gov.uk/gsm" xmlns:iso="urn:oecd:ties:isodpitypes:v1" xmlns:stf="urn:oecd:ties:dpistf:v1" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><requestCommon><receiptDate>2024-11-01T12:24:12Z</receiptDate><regime>AEOI</regime><conversationID>submissionId</conversationID><schemaVersion>1.0.0</schemaVersion></requestCommon><requestDetail><GenericStatusMessage><ValidationErrors/><ValidationResult><Status>Accepted</Status></ValidationResult></GenericStatusMessage></requestDetail></BREResponse>""".stripMargin
 
             val submission = Submission(
               _id = "submissionId",
@@ -131,6 +133,15 @@ class CadxResultServiceSpec
               )
             )
 
+            val expectedAudit = CadxSubmissionResponseEvent(
+              conversationId = "submissionId",
+              dprsId = "dprsId",
+              operatorId = "operatorId",
+              operatorName = "operatorName",
+              fileName = "test.xml",
+              fileStatus = Passed
+            )
+
             val source = Source.single {
               ByteString.fromString(Utility.trim(scalaxb.toXML(approvedResponse, "BREResponse", generated.defaultScope).head).toString)
             }
@@ -144,6 +155,7 @@ class CadxResultServiceSpec
             verify(mockSubmissionRepository).getById(submission._id)
             verify(mockSubmissionRepository).save(expectedSubmission)
             verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
+            verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
           }
 
           "when there is unexpected content in the ValidationErrors element" in {
@@ -260,6 +272,15 @@ class CadxResultServiceSpec
               )
             )
 
+            val expectedAudit = CadxSubmissionResponseEvent(
+              conversationId = "submissionId",
+              dprsId = "dprsId",
+              operatorId = "operatorId",
+              operatorName = "operatorName",
+              fileName = "test.xml",
+              fileStatus = Failed
+            )
+
             val source = Source.single {
               ByteString.fromString(Utility.trim(scalaxb.toXML(rejectedResponse, "BREResponse", generated.defaultScope).head).toString)
             }
@@ -275,6 +296,7 @@ class CadxResultServiceSpec
             verify(mockSubmissionRepository).getById(submission._id)
             verify(mockSubmissionRepository).save(expectedSubmission)
             verify(mockCadxValidationErrorRepository, times(2)).saveBatch(captor.capture())
+            verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
 
             val results = captor.getAllValues
 
