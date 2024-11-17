@@ -77,3 +77,6 @@ implicit def yearPathBindable(using intBinder: PathBindable[Int]): PathBindable[
   override def unbind(key: String, value: Year): String =
     value.toString
 }
+
+def singletonOFormat[A](a: A): OFormat[A] =
+  OFormat(Reads.pure(a), OWrites[A](_ => Json.obj()))

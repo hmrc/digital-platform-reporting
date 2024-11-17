@@ -34,7 +34,7 @@ final case class CadxSubmissionResponseEvent(
                                               fileStatus: FileStatus
                                             ) extends AuditEvent {
 
-  override val auditType: String = "AddSubmission"
+  override val auditType: String = "CadxSubmissionResponse"
 }
 
 object CadxSubmissionResponseEvent {

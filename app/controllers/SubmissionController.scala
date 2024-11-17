@@ -17,12 +17,14 @@
 package controllers
 
 import controllers.actions.AuthAction
+import models.audit.FileUploadedEvent
+import models.audit.FileUploadedEvent.FileUploadOutcome
 import models.submission.Submission.State.{Ready, Submitted, UploadFailed, Uploading, Validated}
 import models.submission.*
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.SubmissionRepository
-import services.{SubmissionService, UuidService, ValidationService, ViewSubmissionsService}
+import services.{AuditService, SubmissionService, UuidService, ValidationService, ViewSubmissionsService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.Clock
@@ -38,7 +40,8 @@ class SubmissionController @Inject() (
                                        auth: AuthAction,
                                        validationService: ValidationService,
                                        submissionService: SubmissionService,
-                                       viewSubmissionsService: ViewSubmissionsService
+                                       viewSubmissionsService: ViewSubmissionsService,
+                                       auditService: AuditService
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def start(id: Option[String]): Action[StartSubmissionRequest] =
@@ -123,6 +126,18 @@ class SubmissionController @Inject() (
 
           validationService.validateXml(request.body.dprsId, request.body.downloadUrl, submission.operatorId).flatMap { maybeReportingPeriod =>
 
+            val auditEvent = FileUploadedEvent(
+              conversationId = submission._id,
+              dprsId = submission.dprsId,
+              operatorId = submission.operatorId,
+              operatorName = submission.operatorName,
+              fileName = request.body.fileName,
+              outcome = maybeReportingPeriod
+                .map(_ => FileUploadOutcome.Accepted)
+                .left.map(e => FileUploadOutcome.Rejected(e))
+                .merge
+            )
+
             val updatedSubmission = maybeReportingPeriod.left.map { failureReason =>
               submission.copy(
                 state = UploadFailed(failureReason),
@@ -140,6 +155,8 @@ class SubmissionController @Inject() (
                 updated = clock.instant()
               )
             }.merge
+
+            auditService.audit(auditEvent)
 
             submissionRepository.save(updatedSubmission).map { _ =>
               Ok(Json.toJson(updatedSubmission))

@@ -16,6 +16,8 @@
 
 package controllers
 
+import models.audit.FileUploadedEvent
+import models.audit.FileUploadedEvent.FileUploadOutcome
 import models.submission.Submission.{State, SubmissionType, UploadFailureReason}
 import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
 import models.submission.{UpscanFailureReason, *}
@@ -39,7 +41,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import repository.SubmissionRepository
-import services.{SubmissionService, UuidService, ValidationService, ViewSubmissionsService}
+import services.{AuditService, SubmissionService, UuidService, ValidationService, ViewSubmissionsService}
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.StringContextOps
 
@@ -65,6 +67,7 @@ class SubmissionControllerSpec
   private val mockValidationService = mock[ValidationService]
   private val mockSubmissionService = mock[SubmissionService]
   private val mockViewSubmissionsService = mock[ViewSubmissionsService]
+  private val mockAuditService = mock[AuditService]
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
@@ -75,13 +78,14 @@ class SubmissionControllerSpec
       bind[AuthConnector].toInstance(mockAuthConnector),
       bind[ValidationService].toInstance(mockValidationService),
       bind[SubmissionService].toInstance(mockSubmissionService),
-      bind[ViewSubmissionsService].toInstance(mockViewSubmissionsService)
+      bind[ViewSubmissionsService].toInstance(mockViewSubmissionsService),
+      bind[AuditService].toInstance(mockAuditService)
     )
     .build()
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset(mockSubmissionRepository, mockAuthConnector, mockValidationService, mockSubmissionService, mockViewSubmissionsService)
+    Mockito.reset(mockSubmissionRepository, mockAuthConnector, mockValidationService, mockSubmissionService, mockViewSubmissionsService, mockAuditService)
   }
 
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
@@ -420,6 +424,15 @@ class SubmissionControllerSpec
               updated = now
             )
 
+            val expectedAudit = FileUploadedEvent(
+              conversationId = uuid,
+              dprsId = dprsId,
+              operatorId = operatorId,
+              operatorName = operatorName,
+              fileName = fileName,
+              outcome = FileUploadOutcome.Rejected(UploadFailureReason.SchemaValidationError)
+            )
+
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
             when(mockValidationService.validateXml(any(), any(), any())).thenReturn(Future.successful(Left(SchemaValidationError)))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
@@ -432,6 +445,7 @@ class SubmissionControllerSpec
             verify(mockSubmissionRepository).get(dprsId, uuid)
             verify(mockSubmissionRepository).save(expectedSubmission)
             verify(mockValidationService).validateXml(dprsId, downloadUrl, operatorId)
+            verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
           }
         }
 
@@ -460,6 +474,15 @@ class SubmissionControllerSpec
               updated = now
             )
 
+            val expectedAudit = FileUploadedEvent(
+              conversationId = uuid,
+              dprsId = dprsId,
+              operatorId = operatorId,
+              operatorName = operatorName,
+              fileName = fileName,
+              outcome = FileUploadOutcome.Accepted
+            )
+
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
             when(mockValidationService.validateXml(any(), any(), any())).thenReturn(Future.successful(Right(Year.of(2024))))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
@@ -472,6 +495,7 @@ class SubmissionControllerSpec
             verify(mockSubmissionRepository).get(dprsId, uuid)
             verify(mockSubmissionRepository).save(expectedSubmission)
             verify(mockValidationService).validateXml(dprsId, downloadUrl, operatorId)
+            verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
           }
         }
       }
