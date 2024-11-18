@@ -16,15 +16,12 @@
 
 package models.audit
 
-import models.audit.AddSubmissionEvent.DeliveryRoute
 import models.audit.FileUploadedEvent.FileUploadOutcome
-import models.submission.Submission.UploadFailureReason.{EntityTooLarge, EntityTooSmall, InvalidArgument, ManualAssumedReportExists, NotXml, PlatformOperatorIdMismatch, PlatformOperatorIdMissing, ReportingPeriodInvalid, SchemaValidationError, UnknownFailure, UpscanError}
+import models.submission.Submission.UploadFailureReason.*
 import models.submission.UpscanFailureReason.{Duplicate, Quarantine, Rejected, Unknown}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
-
-import java.time.Instant
 
 class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
 
@@ -48,7 +45,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
         dprsId = "dprsId",
         operatorId = "poId",
         operatorName = "po",
-        fileName = "test.xml",
+        fileName = Some("test.xml"),
         outcome = FileUploadOutcome.Accepted
       )
 
@@ -77,7 +74,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
           dprsId = "dprsId",
           operatorId = "poId",
           operatorName = "po",
-          fileName = "test.xml",
+          fileName = Some("test.xml"),
           outcome = FileUploadOutcome.Rejected(NotXml)
         )
 
@@ -104,7 +101,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
           dprsId = "dprsId",
           operatorId = "poId",
           operatorName = "po",
-          fileName = "test.xml",
+          fileName = Some("test.xml"),
           outcome = FileUploadOutcome.Rejected(SchemaValidationError)
         )
 
@@ -131,7 +128,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
           dprsId = "dprsId",
           operatorId = "poId",
           operatorName = "po",
-          fileName = "test.xml",
+          fileName = Some("test.xml"),
           outcome = FileUploadOutcome.Rejected(ManualAssumedReportExists)
         )
 
@@ -158,7 +155,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
           dprsId = "dprsId",
           operatorId = "poId",
           operatorName = "po",
-          fileName = "test.xml",
+          fileName = Some("test.xml"),
           outcome = FileUploadOutcome.Rejected(PlatformOperatorIdMissing)
         )
 
@@ -185,7 +182,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
           dprsId = "dprsId",
           operatorId = "poId",
           operatorName = "po",
-          fileName = "test.xml",
+          fileName = Some("test.xml"),
           outcome = FileUploadOutcome.Rejected(PlatformOperatorIdMismatch("id", "id2"))
         )
 
@@ -212,7 +209,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
           dprsId = "dprsId",
           operatorId = "poId",
           operatorName = "po",
-          fileName = "test.xml",
+          fileName = Some("test.xml"),
           outcome = FileUploadOutcome.Rejected(ReportingPeriodInvalid)
         )
 
@@ -241,7 +238,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
             dprsId = "dprsId",
             operatorId = "poId",
             operatorName = "po",
-            fileName = "test.xml",
+            fileName = Some("test.xml"),
             outcome = FileUploadOutcome.Rejected(UpscanError(Quarantine))
           )
 
@@ -268,7 +265,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
             dprsId = "dprsId",
             operatorId = "poId",
             operatorName = "po",
-            fileName = "test.xml",
+            fileName = Some("test.xml"),
             outcome = FileUploadOutcome.Rejected(UpscanError(Rejected))
           )
 
@@ -295,7 +292,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
             dprsId = "dprsId",
             operatorId = "poId",
             operatorName = "po",
-            fileName = "test.xml",
+            fileName = Some("test.xml"),
             outcome = FileUploadOutcome.Rejected(UpscanError(Unknown))
           )
 
@@ -322,7 +319,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
             dprsId = "dprsId",
             operatorId = "poId",
             operatorName = "po",
-            fileName = "test.xml",
+            fileName = Some("test.xml"),
             outcome = FileUploadOutcome.Rejected(UpscanError(Duplicate))
           )
 
@@ -350,7 +347,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
           dprsId = "dprsId",
           operatorId = "poId",
           operatorName = "po",
-          fileName = "test.xml",
+          fileName = Some("test.xml"),
           outcome = FileUploadOutcome.Rejected(EntityTooLarge)
         )
 
@@ -377,7 +374,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
           dprsId = "dprsId",
           operatorId = "poId",
           operatorName = "po",
-          fileName = "test.xml",
+          fileName = Some("test.xml"),
           outcome = FileUploadOutcome.Rejected(EntityTooSmall)
         )
 
@@ -404,7 +401,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
           dprsId = "dprsId",
           operatorId = "poId",
           operatorName = "po",
-          fileName = "test.xml",
+          fileName = Some("test.xml"),
           outcome = FileUploadOutcome.Rejected(InvalidArgument)
         )
 
@@ -431,7 +428,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
           dprsId = "dprsId",
           operatorId = "poId",
           operatorName = "po",
-          fileName = "test.xml",
+          fileName = Some("test.xml"),
           outcome = FileUploadOutcome.Rejected(UnknownFailure)
         )
 

@@ -19,6 +19,7 @@ package controllers
 import controllers.actions.AuthAction
 import models.audit.FileUploadedEvent
 import models.audit.FileUploadedEvent.FileUploadOutcome
+import models.audit.FileUploadedEvent.FileUploadOutcome.Rejected
 import models.submission.Submission.State.{Ready, Submitted, UploadFailed, Uploading, Validated}
 import models.submission.*
 import play.api.libs.json.Json
@@ -131,7 +132,7 @@ class SubmissionController @Inject() (
               dprsId = submission.dprsId,
               operatorId = submission.operatorId,
               operatorName = submission.operatorName,
-              fileName = request.body.fileName,
+              fileName = Some(request.body.fileName),
               outcome = maybeReportingPeriod
                 .map(_ => FileUploadOutcome.Accepted)
                 .left.map(e => FileUploadOutcome.Rejected(e))
@@ -177,10 +178,21 @@ class SubmissionController @Inject() (
       _.map { submission =>
         if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[Uploading.type] || submission.state.isInstanceOf[UploadFailed]) {
 
+          val auditEvent = FileUploadedEvent(
+            conversationId = submission._id,
+            dprsId = submission.dprsId,
+            operatorId = submission.operatorId,
+            operatorName = submission.operatorName,
+            fileName = None,
+            outcome = FileUploadOutcome.Rejected(request.body.reason)
+          )
+
           val updatedSubmission = submission.copy(
             state = UploadFailed(request.body.reason),
             updated = clock.instant()
           )
+
+          auditService.audit(auditEvent)
 
           submissionRepository.save(updatedSubmission).map { _ =>
             Ok(Json.toJson(updatedSubmission))

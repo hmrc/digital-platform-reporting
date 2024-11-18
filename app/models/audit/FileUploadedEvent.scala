@@ -27,7 +27,7 @@ final case class FileUploadedEvent(
                                     dprsId: String,
                                     operatorId: String,
                                     operatorName: String,
-                                    fileName: String,
+                                    fileName: Option[String],
                                     outcome: FileUploadOutcome
                                   ) extends AuditEvent {
 
@@ -73,7 +73,7 @@ object FileUploadedEvent {
     (__ \ "digitalPlatformReportingId").write[String] and
     (__ \ "platformOperatorId").write[String] and
     (__ \ "platformOperator").write[String] and
-    (__ \ "fileName").write[String] and
+    (__ \ "fileName").writeNullable[String] and
     (__ \ "outcome").write[FileUploadOutcome]
   )(o => Tuple.fromProductTyped(o))
 }

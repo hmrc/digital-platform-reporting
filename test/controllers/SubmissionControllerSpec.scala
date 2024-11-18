@@ -429,7 +429,7 @@ class SubmissionControllerSpec
               dprsId = dprsId,
               operatorId = operatorId,
               operatorName = operatorName,
-              fileName = fileName,
+              fileName = Some(fileName),
               outcome = FileUploadOutcome.Rejected(UploadFailureReason.SchemaValidationError)
             )
 
@@ -479,7 +479,7 @@ class SubmissionControllerSpec
               dprsId = dprsId,
               operatorId = operatorId,
               operatorName = operatorName,
-              fileName = fileName,
+              fileName = Some(fileName),
               outcome = FileUploadOutcome.Accepted
             )
 
@@ -585,6 +585,15 @@ class SubmissionControllerSpec
             updated = now
           )
 
+          val expectedAudit = FileUploadedEvent(
+            conversationId = uuid,
+            dprsId = dprsId,
+            operatorId = operatorId,
+            operatorName = operatorName,
+            fileName = None,
+            outcome = FileUploadOutcome.Rejected(UpscanError(UpscanFailureReason.Rejected))
+          )
+
           when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
           when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
@@ -595,6 +604,7 @@ class SubmissionControllerSpec
 
           verify(mockSubmissionRepository).get(dprsId, uuid)
           verify(mockSubmissionRepository).save(expectedSubmission)
+          verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
         }
       }
 
