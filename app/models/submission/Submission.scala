@@ -16,7 +16,7 @@
 
 package models.submission
 
-import models.{urlFormat, yearFormat}
+import models.{urlFormat, yearFormat, singletonOFormat}
 import play.api.libs.json.*
 import play.api.libs.functional.syntax.*
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
@@ -168,7 +168,4 @@ object Submission {
 
     OFormat(reads, writes)
   }
-
-  private def singletonOFormat[A](a: A): OFormat[A] =
-    OFormat(Reads.pure(a), OWrites[A](_ => Json.obj()))
 }

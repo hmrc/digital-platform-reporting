@@ -17,6 +17,8 @@
 package services
 
 import generated.{Accepted, FileAcceptanceStatus_EnumType, Rejected}
+import models.audit.CadxSubmissionResponseEvent
+import models.audit.CadxSubmissionResponseEvent.FileStatus.{Failed, Passed}
 import models.submission.CadxValidationError.{FileError, RowError}
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Submitted}
@@ -29,6 +31,7 @@ import org.apache.pekko.util.ByteString
 import org.apache.pekko.{Done, NotUsed}
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
 import services.CadxResultService.{InvalidResultStatusException, InvalidSubmissionStateException, SubmissionNotFoundException}
+import uk.gov.hmrc.http.HeaderCarrier
 
 import java.time.Clock
 import javax.inject.{Inject, Singleton}
@@ -38,7 +41,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class CadxResultService @Inject()(
                                    submissionRepository: SubmissionRepository,
                                    cadxValidationErrorRepository: CadxValidationErrorRepository,
-                                   clock: Clock
+                                   clock: Clock,
+                                   auditService: AuditService
                                  )(using Materializer, ExecutionContext) {
 
   def processResult(response: Source[ByteString, ?]): Future[Done] =
@@ -128,6 +132,19 @@ class CadxResultService @Inject()(
 
   private def acceptedFlow(submission: Submission, state: Submitted): Flow[CadxValidationError, Done, NotUsed] =
     Flow.futureFlow {
+
+      val auditEvent = CadxSubmissionResponseEvent(
+        conversationId = submission._id,
+        dprsId = submission.dprsId,
+        operatorId = submission.operatorId,
+        operatorName = submission.operatorName,
+        fileName = state.fileName,
+        fileStatus = Passed
+      )
+
+      given HeaderCarrier = HeaderCarrier()
+      auditService.audit(auditEvent)
+
       submissionRepository.save(submission.copy(state = Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = clock.instant())).map { _ =>
         Flow.fromSinkAndSource(Sink.cancelled[CadxValidationError], Source.single[Done](Done))
       }
@@ -135,6 +152,19 @@ class CadxResultService @Inject()(
 
   private def rejectedFlow(submission: Submission, state: Submitted): Flow[CadxValidationError, Done, NotUsed] =
     Flow.futureFlow {
+
+      val auditEvent = CadxSubmissionResponseEvent(
+        conversationId = submission._id,
+        dprsId = submission.dprsId,
+        operatorId = submission.operatorId,
+        operatorName = submission.operatorName,
+        fileName = state.fileName,
+        fileStatus = Failed
+      )
+
+      given HeaderCarrier = HeaderCarrier()
+      auditService.audit(auditEvent)
+
       submissionRepository.save(submission.copy(state = State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = clock.instant())).map { _ =>
         Flow[CadxValidationError]
           .grouped(1000)
