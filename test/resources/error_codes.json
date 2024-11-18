@@ -1,0 +1,7 @@
+{
+  "001": "Following whitespace collapse, the referenced file failed validation against the DPI XML Schema.",
+  "002": "Only one record (DPIBody) is allowed per XML submission.",
+  "003": "The root element DPI_OECD version attribute must be present and must be set to the current schema version.",
+  "004": "SendingEntityIN is a mandatory element.",
+  "005": "The MessageSpec.SendingEntityIN must match an active Platform Operator ID subscribed to the submitter."
+}

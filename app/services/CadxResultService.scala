@@ -32,6 +32,7 @@ import org.apache.pekko.{Done, NotUsed}
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
 import services.CadxResultService.{InvalidResultStatusException, InvalidSubmissionStateException, SubmissionNotFoundException}
 import uk.gov.hmrc.http.HeaderCarrier
+import utils.ErrorCodeMapper.getErrorDescription
 
 import java.time.Clock
 import javax.inject.{Inject, Singleton}
@@ -99,7 +100,8 @@ class CadxResultService @Inject()(
     XmlParsing.subtree(Seq("FileError")).map { element =>
       val code = element.getElementsByTagName("Code").item(0).getTextContent
       val details = Option(element.getElementsByTagName("Details").item(0)).map(_.getTextContent)
-      FileError(submission._id, submission.dprsId, code, details, clock.instant())
+      val errorDescription = getErrorDescription(code, details)
+      FileError(submission._id, submission.dprsId, code, Some(errorDescription), clock.instant())
     }
 
   private def recordErrorsFlow(submission: Submission) =
@@ -107,8 +109,9 @@ class CadxResultService @Inject()(
       val code = element.getElementsByTagName("Code").item(0).getTextContent
       val details = Option(element.getElementsByTagName("Details").item(0)).map(_.getTextContent)
       val docRefs = element.getElementsByTagName("DocRefIDInError")
+      val errorDescription = getErrorDescription(code, details)
       (0 until docRefs.getLength).map { i =>
-        RowError(submission._id, submission.dprsId, code, details, docRefs.item(i).getTextContent, clock.instant())
+        RowError(submission._id, submission.dprsId, code, Some(errorDescription), docRefs.item(i).getTextContent, clock.instant())
       }
     }
 

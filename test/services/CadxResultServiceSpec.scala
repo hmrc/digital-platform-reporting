@@ -225,8 +225,8 @@ class CadxResultServiceSpec
             val expectedFileError: CadxValidationError.FileError = CadxValidationError.FileError(
               submissionId = submission._id,
               dprsId = "dprsId",
-              code = "001",
-              detail = Some("detail"),
+              code = "50007",
+              detail = Some("The referenced file failed validation against the DPI XML Schema."),
               created = now
             )
 
@@ -234,7 +234,7 @@ class CadxResultServiceSpec
               submissionId = submission._id,
               dprsId = "dprsId",
               code = "002",
-              detail = Some("detail 2"),
+              detail = Some("Only one record (DPIBody) is allowed per XML submission."),
               docRef = "1",
               created = now
             )
@@ -253,14 +253,14 @@ class CadxResultServiceSpec
                   ValidationErrors = ValidationErrors_Type(
                     FileError = (0 until 1000).map { _ =>
                       FileError_Type(
-                        Code = "001",
-                        Details = Some(ErrorDetail_Type("detail"))
+                        Code = "50007",
+                        Details = Some(ErrorDetail_Type("The referenced file failed validation against the DPI XML Schema."))
                       )
                     },
                     RecordError = (0 until 200).map { _ =>
                       RecordError_Type(
                         Code = "002",
-                        Details = Some(ErrorDetail_Type("detail 2")),
+                        Details = Some(ErrorDetail_Type("Only one record (DPIBody) is allowed per XML submission.")),
                         DocRefIDInError = Seq("1", "2")
                       )
                     }
