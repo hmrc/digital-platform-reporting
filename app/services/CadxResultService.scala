@@ -16,6 +16,8 @@
 
 package services
 
+import cats.data.OptionT
+import connectors.{PlatformOperatorConnector, SubscriptionConnector}
 import generated.{Accepted, FileAcceptanceStatus_EnumType, Rejected}
 import models.audit.CadxSubmissionResponseEvent
 import models.audit.CadxSubmissionResponseEvent.FileStatus.{Failed, Passed}
@@ -31,6 +33,7 @@ import org.apache.pekko.util.ByteString
 import org.apache.pekko.{Done, NotUsed}
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
 import services.CadxResultService.{InvalidResultStatusException, InvalidSubmissionStateException, SubmissionNotFoundException}
+import services.SubmissionService.NoPlatformOperatorException
 import uk.gov.hmrc.http.HeaderCarrier
 
 import java.time.Clock
@@ -42,7 +45,10 @@ class CadxResultService @Inject()(
                                    submissionRepository: SubmissionRepository,
                                    cadxValidationErrorRepository: CadxValidationErrorRepository,
                                    clock: Clock,
-                                   auditService: AuditService
+                                   auditService: AuditService,
+                                   emailService: EmailService,
+                                   subscriptionConnector: SubscriptionConnector,
+                                   platformOperatorConnector: PlatformOperatorConnector
                                  )(using Materializer, ExecutionContext) {
 
   def processResult(response: Source[ByteString, ?]): Future[Done] =
@@ -145,6 +151,12 @@ class CadxResultService @Inject()(
       given HeaderCarrier = HeaderCarrier()
       auditService.audit(auditEvent)
 
+      // TODO - call email service to send 'dprs_successful_xml_submission_user' and 'dprs_successful_xml_submission_platform_operator'
+      for {
+        subscription      <- subscriptionConnector.get(submission.dprsId)
+        platformOperator  <- OptionT(platformOperatorConnector.get(submission.dprsId, submission.operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
+      } yield emailService.sendSuccessfulBusinessRulesChecksEmails(submission, state, platformOperator, subscription)
+
       submissionRepository.save(submission.copy(state = Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = clock.instant())).map { _ =>
         Flow.fromSinkAndSource(Sink.cancelled[CadxValidationError], Source.single[Done](Done))
       }
@@ -164,6 +176,11 @@ class CadxResultService @Inject()(
 
       given HeaderCarrier = HeaderCarrier()
       auditService.audit(auditEvent)
+
+//      // TODO - call email service to send 'dprs_failed_xml_submission_user' and 'dprs_failed_xml_submission_platform_operator'
+//      for {
+//        subscription <- subscriptionConnector.get(submission.dprsId)
+//      } yield emailService.sendFailedBusinessRulesChecksEmails(submission, subscription)
 
       submissionRepository.save(submission.copy(state = State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = clock.instant())).map { _ =>
         Flow[CadxValidationError]

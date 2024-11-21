@@ -19,7 +19,7 @@ package connectors
 import config.AppConfig
 import connectors.PlatformOperatorConnector.*
 import models.operator.requests.*
-import models.operator.responses.*
+import models.operator.responses._
 import org.apache.pekko.Done
 import play.api.http.HeaderNames
 import play.api.http.Status.{OK, UNPROCESSABLE_ENTITY}

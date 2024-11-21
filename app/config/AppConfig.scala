@@ -26,6 +26,8 @@ class AppConfig @Inject()(configuration: Configuration) {
 
   val AppName: String = configuration.get[String]("appName")
 
+  val emailServiceUrl: String = configuration.get[Service]("microservice.services.email").baseUrl
+
   val RegisterWithIdBaseUrl: String = configuration.get[Service]("microservice.services.register-with-id").baseUrl
   val RegisterWithIdBearerToken: String = configuration.get[String]("microservice.services.register-with-id.bearer-token")
 
