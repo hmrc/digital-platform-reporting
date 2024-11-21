@@ -20,7 +20,7 @@ import config.AppConfig
 import connectors.SubscriptionConnector.{CreateSubscriptionFailure, CreateSubscriptionUnprocessableFailure, UpdateSubscriptionFailure}
 import models.ErrorResponse
 import models.subscription.requests.SubscriptionRequest
-import models.subscription.responses._
+import models.subscription.responses.*
 import org.apache.pekko.Done
 import play.api.http.HeaderNames
 import play.api.http.Status.{ACCEPTED, CREATED, UNPROCESSABLE_ENTITY}
