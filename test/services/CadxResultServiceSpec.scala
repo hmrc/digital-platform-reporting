@@ -135,7 +135,7 @@ class CadxResultServiceSpec
 
 
 
-        val expectedChecksCompletedDateTime = EmailDateTimeFormatter.format(clock.instant())
+        val expectedChecksCompletedDateTime = EmailDateTimeFormatter.format(clock.instant()).replace("AM", "am").replace("PM", "pm")
 
         "when the response indicates that the submission was approved" - {
 
