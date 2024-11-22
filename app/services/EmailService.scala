@@ -19,12 +19,13 @@ package services
 import cats.data.EitherNec
 import com.google.inject.Inject
 import connectors.EmailConnector
+import models.email.requests.FailedXmlSubmissionPlatformOperator.FailedXmlSubmissionPlatformOperatorTemplateId
+import models.email.requests.FailedXmlSubmissionUser.FailedXmlSubmissionUserTemplateId
 import models.email.requests.SuccessfulXmlSubmissionPlatformOperator.SuccessfulXmlSubmissionPlatformOperatorTemplateId
 import models.email.requests.SuccessfulXmlSubmissionUser.SuccessfulXmlSubmissionUserTemplateId
-import models.email.requests.{SuccessfulXmlSubmissionPlatformOperator, SendEmailRequest, SuccessfulXmlSubmissionUser, ValidationError}
+import models.email.requests.{FailedXmlSubmissionPlatformOperator, FailedXmlSubmissionUser, SendEmailRequest, SuccessfulXmlSubmissionPlatformOperator, SuccessfulXmlSubmissionUser, ValidationError}
 import models.operator.responses.PlatformOperator
-import models.submission.Submission
-import models.submission.Submission.State.Submitted
+import models.submission.Submission.State.{Approved, Rejected, Submitted}
 import models.subscription.responses.SubscriptionInfo
 import org.apache.pekko.Done
 import play.api.i18n.Lang.logger
@@ -34,12 +35,17 @@ import scala.concurrent.Future
 
 class EmailService @Inject()(emailConnector: EmailConnector) {
 
-  def sendSuccessfulBusinessRulesChecksEmails(submission: Submission, state: Submitted, platformOperator: PlatformOperator, subscriptionInfo: SubscriptionInfo)
+  def sendSuccessfulBusinessRulesChecksEmails(state: Approved, checksCompletedDateTime: String, platformOperator: PlatformOperator, subscriptionInfo: SubscriptionInfo)
                                    (implicit hc: HeaderCarrier): Future[Done] = {
-    sendEmail(SuccessfulXmlSubmissionUser.build(submission, state, platformOperator, subscriptionInfo), SuccessfulXmlSubmissionUserTemplateId)
-    sendEmail(SuccessfulXmlSubmissionPlatformOperator.build(submission, state, platformOperator), SuccessfulXmlSubmissionPlatformOperatorTemplateId)
+    sendEmail(SuccessfulXmlSubmissionUser.build(state, checksCompletedDateTime, platformOperator, subscriptionInfo), SuccessfulXmlSubmissionUserTemplateId)
+    sendEmail(SuccessfulXmlSubmissionPlatformOperator.build(state, checksCompletedDateTime, platformOperator), SuccessfulXmlSubmissionPlatformOperatorTemplateId)
   }
 
+  def sendFailedBusinessRulesChecksEmails(state: Rejected, checksCompletedDateTime: String, platformOperator: PlatformOperator, subscriptionInfo: SubscriptionInfo)
+                                             (implicit hc: HeaderCarrier): Future[Done] = {
+    sendEmail(FailedXmlSubmissionUser.build(state, checksCompletedDateTime, platformOperator, subscriptionInfo), FailedXmlSubmissionUserTemplateId)
+    sendEmail(FailedXmlSubmissionPlatformOperator.build(checksCompletedDateTime, platformOperator), FailedXmlSubmissionPlatformOperatorTemplateId)
+  }
 
   private def sendEmail(requestBuild: EitherNec[ValidationError, SendEmailRequest], templateName: String)
                        (implicit hc: HeaderCarrier): Future[Done] = requestBuild.fold(

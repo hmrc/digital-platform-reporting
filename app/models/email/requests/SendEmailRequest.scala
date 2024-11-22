@@ -19,8 +19,7 @@ package models.email.requests
 import cats.data.EitherNec
 import cats.implicits._
 import models.operator.responses.PlatformOperator
-import models.submission.Submission
-import models.submission.Submission.State.Submitted
+import models.submission.Submission.State.{Approved, Rejected}
 import models.subscription.responses.SubscriptionInfo
 import play.api.libs.json.{Json, OFormat}
 
@@ -66,10 +65,10 @@ object SuccessfulXmlSubmissionUser {
     )
   )
 
-  def build(submission: Submission, state: Submitted, platformOperator: PlatformOperator, subscriptionInfo: SubscriptionInfo): EitherNec[ValidationError, SuccessfulXmlSubmissionUser] = (
+  def build(state: Approved, checksCompletedDateTime: String, platformOperator: PlatformOperator, subscriptionInfo: SubscriptionInfo): EitherNec[ValidationError, SuccessfulXmlSubmissionUser] = (
     Right(subscriptionInfo.primaryContact.email),
     platformOperator.businessName.toRightNec(MissingBusinessName)
-  ).parMapN(SuccessfulXmlSubmissionUser(_, subscriptionInfo.primaryContactName, _, platformOperator.operatorId, submission.updated.toString, state.reportingPeriod.toString, state.fileName))
+  ).parMapN(SuccessfulXmlSubmissionUser(_, subscriptionInfo.primaryContactName, _, platformOperator.operatorId, checksCompletedDateTime, state.reportingPeriod.toString, state.fileName))
 
 }
 
@@ -100,10 +99,68 @@ object SuccessfulXmlSubmissionPlatformOperator {
     )
   )
 
-  def build(submission: Submission, state: Submitted, platformOperator: PlatformOperator): EitherNec[ValidationError, SuccessfulXmlSubmissionPlatformOperator] = (
+  def build(state: Approved, checksCompletedDateTime: String, platformOperator: PlatformOperator): EitherNec[ValidationError, SuccessfulXmlSubmissionPlatformOperator] = (
     Right(platformOperator.primaryContactDetails.emailAddress),
     platformOperator.businessName.toRightNec(MissingBusinessName)
-  ).parMapN(SuccessfulXmlSubmissionPlatformOperator(_, platformOperator.primaryContactDetails.contactName, _, platformOperator.operatorId, submission.updated.toString, state.reportingPeriod.toString, state.fileName))
+  ).parMapN(SuccessfulXmlSubmissionPlatformOperator(_, platformOperator.primaryContactDetails.contactName, _, platformOperator.operatorId, checksCompletedDateTime, state.reportingPeriod.toString, state.fileName))
+
+}
+
+final case class FailedXmlSubmissionUser(to: List[String],
+                                             templateId: String,
+                                             parameters: Map[String, String]) extends SendEmailRequest
+
+object FailedXmlSubmissionUser {
+  val FailedXmlSubmissionUserTemplateId: String = "dprs_failed_xml_submission_user"
+  implicit val format: OFormat[FailedXmlSubmissionUser] = Json.format[FailedXmlSubmissionUser]
+
+  def apply(email: String,
+            name: String,
+            businessName: String,
+            checksCompletedDateTime: String,
+            fileName: String): FailedXmlSubmissionUser = FailedXmlSubmissionUser(
+    to = List(email),
+    templateId = FailedXmlSubmissionUserTemplateId,
+    parameters = Map(
+      "userPrimaryContactName" -> name,
+      "poBusinessName" -> businessName,
+      "checksCompletedDateTime" -> checksCompletedDateTime,
+      "fileName" -> fileName
+    )
+  )
+
+  def build(state: Rejected, checksCompletedDateTime: String, platformOperator: PlatformOperator, subscriptionInfo: SubscriptionInfo): EitherNec[ValidationError, FailedXmlSubmissionUser] = (
+    Right(subscriptionInfo.primaryContact.email),
+    platformOperator.businessName.toRightNec(MissingBusinessName)
+  ).parMapN(FailedXmlSubmissionUser(_, subscriptionInfo.primaryContactName, _, checksCompletedDateTime, state.fileName))
+
+}
+
+final case class FailedXmlSubmissionPlatformOperator(to: List[String],
+                                                         templateId: String,
+                                                         parameters: Map[String, String]) extends SendEmailRequest
+
+object FailedXmlSubmissionPlatformOperator {
+  val FailedXmlSubmissionPlatformOperatorTemplateId: String = "dprs_failed_xml_submission_platform_operator"
+  implicit val format: OFormat[FailedXmlSubmissionPlatformOperator] = Json.format[FailedXmlSubmissionPlatformOperator]
+
+  def apply(email: String,
+            platformOperatorContactName: String,
+            platformOperatorBusinessName: String,
+            checksCompletedDateTime: String): FailedXmlSubmissionPlatformOperator = FailedXmlSubmissionPlatformOperator(
+    to = List(email),
+    templateId = FailedXmlSubmissionPlatformOperatorTemplateId,
+    parameters = Map(
+      "poPrimaryContactName" -> platformOperatorContactName,
+      "poBusinessName" -> platformOperatorBusinessName,
+      "checksCompletedDateTime" -> checksCompletedDateTime
+    )
+  )
+
+  def build(checksCompletedDateTime: String, platformOperator: PlatformOperator): EitherNec[ValidationError, FailedXmlSubmissionPlatformOperator] = (
+    Right(platformOperator.primaryContactDetails.emailAddress),
+    platformOperator.businessName.toRightNec(MissingBusinessName)
+  ).parMapN(FailedXmlSubmissionPlatformOperator(_, platformOperator.primaryContactDetails.contactName, _, checksCompletedDateTime))
 
 }
 

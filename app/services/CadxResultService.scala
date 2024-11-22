@@ -35,6 +35,7 @@ import repository.{CadxValidationErrorRepository, SubmissionRepository}
 import services.CadxResultService.{InvalidResultStatusException, InvalidSubmissionStateException, SubmissionNotFoundException}
 import services.SubmissionService.NoPlatformOperatorException
 import uk.gov.hmrc.http.HeaderCarrier
+import utils.DateTimeFormats.EmailDateTimeFormatter
 
 import java.time.Clock
 import javax.inject.{Inject, Singleton}
@@ -151,13 +152,15 @@ class CadxResultService @Inject()(
       given HeaderCarrier = HeaderCarrier()
       auditService.audit(auditEvent)
 
-      // TODO - call email service to send 'dprs_successful_xml_submission_user' and 'dprs_successful_xml_submission_platform_operator'
+      lazy val updatedInstance = clock.instant()
+      lazy val checksCompletedDateTime = EmailDateTimeFormatter.format(updatedInstance)
+
       for {
         subscription      <- subscriptionConnector.get(submission.dprsId)
         platformOperator  <- OptionT(platformOperatorConnector.get(submission.dprsId, submission.operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
-      } yield emailService.sendSuccessfulBusinessRulesChecksEmails(submission, state, platformOperator, subscription)
+      } yield emailService.sendSuccessfulBusinessRulesChecksEmails(Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), checksCompletedDateTime, platformOperator, subscription)
 
-      submissionRepository.save(submission.copy(state = Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = clock.instant())).map { _ =>
+      submissionRepository.save(submission.copy(state = Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = updatedInstance)).map { _ =>
         Flow.fromSinkAndSource(Sink.cancelled[CadxValidationError], Source.single[Done](Done))
       }
     }.mapMaterializedValue(_ => NotUsed)
@@ -177,12 +180,15 @@ class CadxResultService @Inject()(
       given HeaderCarrier = HeaderCarrier()
       auditService.audit(auditEvent)
 
-//      // TODO - call email service to send 'dprs_failed_xml_submission_user' and 'dprs_failed_xml_submission_platform_operator'
-//      for {
-//        subscription <- subscriptionConnector.get(submission.dprsId)
-//      } yield emailService.sendFailedBusinessRulesChecksEmails(submission, subscription)
+      lazy val updatedInstance = clock.instant()
+      lazy val checksCompletedDateTime = EmailDateTimeFormatter.format(updatedInstance)
 
-      submissionRepository.save(submission.copy(state = State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = clock.instant())).map { _ =>
+      for {
+        subscription      <- subscriptionConnector.get(submission.dprsId)
+        platformOperator  <- OptionT(platformOperatorConnector.get(submission.dprsId, submission.operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
+      } yield emailService.sendFailedBusinessRulesChecksEmails(State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), checksCompletedDateTime, platformOperator, subscription)
+
+      submissionRepository.save(submission.copy(state = State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = updatedInstance)).map { _ =>
         Flow[CadxValidationError]
           .grouped(1000)
           .mapAsync(1)(cadxValidationErrorRepository.saveBatch)

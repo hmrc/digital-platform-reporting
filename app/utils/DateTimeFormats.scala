@@ -28,4 +28,9 @@ object DateTimeFormats {
   val ISO8601Formatter: DateTimeFormatter = DateTimeFormatter
     .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
     .withZone(ZoneId.of("UTC"))
+
+  val EmailDateTimeFormatter: DateTimeFormatter = DateTimeFormatter
+    .ofPattern("h:mma (z) 'on' d MMMM yyyy")
+    .withZone(ZoneId.of("GMT"))
+
 }
