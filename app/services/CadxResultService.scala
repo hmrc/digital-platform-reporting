@@ -153,7 +153,7 @@ class CadxResultService @Inject()(
       auditService.audit(auditEvent)
 
       lazy val updatedInstance = clock.instant()
-      lazy val checksCompletedDateTime = EmailDateTimeFormatter.format(updatedInstance)
+      lazy val checksCompletedDateTime = EmailDateTimeFormatter.format(updatedInstance).replace("AM", "am").replace("PM", "pm")
 
       for {
         subscription      <- subscriptionConnector.get(submission.dprsId)
@@ -181,7 +181,7 @@ class CadxResultService @Inject()(
       auditService.audit(auditEvent)
 
       lazy val updatedInstance = clock.instant()
-      lazy val checksCompletedDateTime = EmailDateTimeFormatter.format(updatedInstance)
+      lazy val checksCompletedDateTime = EmailDateTimeFormatter.format(updatedInstance).replace("AM", "am").replace("PM", "pm")
 
       for {
         subscription      <- subscriptionConnector.get(submission.dprsId)
