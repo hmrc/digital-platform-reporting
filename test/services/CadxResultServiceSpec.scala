@@ -217,7 +217,7 @@ class CadxResultServiceSpec
             verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
             verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
             verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-            verify(mockEmailService).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any()) // TODO
+            verify(mockEmailService).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
           }
 
           "when there is unexpected content in the ValidationErrors element" in {
@@ -262,7 +262,7 @@ class CadxResultServiceSpec
             verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
             verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
             verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-            verify(mockEmailService).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any()) // TODO
+            verify(mockEmailService).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
 
           }
         }
@@ -376,7 +376,7 @@ class CadxResultServiceSpec
             verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
             verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
             verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-            verify(mockEmailService).sendFailedBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any()) // TODO
+            verify(mockEmailService).sendFailedBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
 
             val results = captor.getAllValues
 

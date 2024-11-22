@@ -25,7 +25,7 @@ import models.email.requests.SuccessfulXmlSubmissionPlatformOperator.SuccessfulX
 import models.email.requests.SuccessfulXmlSubmissionUser.SuccessfulXmlSubmissionUserTemplateId
 import models.email.requests.{FailedXmlSubmissionPlatformOperator, FailedXmlSubmissionUser, SendEmailRequest, SuccessfulXmlSubmissionPlatformOperator, SuccessfulXmlSubmissionUser, ValidationError}
 import models.operator.responses.PlatformOperator
-import models.submission.Submission.State.{Approved, Rejected, Submitted}
+import models.submission.Submission.State.{Approved, Rejected}
 import models.subscription.responses.SubscriptionInfo
 import org.apache.pekko.Done
 import play.api.i18n.Lang.logger
