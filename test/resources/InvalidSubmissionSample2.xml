@@ -9,12 +9,13 @@
     <dpi:SendingEntityIN>platformOperatorId</dpi:SendingEntityIN>
     <dpi:TransmittingCountry>CC</dpi:TransmittingCountry>
     <dpi:ReceivingCountry>LY</dpi:ReceivingCountry>
+    <dpi:MessageType>broken</dpi:MessageType>
     <dpi:Warning>a</dpi:Warning>
     <dpi:Contact>a</dpi:Contact>
     <dpi:MessageRefId>a</dpi:MessageRefId>
     <dpi:MessageTypeIndic>DPI402</dpi:MessageTypeIndic>
-    <dpi:ReportingPeriod>2001-12-17</dpi:ReportingPeriod>
-    <dpi:Timestamp>2001-12-17T09:30:47Z</dpi:Timestamp>
+    <dpi:ReportingPeriod>broken</dpi:ReportingPeriod>
+    <dpi:Timestamp>broken</dpi:Timestamp>
   </dpi:MessageSpec>
   <dpi:DPIBody>
     <dpi:PlatformOperator>
