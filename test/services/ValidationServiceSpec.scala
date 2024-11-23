@@ -163,7 +163,7 @@ class ValidationServiceSpec
         .thenReturn(Future.successful(None))
 
       val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
-      result.left.value mustEqual SchemaValidationError
+      result.left.value mustEqual SchemaValidationError(Seq.empty)
 
       verify(mockDownloadConnector).download(downloadUrl)
     }

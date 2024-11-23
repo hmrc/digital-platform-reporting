@@ -88,7 +88,7 @@ class ValidationService @Inject() (
         case _: FatalSaxParsingException =>
           Future.successful(Left(NotXml))
         case _: SAXParseException =>
-          Future.successful(Left(SchemaValidationError))
+          Future.successful(Left(SchemaValidationError(Seq.empty)))
       }
     }
   }
