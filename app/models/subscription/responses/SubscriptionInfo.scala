@@ -28,7 +28,7 @@ final case class SubscriptionInfo(id: String,
                                   secondaryContact: Option[Contact]) {
 
   lazy val primaryContactName: String = primaryContact match {
-    case ic: IndividualContact => ic.individual.firstName + " " + ic.individual.lastName
+    case ic: IndividualContact => s"${ic.individual.firstName} ${ic.individual.lastName}"
     case oc: OrganisationContact => oc.organisation.name
   }
 }

@@ -52,7 +52,7 @@ class FailedXmlSubmissionPlatformOperatorSpec extends AnyFreeSpec
       operatorId = "operatorId",
       operatorName = "operatorName",
       tinDetails = Seq.empty,
-      businessName = Some("businessName"),
+      businessName = None,
       tradingName = None,
       primaryContactDetails = ContactDetails(None, "name", "email"),
       secondaryContactDetails = None,
@@ -67,32 +67,15 @@ class FailedXmlSubmissionPlatformOperatorSpec extends AnyFreeSpec
 
     "must return correct FailedXmlSubmissionPlatformOperator" in {
 
-      underTest.build(checksCompletedDateTime, platformOperator) mustBe Right(FailedXmlSubmissionPlatformOperator(
+      underTest.build(checksCompletedDateTime, platformOperator) mustBe FailedXmlSubmissionPlatformOperator(
         to = List(subscriptionInfo.primaryContact.email),
         templateId = "dprs_failed_xml_submission_platform_operator",
         parameters = Map(
           "poPrimaryContactName" -> "name",
-          "poBusinessName" -> "businessName",
+          "poBusinessName" -> "operatorName",
           "checksCompletedDateTime" -> checksCompletedDateTime
         )
-      ))
-    }
-
-    "must return list of missing field errors when not found in user answers" in {
-
-      val platformOperator = PlatformOperator(
-        operatorId = "operatorId",
-        operatorName = "operatorName",
-        tinDetails = Seq.empty,
-        businessName = None,
-        tradingName = None,
-        primaryContactDetails = ContactDetails(None, "name", "email"),
-        secondaryContactDetails = None,
-        addressDetails = AddressDetails("line 1", None, None, None, None, None),
-        notifications = Seq.empty
       )
-      val result = underTest.build(checksCompletedDateTime, platformOperator)
-      result.left.value.toChain.toList must contain theSameElementsAs Seq(MissingBusinessName)
     }
   }
 

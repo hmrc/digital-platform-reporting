@@ -60,7 +60,7 @@ class SuccessfulXmlSubmissionUserSpec extends AnyFreeSpec
       operatorId = "operatorId",
       operatorName = "operatorName",
       tinDetails = Seq.empty,
-      businessName = Some("businessName"),
+      businessName = None,
       tradingName = None,
       primaryContactDetails = ContactDetails(None, "name", "email"),
       secondaryContactDetails = None,
@@ -75,35 +75,19 @@ class SuccessfulXmlSubmissionUserSpec extends AnyFreeSpec
 
     "must return correct SuccessfulXmlSubmissionUser" in {
 
-      underTest.build(stateApproved, checksCompletedDateTime, platformOperator, subscriptionInfo) mustBe Right(SuccessfulXmlSubmissionUser(
+      underTest.build(stateApproved, checksCompletedDateTime, platformOperator, subscriptionInfo) mustBe SuccessfulXmlSubmissionUser(
         to = List(subscriptionInfo.primaryContact.email),
         templateId = "dprs_successful_xml_submission_user",
         parameters = Map(
           "userPrimaryContactName" -> "first last",
-          "poBusinessName" -> "businessName",
+          "poBusinessName" -> "operatorName",
           "poId" -> "operatorId",
           "checksCompletedDateTime" -> checksCompletedDateTime,
           "reportingPeriod" -> stateApproved.reportingPeriod.toString,
           "fileName" -> stateApproved.fileName
         )
-      ))
-    }
-
-    "must return list of missing field errors when not found in user answers" in {
-
-      val platformOperator = PlatformOperator(
-        operatorId = "operatorId",
-        operatorName = "operatorName",
-        tinDetails = Seq.empty,
-        businessName = None,
-        tradingName = None,
-        primaryContactDetails = ContactDetails(None, "name", "email"),
-        secondaryContactDetails = None,
-        addressDetails = AddressDetails("line 1", None, None, None, None, None),
-        notifications = Seq.empty
       )
-      val result = underTest.build(stateApproved, checksCompletedDateTime, platformOperator, subscriptionInfo)
-      result.left.value.toChain.toList must contain theSameElementsAs Seq(MissingBusinessName)
     }
+
   }
 }

@@ -26,7 +26,7 @@ import models.email.requests._
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import org.mockito.Mockito
-import org.mockito.Mockito.{never, times, verify, when}
+import org.mockito.Mockito.{times, verify, when}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.{BeforeAndAfterEach, TryValues}
@@ -64,7 +64,7 @@ class EmailServiceSpec extends AnyFreeSpec
       operatorId = "operatorId",
       operatorName = "operatorName",
       tinDetails = Seq.empty,
-      businessName = Some("businessName"),
+      businessName = None,
       tradingName = None,
       primaryContactDetails = ContactDetails(None, "name", "email"),
       secondaryContactDetails = None,
@@ -81,8 +81,8 @@ class EmailServiceSpec extends AnyFreeSpec
     "must send SuccessfulXmlSubmissionUser SuccessfulXmlSubmissionPlatformOperator when relevant data available" in {
 
 
-      val expectedSuccessfulXmlSubmissionUser = SuccessfulXmlSubmissionUser.build(stateApproved, checksCompletedDateTime, platformOperator, subscriptionInfo).toOption.get
-      val expectedSuccessfulXmlSubmissionPlatformOperator = SuccessfulXmlSubmissionPlatformOperator.build(stateApproved, checksCompletedDateTime, platformOperator).toOption.get
+      val expectedSuccessfulXmlSubmissionUser = SuccessfulXmlSubmissionUser.build(stateApproved, checksCompletedDateTime, platformOperator, subscriptionInfo)
+      val expectedSuccessfulXmlSubmissionPlatformOperator = SuccessfulXmlSubmissionPlatformOperator.build(stateApproved, checksCompletedDateTime, platformOperator)
 
       when(mockEmailConnector.send(any())(any())).thenReturn(Future.successful(Done))
 
@@ -90,28 +90,6 @@ class EmailServiceSpec extends AnyFreeSpec
 
       verify(mockEmailConnector, times(1)).send(eqTo(expectedSuccessfulXmlSubmissionUser))(any())
       verify(mockEmailConnector, times(1)).send(eqTo(expectedSuccessfulXmlSubmissionPlatformOperator))(any())
-    }
-
-    "must not send emails when relevant data not available" in {
-
-      val platformOperator = PlatformOperator(
-        operatorId = "operatorId",
-        operatorName = "operatorName",
-        tinDetails = Seq.empty,
-        businessName = None,
-        tradingName = None,
-        primaryContactDetails = ContactDetails(None, "name", "email"),
-        secondaryContactDetails = None,
-        addressDetails = AddressDetails("line 1", None, None, None, None, None),
-        notifications = Seq.empty
-      )
-
-      when(mockEmailConnector.send(any())(any())).thenReturn(Future.successful(Done))
-
-      underTest.sendSuccessfulBusinessRulesChecksEmails(stateApproved, checksCompletedDateTime, platformOperator, subscriptionInfo).futureValue
-
-      verify(mockEmailConnector, never()).send(any())(any())
-      verify(mockEmailConnector, never()).send(any())(any())
     }
   }
 
@@ -140,8 +118,8 @@ class EmailServiceSpec extends AnyFreeSpec
     "must send FailedXmlSubmissionUser FailedXmlSubmissionPlatformOperator when relevant data available" in {
 
 
-      val expectedFailedXmlSubmissionUser = FailedXmlSubmissionUser.build(stateRejected, checksCompletedDateTime, platformOperator, subscriptionInfo).toOption.get
-      val expectedFailedXmlSubmissionPlatformOperator = FailedXmlSubmissionPlatformOperator.build(checksCompletedDateTime, platformOperator).toOption.get
+      val expectedFailedXmlSubmissionUser = FailedXmlSubmissionUser.build(stateRejected, checksCompletedDateTime, platformOperator, subscriptionInfo)
+      val expectedFailedXmlSubmissionPlatformOperator = FailedXmlSubmissionPlatformOperator.build(checksCompletedDateTime, platformOperator)
 
       when(mockEmailConnector.send(any())(any())).thenReturn(Future.successful(Done))
 
@@ -149,28 +127,6 @@ class EmailServiceSpec extends AnyFreeSpec
 
       verify(mockEmailConnector, times(1)).send(eqTo(expectedFailedXmlSubmissionUser))(any())
       verify(mockEmailConnector, times(1)).send(eqTo(expectedFailedXmlSubmissionPlatformOperator))(any())
-    }
-
-    "must not send emails when relevant data not available" in {
-
-      val platformOperator = PlatformOperator(
-        operatorId = "operatorId",
-        operatorName = "operatorName",
-        tinDetails = Seq.empty,
-        businessName = None,
-        tradingName = None,
-        primaryContactDetails = ContactDetails(None, "name", "email"),
-        secondaryContactDetails = None,
-        addressDetails = AddressDetails("line 1", None, None, None, None, None),
-        notifications = Seq.empty
-      )
-
-      when(mockEmailConnector.send(any())(any())).thenReturn(Future.successful(Done))
-
-      underTest.sendFailedBusinessRulesChecksEmails(stateRejected, checksCompletedDateTime, platformOperator, subscriptionInfo).futureValue
-
-      verify(mockEmailConnector, never()).send(any())(any())
-      verify(mockEmailConnector, never()).send(any())(any())
     }
   }
 
