@@ -17,7 +17,8 @@
 package models.sdes.list
 
 import models.urlFormat
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
 
 import java.net.URL
 
@@ -30,7 +31,24 @@ final case class SdesFile(
 
 object SdesFile {
 
-  given OFormat[SdesFile] = Json.format
+  given OFormat[SdesFile] = {
+
+    val reads: Reads[SdesFile] = (
+      (__ \ "filename").read[String] and
+      (__ \ "fileSize").read[Long] and
+      (__ \ "downloadURL").read[URL] and
+      (__ \ "metadata").readWithDefault(Seq.empty[MetadataValue])
+    )(SdesFile.apply)
+
+    val writes: OWrites[SdesFile] = (
+      (__ \ "filename").write[String] and
+      (__ \ "fileSize").write[Long] and
+      (__ \ "downloadURL").write[URL] and
+      (__ \ "metadata").write[Seq[MetadataValue]]
+    )(o => Tuple.fromProductTyped(o))
+
+    OFormat(reads, writes)
+  }
 }
 
 final case class MetadataValue(metadata: String, value: String)
