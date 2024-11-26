@@ -90,7 +90,7 @@ class SdesSubmissionCallbackControllerSpec
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
   private val uploadFailureReasonGen: Gen[UploadFailureReason] = Gen.oneOf(NotXml, SchemaValidationError, PlatformOperatorIdMissing, ReportingPeriodInvalid)
-  private val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason))
+  private val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason, None))
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
   private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
   private val rejectedGen: Gen[Rejected] = Gen.const(Rejected("test.xml", Year.of(2024)))

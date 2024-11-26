@@ -105,7 +105,7 @@ object Submission {
 
     case object Ready extends State
     case object Uploading extends State
-    final case class UploadFailed(reason: UploadFailureReason) extends State
+    final case class UploadFailed(reason: UploadFailureReason, fileName: Option[String]) extends State
     final case class Validated(downloadUrl: URL, reportingPeriod: Year, fileName: String, checksum: String, size: Long) extends State
     final case class Submitted(fileName: String, reportingPeriod: Year) extends State
     final case class Approved(fileName: String, reportingPeriod: Year) extends State

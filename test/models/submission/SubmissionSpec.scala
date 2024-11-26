@@ -114,7 +114,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       operatorId = "operatorId",
       operatorName = "operatorName",
       assumingOperatorName = None,
-      state = UploadFailed(SchemaValidationError),
+      state = UploadFailed(SchemaValidationError, Some("some-file-name")),
       created = created,
       updated = updated
     )
@@ -129,7 +129,8 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
         "type" -> "UploadFailed",
         "reason" -> Json.obj(
           "type" -> "SchemaValidationError"
-        )
+        ),
+        "fileName" -> "some-file-name"
       ),
       "created" -> created,
       "updated" -> updated

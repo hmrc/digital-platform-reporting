@@ -18,10 +18,10 @@ package controllers
 
 import models.audit.FileUploadedEvent
 import models.audit.FileUploadedEvent.FileUploadOutcome
+import models.submission.*
+import models.submission.Submission.State.*
+import models.submission.Submission.UploadFailureReason.*
 import models.submission.Submission.{State, SubmissionType, UploadFailureReason}
-import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
-import models.submission.{UpscanFailureReason, *}
-import models.submission.Submission.UploadFailureReason.{NotXml, PlatformOperatorIdMissing, ReportingPeriodInvalid, SchemaValidationError, UpscanError}
 import models.submission.SubmissionStatus.Pending
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
@@ -41,7 +41,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import repository.SubmissionRepository
-import services.{AuditService, SubmissionService, UuidService, ValidationService, ViewSubmissionsService}
+import services.*
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.StringContextOps
 
@@ -91,7 +91,7 @@ class SubmissionControllerSpec
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
   private val uploadFailureReasonGen: Gen[UploadFailureReason] = Gen.oneOf(NotXml, SchemaValidationError, PlatformOperatorIdMissing, ReportingPeriodInvalid)
-  private val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason))
+  private val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason, Some("some-file-name")))
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
   private val submittedGen: Gen[Submitted] = Gen.const(Submitted("test.xml", Year.of(2024)))
   private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
@@ -402,7 +402,6 @@ class SubmissionControllerSpec
         "when the submission fails validation" - {
 
           "must set the state of the submission to UpdateFailed and return OK" in {
-
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
               .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)))
 
@@ -420,7 +419,7 @@ class SubmissionControllerSpec
             )
 
             val expectedSubmission = existingSubmission.copy(
-              state = UploadFailed(SchemaValidationError),
+              state = UploadFailed(SchemaValidationError, Some(fileName)),
               updated = now
             )
 
@@ -581,7 +580,7 @@ class SubmissionControllerSpec
           )
 
           val expectedSubmission = existingSubmission.copy(
-            state = UploadFailed(UpscanError(UpscanFailureReason.Rejected)),
+            state = UploadFailed(UpscanError(UpscanFailureReason.Rejected), None),
             updated = now
           )
 
@@ -807,7 +806,7 @@ class SubmissionControllerSpec
     "when there are local submissions" - {
 
       "must return OK with the submissions in the body" in {
-        
+
         val summary = SubmissionsSummary(Nil, 0, false, 1L)
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
@@ -829,7 +828,7 @@ class SubmissionControllerSpec
         verify(mockViewSubmissionsService, times(1)).getDeliveredSubmissions(eqTo(expectedRequest))(any())
       }
     }
-    
+
     "when there are delivered and local submissions" - {
 
       "must return OK the submissions in the body" in {
@@ -848,7 +847,7 @@ class SubmissionControllerSpec
         ))
 
         val summary = SubmissionsSummary(deliveredSubmissions, 1, true, 1L)
-        
+
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
         when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
 
@@ -885,18 +884,18 @@ class SubmissionControllerSpec
         val result = route(app, request).value
 
         status(result) mustEqual NOT_FOUND
-        
+
         val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
         val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
         verify(mockViewSubmissionsService, times(1)).getDeliveredSubmissions(eqTo(expectedRequest))(any())
       }
     }
   }
-  
+
   "listUndeliveredSubmissions" - {
-    
+
     "must return OK and an array of submissions where there are undelivered submissions" in {
-      
+
       val existingSubmission = SubmissionSummary(
         submissionId = uuid,
         fileName = "filename",
@@ -909,7 +908,7 @@ class SubmissionControllerSpec
         submissionCaseId = None,
         isDeleted = false
       )
-      
+
       when(mockViewSubmissionsService.getUndeliveredSubmissions(any())(any())).thenReturn(Future.successful(Seq(existingSubmission)))
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
 
@@ -920,7 +919,7 @@ class SubmissionControllerSpec
       status(result) mustEqual OK
       contentAsJson(result) mustEqual Json.toJson(Seq(existingSubmission))
     }
-    
+
     "must return OK and an empty array when there are no undelivered submissions" in {
 
       when(mockViewSubmissionsService.getUndeliveredSubmissions(any())(any())).thenReturn(Future.successful(Nil))
