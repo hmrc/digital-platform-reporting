@@ -50,7 +50,7 @@ class SubmissionController @Inject() (
       id.map { id =>
         submissionRepository.get(request.dprsId, id).flatMap {
           _.map { submission =>
-            if (submission.state.isInstanceOf[Validated]) {
+            if (submission.state.isInstanceOf[Validated] || submission.state.isInstanceOf[UploadFailed]) {
 
               val updatedSubmission = submission.copy(
                 state = Ready,
@@ -141,7 +141,7 @@ class SubmissionController @Inject() (
 
             val updatedSubmission = maybeReportingPeriod.left.map { failureReason =>
               submission.copy(
-                state = UploadFailed(failureReason),
+                state = UploadFailed(failureReason, Some(request.body.fileName)),
                 updated = clock.instant()
               )
             }.map { reportingPeriod =>
@@ -188,7 +188,7 @@ class SubmissionController @Inject() (
           )
 
           val updatedSubmission = submission.copy(
-            state = UploadFailed(request.body.reason),
+            state = UploadFailed(request.body.reason, None),
             updated = clock.instant()
           )
 
