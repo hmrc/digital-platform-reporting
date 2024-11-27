@@ -30,13 +30,14 @@ final case class SubmissionSummary(submissionId: String,
                                    submissionStatus: SubmissionStatus,
                                    assumingReporterName: Option[String],
                                    submissionCaseId: Option[String],
-                                   isDeleted: Boolean)
+                                   isDeleted: Boolean,
+                                   localDataExists: Boolean)
 
 object SubmissionSummary {
   
   implicit lazy val writes: OWrites[SubmissionSummary] = Json.writes
   
-  def apply(submission: DeliveredSubmission, isDeleted: Boolean): SubmissionSummary =
+  def apply(submission: DeliveredSubmission, isDeleted: Boolean, localDataExists: Boolean): SubmissionSummary =
     SubmissionSummary(
       submission.conversationId,
       submission.fileName,
@@ -47,7 +48,8 @@ object SubmissionSummary {
       submission.submissionStatus,
       submission.assumingReporterName,
       Some(submission.submissionCaseId),
-      isDeleted
+      isDeleted,
+      localDataExists
     )
     
   def apply(submission: Submission): Option[SubmissionSummary] =
@@ -63,7 +65,8 @@ object SubmissionSummary {
           SubmissionStatus.Pending,
           submission.assumingOperatorName,
           None,
-          isDeleted = false
+          isDeleted = false,
+          localDataExists = true
         ))
 
       case _ => None

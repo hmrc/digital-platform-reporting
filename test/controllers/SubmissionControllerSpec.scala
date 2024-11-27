@@ -779,7 +779,8 @@ class SubmissionControllerSpec
           submissionStatus = SubmissionStatus.Success,
           assumingReporterName = None,
           submissionCaseId = Some("submissionCaseId"),
-          isDeleted = false
+          isDeleted = false,
+          localDataExists = true
         ))
         val summary = SubmissionsSummary(deliveredSubmissions, 1, true, 0L)
 
@@ -843,7 +844,8 @@ class SubmissionControllerSpec
           submissionStatus = SubmissionStatus.Success,
           assumingReporterName = None,
           submissionCaseId = Some("submissionCaseId"),
-          isDeleted = false
+          isDeleted = false,
+          localDataExists = true
         ))
 
         val summary = SubmissionsSummary(deliveredSubmissions, 1, true, 1L)
@@ -906,7 +908,8 @@ class SubmissionControllerSpec
         submissionStatus = Pending,
         assumingReporterName = None,
         submissionCaseId = None,
-        isDeleted = false
+        isDeleted = false,
+        localDataExists = true
       )
 
       when(mockViewSubmissionsService.getUndeliveredSubmissions(any())(any())).thenReturn(Future.successful(Seq(existingSubmission)))

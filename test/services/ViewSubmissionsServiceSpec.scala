@@ -21,6 +21,7 @@ import models.assumed.AssumingPlatformOperator
 import models.submission.*
 import models.submission.DeliveredSubmissionSortBy.SubmissionDate
 import models.submission.SortOrder.Descending
+import models.submission.Submission.SubmissionType.{ManualAssumedReport, Xml}
 import models.submission.SubmissionStatus.*
 import models.submission.Submission.{State, SubmissionType}
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
@@ -60,62 +61,77 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
       
       "when there are delivered submissions and no Submitted local XML submissions" in {        
         
+        val deliveredSubmission1 = DeliveredSubmission("id1", "fileName", "operatorId", "operatorName", Year.of(2024), "submissionCaseId", instant, Success, None)
+        val deliveredSubmission2 = DeliveredSubmission("id2", "fileName2", "operatorId", "operatorName", Year.of(2024), "submissionCaseId", instant, Success, None)
+        
         val deliveredSubmissions = DeliveredSubmissions(
-          submissions = Seq(
-            DeliveredSubmission("id1", "fileName", "operatorId", "operatorName", Year.of(2024), "submissionCaseId", instant, Success, None),
-            DeliveredSubmission("id2", "fileName2", "operatorId", "operatorName", Year.of(2024), "submissionCaseId", instant, Success, None)
-          ),
+          submissions = Seq(deliveredSubmission1, deliveredSubmission2),
           resultsCount = 2
         )
+        
+        val submission1 = Submission(_id = "id1", submissionType = Xml, dprsId = "dprsId", operatorId = "operatorId", operatorName = "operatorName", assumingOperatorName = None, state = State.Approved("filename", Year.of(2024)), created = instant, updated = instant)
 
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(deliveredSubmissions)))
         when(mockRepository.countSubmittedXmlSubmissions(any())).thenReturn(Future.successful(0L))
+        when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(Seq(submission1)))
 
         val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
         val result = service.getDeliveredSubmissions(request).futureValue
 
+        val summary1 = SubmissionSummary(deliveredSubmission1, false, true)
+        val summary2 = SubmissionSummary(deliveredSubmission2, false, false)
+        
         result mustEqual SubmissionsSummary(
-          deliveredSubmissions = deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)),
+          deliveredSubmissions = Seq(summary1, summary2),
           deliveredSubmissionRecordCount =  2,
-          deliveredSubmissionsExist =  true,
+          deliveredSubmissionsExist = true,
           undeliveredSubmissionCount = 0L
         )
 
-        verify(mockConnector, times(1)).get(eqTo(request))(any())
-        verify(mockRepository, times(1)).countSubmittedXmlSubmissions("dprsId")
+        verify(mockConnector).get(eqTo(request))(any())
+        verify(mockRepository).countSubmittedXmlSubmissions("dprsId")
+        verify(mockRepository).getBySubscriptionId("dprsId")
       }
 
       "when there are delivered submissions and some Submitted local submissions" in {
 
+        val deliveredSubmission1 = DeliveredSubmission("id1", "fileName", "operatorId", "operatorName", Year.of(2024), "submissionCaseId", instant, Success, None)
+        val deliveredSubmission2 = DeliveredSubmission("id2", "fileName2", "operatorId", "operatorName", Year.of(2024), "submissionCaseId", instant, Success, None)
+
         val deliveredSubmissions = DeliveredSubmissions(
-          submissions = Seq(
-            DeliveredSubmission("id1", "fileName", "operatorId", "operatorName", Year.of(2024), "submissionCaseId", instant, Success, None),
-            DeliveredSubmission("id2", "fileName2", "operatorId", "operatorName", Year.of(2024), "submissionCaseId", instant, Success, None)
-          ),
+          submissions = Seq(deliveredSubmission1, deliveredSubmission2),
           resultsCount = 2
         )
-        
+
+        val submission1 = Submission(_id = "id1", submissionType = Xml, dprsId = "dprsId", operatorId = "operatorId", operatorName = "operatorName", assumingOperatorName = None, state = State.Approved("filename", Year.of(2024)), created = instant, updated = instant)
+
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(deliveredSubmissions)))
         when(mockRepository.countSubmittedXmlSubmissions(any())).thenReturn(Future.successful(2L))
+        when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(Seq(submission1)))
 
         val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
         val result = service.getDeliveredSubmissions(request).futureValue
 
+        val summary1 = SubmissionSummary(deliveredSubmission1, false, true)
+        val summary2 = SubmissionSummary(deliveredSubmission2, false, false)
+
         result mustEqual SubmissionsSummary(
-          deliveredSubmissions = deliveredSubmissions.submissions.map(x => SubmissionSummary(x, false)),
-          deliveredSubmissionRecordCount =  2,
-          deliveredSubmissionsExist =  true,
+          deliveredSubmissions = Seq(summary1, summary2),
+          deliveredSubmissionRecordCount = 2,
+          deliveredSubmissionsExist = true,
           undeliveredSubmissionCount = 2L
         )
 
-        verify(mockConnector, times(1)).get(eqTo(request))(any())
-        verify(mockRepository, times(1)).countSubmittedXmlSubmissions("dprsId")
+        verify(mockConnector).get(eqTo(request))(any())
+        verify(mockRepository).countSubmittedXmlSubmissions("dprsId")
+        verify(mockRepository).getBySubscriptionId("dprsId")
       }
       
       "when there are no delivered submissions and some Submitted local submissions" in {
 
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(None))
         when(mockRepository.countSubmittedXmlSubmissions(any())).thenReturn(Future.successful(2L))
+        when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(Nil))
 
         val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
         val result = service.getDeliveredSubmissions(request).futureValue
@@ -127,8 +143,9 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
           undeliveredSubmissionCount = 2L
         )
 
-        verify(mockConnector, times(1)).get(eqTo(request))(any())
-        verify(mockRepository, times(1)).countSubmittedXmlSubmissions("dprsId")
+        verify(mockConnector).get(eqTo(request))(any())
+        verify(mockRepository).countSubmittedXmlSubmissions("dprsId")
+        verify(mockRepository).getBySubscriptionId("dprsId")
       }
     }
 
@@ -136,28 +153,32 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
 
       when(mockConnector.get(any())(any())).thenReturn(Future.successful(None))
       when(mockRepository.countSubmittedXmlSubmissions(any())).thenReturn(Future.successful(0L))
+      when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(Nil))
 
       val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
       val result = service.getDeliveredSubmissions(request).futureValue
 
       result mustEqual SubmissionsSummary(Nil, 0, false, 0)
 
-      verify(mockConnector, times(1)).get(eqTo(request))(any())
-      verify(mockRepository, times(1)).countSubmittedXmlSubmissions("dprsId")
+      verify(mockConnector).get(eqTo(request))(any())
+      verify(mockRepository).countSubmittedXmlSubmissions("dprsId")
+      verify(mockRepository).getBySubscriptionId("dprsId")
     }
 
     "must return an empty submission summary, with `deliveredSubmissionsExist` as true, when no delivered submissions are returned but the connector response indicates that some exist" in {
 
       when(mockConnector.get(any())(any())).thenReturn(Future.successful(Some(DeliveredSubmissions(Nil, 0))))
       when(mockRepository.countSubmittedXmlSubmissions(any())).thenReturn(Future.successful(0L))
+      when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(Nil))
 
       val request = ViewSubmissionsRequest("dprsId", false, 1, DeliveredSubmissionSortBy.SubmissionDate, SortOrder.Descending, None, None, None, Nil)
       val result = service.getDeliveredSubmissions(request).futureValue
 
       result mustEqual SubmissionsSummary(Nil, 0, true, 0)
 
-      verify(mockConnector, times(1)).get(eqTo(request))(any())
-      verify(mockRepository, times(1)).countSubmittedXmlSubmissions("dprsId")
+      verify(mockConnector).get(eqTo(request))(any())
+      verify(mockRepository).countSubmittedXmlSubmissions("dprsId")
+      verify(mockRepository).getBySubscriptionId("dprsId")
     }
   }
 
@@ -175,8 +196,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
       val result = service.getUndeliveredSubmissions("dprsId").futureValue
       
       result must contain theSameElementsInOrderAs Seq(
-        SubmissionSummary("id2", "fileName2","operatorId", "operatorName", Year.of(2024), instant.plusSeconds(1), Pending, None, None, isDeleted = false),
-        SubmissionSummary("id1", "fileName1","operatorId", "operatorName", Year.of(2024), instant, Pending, None, None, isDeleted = false)
+        SubmissionSummary("id2", "fileName2","operatorId", "operatorName", Year.of(2024), instant.plusSeconds(1), Pending, None, None, isDeleted = false, localDataExists = true),
+        SubmissionSummary("id1", "fileName1","operatorId", "operatorName", Year.of(2024), instant, Pending, None, None, isDeleted = false, localDataExists = true)
       )
     }
   }
@@ -199,6 +220,9 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
           resultsCount = 6
         )
 
+        val localSubmission2 = Submission(_id = "id2", submissionType = ManualAssumedReport, dprsId = "dprsId", operatorId = "operatorId1", operatorName = "operatorName1", assumingOperatorName = Some("assumingName"), state = State.Approved("filename", Year.of(2024)), created = instant, updated = instant)
+        val localSubmission3 = Submission(_id = "id3", submissionType = ManualAssumedReport, dprsId = "dprsId", operatorId = "operatorId1", operatorName = "operatorName1", assumingOperatorName = Some("assumingName"), state = State.Approved("filename", Year.of(2025)), created = instant, updated = instant)
+
         val assumedReport2 = AssumedReportingSubmission("operatorId1", "operatorName1", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2024), true)
         val assumedReport3 = AssumedReportingSubmission("operatorId1", "operatorName1", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2025), true)
         val assumedReport5 = AssumedReportingSubmission("operatorId2", "operatorName2", AssumingPlatformOperator("name", "GB", Nil, "GB", "address"), Year.of(2024), false)
@@ -209,15 +233,18 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         when(mockAssumedReportingService.getSubmission(any(), eqTo("operatorId1"), eqTo(Year.of(2025)))(using any())).thenReturn(Future.successful(Some(assumedReport3)))
         when(mockAssumedReportingService.getSubmission(any(), eqTo("operatorId2"), eqTo(Year.of(2024)))(using any())).thenReturn(Future.successful(Some(assumedReport5)))
         when(mockAssumedReportingService.getSubmission(any(), eqTo("operatorId3"), eqTo(Year.of(2024)))(using any())).thenReturn(Future.successful(Some(assumedReport6)))
+        when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(Seq(localSubmission2, localSubmission3)))
 
         val result = service.getAssumedReports("dprsId").futureValue
 
         result must contain theSameElementsInOrderAs Seq(
-          SubmissionSummary("id6", "fileName6", "operatorId3", "operatorName3", Year.of(2024), instant.plusSeconds(6), Success, Some("assumingName"), Some("submissionCaseId6"), false),
-          SubmissionSummary("id5", "fileName5", "operatorId2", "operatorName2", Year.of(2024), instant.plusSeconds(5), Success, Some("assumingName"), Some("submissionCaseId5"), false),
-          SubmissionSummary("id3", "fileName3", "operatorId1", "operatorName1", Year.of(2025), instant.plusSeconds(3), Success, Some("assumingName"), Some("submissionCaseId3"), true),
-          SubmissionSummary("id2", "fileName2", "operatorId1", "operatorName1", Year.of(2024), instant.plusSeconds(2), Success, Some("assumingName"), Some("submissionCaseId2"), true)
+          SubmissionSummary("id6", "fileName6", "operatorId3", "operatorName3", Year.of(2024), instant.plusSeconds(6), Success, Some("assumingName"), Some("submissionCaseId6"), false, false),
+          SubmissionSummary("id5", "fileName5", "operatorId2", "operatorName2", Year.of(2024), instant.plusSeconds(5), Success, Some("assumingName"), Some("submissionCaseId5"), false, false),
+          SubmissionSummary("id3", "fileName3", "operatorId1", "operatorName1", Year.of(2025), instant.plusSeconds(3), Success, Some("assumingName"), Some("submissionCaseId3"), true, true),
+          SubmissionSummary("id2", "fileName2", "operatorId1", "operatorName1", Year.of(2024), instant.plusSeconds(2), Success, Some("assumingName"), Some("submissionCaseId2"), true, true)
         )
+
+        verify(mockRepository).getBySubscriptionId(eqTo("dprsId"))
       }
     }
     
@@ -226,10 +253,13 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
       "must return an empty submissions summary" in {
 
         when(mockConnector.get(any())(any())).thenReturn(Future.successful(None))
+        when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(Nil))
         
         val result = service.getAssumedReports("dprsId").futureValue
         
         result mustBe empty
+
+        verify(mockRepository).getBySubscriptionId(eqTo("dprsId"))
       }
     }
 
@@ -259,13 +289,14 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         when(mockAssumedReportingService.getSubmission(any(), eqTo("operatorId"), eqTo(Year.of(2024)))(using any())).thenReturn(Future.successful(Some(assumedReport1)))
         when(mockAssumedReportingService.getSubmission(any(), eqTo("operatorId"), eqTo(Year.of(2025)))(using any())).thenReturn(Future.successful(Some(assumedReport2)))
         when(mockAssumedReportingService.getSubmission(any(), eqTo("operatorId"), eqTo(Year.of(2026)))(using any())).thenReturn(Future.successful(Some(assumedReport3)))
+        when(mockRepository.getBySubscriptionId(any())).thenReturn(Future.successful(Nil))
 
         val result = service.getAssumedReports("dprsId").futureValue
 
         result must contain theSameElementsInOrderAs Seq(
-          SubmissionSummary("25", "fileName", "operatorId", "operatorName", Year.of(2026), instant.plusSeconds(25), Success, Some("assumingName"), Some("submissionCaseId"), false),
-          SubmissionSummary("20", "fileName", "operatorId", "operatorName", Year.of(2025), instant.plusSeconds(20), Success, Some("assumingName"), Some("submissionCaseId"), true),
-          SubmissionSummary("10", "fileName", "operatorId", "operatorName", Year.of(2024), instant.plusSeconds(10), Success, Some("assumingName"), Some("submissionCaseId"), true),
+          SubmissionSummary("25", "fileName", "operatorId", "operatorName", Year.of(2026), instant.plusSeconds(25), Success, Some("assumingName"), Some("submissionCaseId"), false, false),
+          SubmissionSummary("20", "fileName", "operatorId", "operatorName", Year.of(2025), instant.plusSeconds(20), Success, Some("assumingName"), Some("submissionCaseId"), true, false),
+          SubmissionSummary("10", "fileName", "operatorId", "operatorName", Year.of(2024), instant.plusSeconds(10), Success, Some("assumingName"), Some("submissionCaseId"), true, false),
         )
 
         val expectedRequest1 = ViewSubmissionsRequest("dprsId", true, 1, SubmissionDate, Descending, None, None, None, Seq(Pending, Success, Rejected))
@@ -279,6 +310,7 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
         verify(mockAssumedReportingService).getSubmission(eqTo("dprsId"), eqTo("operatorId"), eqTo(Year.of(2024)))(using any())
         verify(mockAssumedReportingService).getSubmission(eqTo("dprsId"), eqTo("operatorId"), eqTo(Year.of(2025)))(using any())
         verify(mockAssumedReportingService).getSubmission(eqTo("dprsId"), eqTo("operatorId"), eqTo(Year.of(2026)))(using any())
+        verify(mockRepository).getBySubscriptionId(eqTo("dprsId"))
       }
     }
   }

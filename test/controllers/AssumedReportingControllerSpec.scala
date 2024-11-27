@@ -252,7 +252,8 @@ class AssumedReportingControllerSpec
         submissionStatus = SubmissionStatus.Success,
         assumingReporterName = Some("assumingOperator"),
         submissionCaseId = Some("caseId1"),
-        isDeleted = false
+        isDeleted = false,
+        localDataExists = false
       )
       val submission2 = SubmissionSummary(
         submissionId = "id2",
@@ -264,7 +265,8 @@ class AssumedReportingControllerSpec
         submissionStatus = SubmissionStatus.Success,
         assumingReporterName = Some("assumingOperator2"),
         submissionCaseId = Some("caseId2"),
-        isDeleted = false
+        isDeleted = false,
+        localDataExists = false
       )
 
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
