@@ -18,8 +18,6 @@ package models.email.requests
 
 import models.operator.responses.PlatformOperator
 import models.operator.{AddressDetails, ContactDetails}
-import models.subscription.responses.SubscriptionInfo
-import models.subscription.{Individual, IndividualContact}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.{EitherValues, OptionValues, TryValues}
@@ -30,45 +28,24 @@ class FailedXmlSubmissionPlatformOperatorSpec extends AnyFreeSpec
   with OptionValues
   with EitherValues {
 
-  private val underTest = FailedXmlSubmissionPlatformOperator
+  val platformOperator: PlatformOperator = PlatformOperator(
+    operatorId = "operatorId",
+    operatorName = "operatorName",
+    tinDetails = Seq.empty,
+    businessName = None,
+    tradingName = None,
+    primaryContactDetails = ContactDetails(None, "name", "po.email@example.com"),
+    secondaryContactDetails = None,
+    addressDetails = AddressDetails("line 1", None, None, None, None, None),
+    notifications = Seq.empty
+  )
+
+  val checksCompletedDateTime = "09:30am on 17th November 2024"
 
   ".apply(...)" - {
     "must create FailedXmlSubmissionPlatformOperator object" in {
-      FailedXmlSubmissionPlatformOperator.apply("email@example.com", "name", "some-business-name", "09:30am on 17th November 2024") mustBe FailedXmlSubmissionPlatformOperator(
-        to = List("email@example.com"),
-        templateId = "dprs_failed_xml_submission_platform_operator",
-        parameters = Map(
-          "poPrimaryContactName" -> "name",
-          "poBusinessName" -> "some-business-name",
-          "checksCompletedDateTime" -> "09:30am on 17th November 2024"
-        )
-      )
-    }
-  }
-
-  ".build(...)" - {
-
-    val platformOperator = PlatformOperator(
-      operatorId = "operatorId",
-      operatorName = "operatorName",
-      tinDetails = Seq.empty,
-      businessName = None,
-      tradingName = None,
-      primaryContactDetails = ContactDetails(None, "name", "email"),
-      secondaryContactDetails = None,
-      addressDetails = AddressDetails("line 1", None, None, None, None, None),
-      notifications = Seq.empty
-    )
-
-    val expectedIndividual = IndividualContact(Individual("first", "last"), "email", None)
-    val subscriptionInfo = SubscriptionInfo("DPRS123", true, None, expectedIndividual, None)
-
-    val checksCompletedDateTime = "09:30am on 17th November 2024"
-
-    "must return correct FailedXmlSubmissionPlatformOperator" in {
-
-      underTest.build(checksCompletedDateTime, platformOperator) mustBe FailedXmlSubmissionPlatformOperator(
-        to = List(subscriptionInfo.primaryContact.email),
+      FailedXmlSubmissionPlatformOperator.apply(checksCompletedDateTime, platformOperator) mustBe FailedXmlSubmissionPlatformOperator(
+        to = List("po.email@example.com"),
         templateId = "dprs_failed_xml_submission_platform_operator",
         parameters = Map(
           "poPrimaryContactName" -> "name",

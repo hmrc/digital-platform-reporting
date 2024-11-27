@@ -18,7 +18,7 @@ package models.email.requests
 
 import models.operator.{AddressDetails, ContactDetails}
 import models.operator.responses.PlatformOperator
-import models.submission.Submission.State
+import models.submission.Submission.State.Approved
 import models.subscription.responses.SubscriptionInfo
 import models.subscription.{Individual, IndividualContact}
 import org.scalatest.freespec.AnyFreeSpec
@@ -33,18 +33,32 @@ class SuccessfulXmlSubmissionUserSpec extends AnyFreeSpec
   with OptionValues
   with EitherValues {
 
-  private val underTest = SuccessfulXmlSubmissionUser
+  val stateApproved: Approved = Approved("test.xml", Year.of(2024))
+  val platformOperator: PlatformOperator = PlatformOperator(
+    operatorId = "operatorId",
+    operatorName = "operatorName",
+    tinDetails = Seq.empty,
+    businessName = None,
+    tradingName = None,
+    primaryContactDetails = ContactDetails(None, "name", "po.email@example.com"),
+    secondaryContactDetails = None,
+    addressDetails = AddressDetails("line 1", None, None, None, None, None),
+    notifications = Seq.empty
+  )
+  val checksCompletedDateTime = "09:30am on 17th November 2024"
+  val expectedIndividual: IndividualContact = IndividualContact(Individual("first", "last"), "user.email@example.com", None)
+  val subscriptionInfo: SubscriptionInfo = SubscriptionInfo("DPRS123", gbUser = true, None, expectedIndividual, None)
 
   ".apply(...)" - {
     "must create SuccessfulXmlSubmissionUser object" in {
-      SuccessfulXmlSubmissionUser.apply("email@example.com", "first last", "some-business-name", "some-po-id", "09:30am on 17th November 2024", "2024", "test.xml") mustBe SuccessfulXmlSubmissionUser(
-        to = List("email@example.com"),
+      SuccessfulXmlSubmissionUser.apply(stateApproved, checksCompletedDateTime, platformOperator, subscriptionInfo) mustBe SuccessfulXmlSubmissionUser(
+        to = List("user.email@example.com"),
         templateId = "dprs_successful_xml_submission_user",
         parameters = Map(
           "userPrimaryContactName" -> "first last",
-          "poBusinessName" -> "some-business-name",
-          "poId" -> "some-po-id",
-          "checksCompletedDateTime" -> "09:30am on 17th November 2024",
+          "poBusinessName" -> "operatorName",
+          "poId" -> "operatorId",
+          "checksCompletedDateTime" -> checksCompletedDateTime,
           "reportingPeriod" -> "2024",
           "fileName" -> "test.xml"
         )
@@ -52,42 +66,4 @@ class SuccessfulXmlSubmissionUserSpec extends AnyFreeSpec
     }
   }
 
-  ".build(...)" - {
-
-    val stateApproved = State.Approved(fileName = "test.xml", reportingPeriod = Year.of(2024))
-
-    val platformOperator = PlatformOperator(
-      operatorId = "operatorId",
-      operatorName = "operatorName",
-      tinDetails = Seq.empty,
-      businessName = None,
-      tradingName = None,
-      primaryContactDetails = ContactDetails(None, "name", "email"),
-      secondaryContactDetails = None,
-      addressDetails = AddressDetails("line 1", None, None, None, None, None),
-      notifications = Seq.empty
-    )
-
-    val expectedIndividual = IndividualContact(Individual("first", "last"), "email", None)
-    val subscriptionInfo = SubscriptionInfo("DPRS123", true, None, expectedIndividual, None)
-
-    val checksCompletedDateTime = "09:30am on 17th November 2024"
-
-    "must return correct SuccessfulXmlSubmissionUser" in {
-
-      underTest.build(stateApproved, checksCompletedDateTime, platformOperator, subscriptionInfo) mustBe SuccessfulXmlSubmissionUser(
-        to = List(subscriptionInfo.primaryContact.email),
-        templateId = "dprs_successful_xml_submission_user",
-        parameters = Map(
-          "userPrimaryContactName" -> "first last",
-          "poBusinessName" -> "operatorName",
-          "poId" -> "operatorId",
-          "checksCompletedDateTime" -> checksCompletedDateTime,
-          "reportingPeriod" -> stateApproved.reportingPeriod.toString,
-          "fileName" -> stateApproved.fileName
-        )
-      )
-    }
-
-  }
 }

@@ -42,6 +42,7 @@ import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
+import services.SubmissionService.NoPlatformOperatorException
 import utils.DateTimeFormats
 import utils.DateTimeFormats.EmailDateTimeFormatter
 
@@ -144,30 +145,30 @@ class CadxResultServiceSpec
             reportingPeriod = Year.of(2024)
           )
 
-          "must update the submission" in {
+          val submission = Submission(
+            _id = "submissionId",
+            submissionType = SubmissionType.Xml,
+            dprsId = "dprsId",
+            operatorId = "operatorId",
+            operatorName = "operatorName",
+            assumingOperatorName = None,
+            state = State.Submitted(
+              fileName = "test.xml",
+              reportingPeriod = Year.of(2024)
+            ),
+            created = now.minus(1, ChronoUnit.DAYS),
+            updated = now.minus(1, ChronoUnit.DAYS)
+          )
 
-            val submission = Submission(
-              _id = "submissionId",
-              submissionType = SubmissionType.Xml,
-              dprsId = "dprsId",
-              operatorId = "operatorId",
-              operatorName = "operatorName",
-              assumingOperatorName = None,
-              state = State.Submitted(
-                fileName = "test.xml",
-                reportingPeriod = Year.of(2024)
-              ),
-              created = now.minus(1, ChronoUnit.DAYS),
-              updated = now.minus(1, ChronoUnit.DAYS)
-            )
+          val expectedSubmission = submission.copy(
+            state = State.Approved(
+              fileName = "test.xml",
+              reportingPeriod = Year.of(2024)
+            ),
+            updated = now
+          )
 
-            val expectedSubmission = submission.copy(
-              state = State.Approved(
-                fileName = "test.xml",
-                reportingPeriod = Year.of(2024)
-              ),
-              updated = now
-            )
+          "must update the submission" - {
 
             val approvedResponse = BREResponse_Type(
               requestCommon = RequestCommon_Type(
@@ -202,48 +203,65 @@ class CadxResultServiceSpec
               ByteString.fromString(Utility.trim(scalaxb.toXML(approvedResponse, "BREResponse", generated.defaultScope).head).toString)
             }
 
-            when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
-            when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
-            when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
-            when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
-            when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
-            when(mockEmailService.sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
+            "subscription and platformOperator returned successfully" in {
+              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
+              when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+              when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
+              when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+              when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
+              when(mockEmailService.sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
 
-            cadxResultService.processResult(source).futureValue
+              cadxResultService.processResult(source).futureValue
 
-            verify(mockSubmissionRepository).getById(submission._id)
-            verify(mockSubmissionRepository).save(expectedSubmission)
-            verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
-            verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
-            verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
-            verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-            verify(mockEmailService).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
+              verify(mockSubmissionRepository).getById(submission._id)
+              verify(mockSubmissionRepository).save(expectedSubmission)
+              verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
+              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+              verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+              verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
+              verify(mockEmailService).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
+            }
+
+            "subscription returned failure" in {
+              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
+              when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+              when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
+              when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.failed(new Exception("foo")))
+              when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
+              when(mockEmailService.sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
+
+              cadxResultService.processResult(source).futureValue
+
+              verify(mockSubmissionRepository).getById(submission._id)
+              verify(mockSubmissionRepository).save(expectedSubmission)
+              verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
+              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+              verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+              verify(mockPlatformOperatorConnector, never()).get(any(), any())(using any())
+              verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())
+            }
+
+            "platformOperator returned failure" in {
+              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
+              when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+              when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
+              when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+              when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
+              when(mockEmailService.sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
+
+              cadxResultService.processResult(source).futureValue
+
+              verify(mockSubmissionRepository).getById(submission._id)
+              verify(mockSubmissionRepository).save(expectedSubmission)
+              verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
+              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+              verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+              verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
+              verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())
+            }
           }
 
           "when there is unexpected content in the ValidationErrors element" in {
-
-            val submission = Submission(
-              _id = "submissionId",
-              submissionType = SubmissionType.Xml,
-              dprsId = "dprsId",
-              operatorId = "operatorId",
-              operatorName = "operatorName",
-              assumingOperatorName = None,
-              state = State.Submitted(
-                fileName = "test.xml",
-                reportingPeriod = Year.of(2024)
-              ),
-              created = now.minus(1, ChronoUnit.DAYS),
-              updated = now.minus(1, ChronoUnit.DAYS)
-            )
-
-            val expectedSubmission = submission.copy(
-              state = State.Approved(
-                fileName = "test.xml",
-                reportingPeriod = Year.of(2024)
-              ),
-              updated = now
-            )
 
             val response = """<BREResponse xmlns:dpi="urn:oecd:ties:dpi:v1" xmlns:gsm="http://www.hmrc.gsi.gov.uk/gsm" xmlns:iso="urn:oecd:ties:isodpitypes:v1" xmlns:stf="urn:oecd:ties:dpistf:v1" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><requestCommon><receiptDate>2024-11-01T12:24:12Z</receiptDate><regime>AEOI</regime><conversationID>submissionId</conversationID><schemaVersion>1.0.0</schemaVersion></requestCommon><requestDetail><GenericStatusMessage><ValidationErrors>   </ValidationErrors><ValidationResult><Status>Accepted</Status></ValidationResult></GenericStatusMessage></requestDetail></BREResponse>""".stripMargin
             val source = Source.single(ByteString.fromString(response))

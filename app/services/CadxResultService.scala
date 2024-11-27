@@ -36,10 +36,12 @@ import services.CadxResultService.{InvalidResultStatusException, InvalidSubmissi
 import services.SubmissionService.NoPlatformOperatorException
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.DateTimeFormats.EmailDateTimeFormatter
+import play.api.i18n.Lang.logger
 
 import java.time.Clock
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 @Singleton
 class CadxResultService @Inject()(
@@ -155,10 +157,15 @@ class CadxResultService @Inject()(
       lazy val updatedInstance = clock.instant()
       lazy val checksCompletedDateTime = EmailDateTimeFormatter.format(updatedInstance).replace("AM", "am").replace("PM", "pm")
 
-      for {
+      val compResult = for {
         subscription      <- subscriptionConnector.get(submission.dprsId)
         platformOperator  <- OptionT(platformOperatorConnector.get(submission.dprsId, submission.operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
       } yield emailService.sendSuccessfulBusinessRulesChecksEmails(Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), checksCompletedDateTime, platformOperator, subscription)
+
+      compResult.onComplete {
+        case Success(_) => logger.info("emailService.sendSuccessfulBusinessRulesChecksEmails successful")
+        case Failure(exception) => logger.warn(s"emailService.sendSuccessfulBusinessRulesChecksEmails failed, error: $exception")
+      }
 
       submissionRepository.save(submission.copy(state = Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = updatedInstance)).map { _ =>
         Flow.fromSinkAndSource(Sink.cancelled[CadxValidationError], Source.single[Done](Done))
@@ -183,10 +190,15 @@ class CadxResultService @Inject()(
       lazy val updatedInstance = clock.instant()
       lazy val checksCompletedDateTime = EmailDateTimeFormatter.format(updatedInstance).replace("AM", "am").replace("PM", "pm")
 
-      for {
+      val compResult = for {
         subscription      <- subscriptionConnector.get(submission.dprsId)
         platformOperator  <- OptionT(platformOperatorConnector.get(submission.dprsId, submission.operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
       } yield emailService.sendFailedBusinessRulesChecksEmails(State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), checksCompletedDateTime, platformOperator, subscription)
+
+      compResult.onComplete {
+        case Success(_) => logger.info("emailService.sendFailedBusinessRulesChecksEmails successful")
+        case Failure(exception) => logger.warn(s"emailService.sendFailedBusinessRulesChecksEmails, error: $exception")
+      }
 
       submissionRepository.save(submission.copy(state = State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = updatedInstance)).map { _ =>
         Flow[CadxValidationError]

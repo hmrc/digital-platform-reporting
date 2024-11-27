@@ -31,15 +31,22 @@ class EmailService @Inject()(emailConnector: EmailConnector) {
 
   def sendSuccessfulBusinessRulesChecksEmails(state: Approved, checksCompletedDateTime: String, platformOperator: PlatformOperator, subscriptionInfo: SubscriptionInfo)
                                    (implicit hc: HeaderCarrier): Future[Done] = {
-    sendEmail(SuccessfulXmlSubmissionUser.build(state, checksCompletedDateTime, platformOperator, subscriptionInfo))
-    sendEmail(SuccessfulXmlSubmissionPlatformOperator.build(state, checksCompletedDateTime, platformOperator))
+    if (!matchingEmails(subscriptionInfo.primaryContact.email, platformOperator.primaryContactDetails.emailAddress)) {
+      sendEmail(SuccessfulXmlSubmissionPlatformOperator(state, checksCompletedDateTime, platformOperator))
+    }
+    sendEmail(SuccessfulXmlSubmissionUser(state, checksCompletedDateTime, platformOperator, subscriptionInfo))
   }
 
   def sendFailedBusinessRulesChecksEmails(state: Rejected, checksCompletedDateTime: String, platformOperator: PlatformOperator, subscriptionInfo: SubscriptionInfo)
                                              (implicit hc: HeaderCarrier): Future[Done] = {
-    sendEmail(FailedXmlSubmissionUser.build(state, checksCompletedDateTime, platformOperator, subscriptionInfo))
-    sendEmail(FailedXmlSubmissionPlatformOperator.build(checksCompletedDateTime, platformOperator))
+    if (!matchingEmails(subscriptionInfo.primaryContact.email, platformOperator.primaryContactDetails.emailAddress)) {
+      sendEmail(FailedXmlSubmissionPlatformOperator(checksCompletedDateTime, platformOperator))
+    }
+    sendEmail(FailedXmlSubmissionUser(state, checksCompletedDateTime, platformOperator, subscriptionInfo))
   }
+
+  private def matchingEmails(primaryContactEmail: String, poEmail: String): Boolean =
+    primaryContactEmail.trim.toLowerCase() == poEmail.trim.toLowerCase
 
   private def sendEmail(requestBuild: SendEmailRequest)(implicit hc: HeaderCarrier): Future[Done] =
     emailConnector.send(requestBuild)

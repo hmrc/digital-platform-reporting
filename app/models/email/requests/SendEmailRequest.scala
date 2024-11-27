@@ -37,35 +37,20 @@ final case class SuccessfulXmlSubmissionUser(to: List[String],
 
 object SuccessfulXmlSubmissionUser {
   implicit val format: OFormat[SuccessfulXmlSubmissionUser] = Json.format[SuccessfulXmlSubmissionUser]
+  private val templateId = "dprs_successful_xml_submission_user"
 
-  def apply(email: String,
-            primaryContactName: String,
-            platformOperatorName: String,
-            platformOperatorId: String,
-            checksCompletedDateTime: String,
-            reportingPeriod: String,
-            fileName: String): SuccessfulXmlSubmissionUser = SuccessfulXmlSubmissionUser(
-    to = List(email),
-    templateId = "dprs_successful_xml_submission_user",
+  def apply(state: Approved, checksCompletedDateTime: String, platformOperator: PlatformOperator, subscriptionInfo: SubscriptionInfo): SuccessfulXmlSubmissionUser = SuccessfulXmlSubmissionUser(
+    to = List(subscriptionInfo.primaryContact.email),
+    templateId = templateId,
     parameters = Map(
-      "userPrimaryContactName" -> primaryContactName,
-      "poBusinessName" -> platformOperatorName,
-      "poId" -> platformOperatorId,
+      "userPrimaryContactName" -> subscriptionInfo.primaryContactName,
+      "poBusinessName" -> platformOperator.operatorName,
+      "poId" -> platformOperator.operatorId,
       "checksCompletedDateTime" -> checksCompletedDateTime,
-      "reportingPeriod" -> reportingPeriod,
-      "fileName" -> fileName
+      "reportingPeriod" -> state.reportingPeriod.toString,
+      "fileName" -> state.fileName
     )
   )
-
-  def build(state: Approved, checksCompletedDateTime: String, platformOperator: PlatformOperator, subscriptionInfo: SubscriptionInfo): SuccessfulXmlSubmissionUser =
-    SuccessfulXmlSubmissionUser(
-      subscriptionInfo.primaryContact.email,
-      subscriptionInfo.primaryContactName,
-      platformOperator.operatorName,
-      platformOperator.operatorId,
-      checksCompletedDateTime,
-      state.reportingPeriod.toString,
-      state.fileName)
 
 }
 
@@ -75,35 +60,20 @@ final case class SuccessfulXmlSubmissionPlatformOperator(to: List[String],
 
 object SuccessfulXmlSubmissionPlatformOperator {
   implicit val format: OFormat[SuccessfulXmlSubmissionPlatformOperator] = Json.format[SuccessfulXmlSubmissionPlatformOperator]
+  private val templateId = "dprs_successful_xml_submission_platform_operator"
 
-  def apply(email: String,
-            platformOperatorContactName: String,
-            platformOperatorName: String,
-            platformOperatorId: String,
-            checksCompletedDateTime: String,
-            reportingPeriod: String,
-            fileName: String): SuccessfulXmlSubmissionPlatformOperator = SuccessfulXmlSubmissionPlatformOperator(
-    to = List(email),
-    templateId = "dprs_successful_xml_submission_platform_operator",
+  def apply(state: Approved, checksCompletedDateTime: String, platformOperator: PlatformOperator): SuccessfulXmlSubmissionPlatformOperator = SuccessfulXmlSubmissionPlatformOperator(
+    to = List(platformOperator.primaryContactDetails.emailAddress),
+    templateId = templateId,
     parameters = Map(
-      "poPrimaryContactName" -> platformOperatorContactName,
-      "poBusinessName" -> platformOperatorName,
-      "poId" -> platformOperatorId,
+      "poPrimaryContactName" -> platformOperator.primaryContactDetails.contactName,
+      "poBusinessName" -> platformOperator.operatorName,
+      "poId" -> platformOperator.operatorId,
       "checksCompletedDateTime" -> checksCompletedDateTime,
-      "reportingPeriod" -> reportingPeriod,
-      "fileName" -> fileName
+      "reportingPeriod" -> state.reportingPeriod.toString,
+      "fileName" -> state.fileName
     )
   )
-
-  def build(state: Approved, checksCompletedDateTime: String, platformOperator: PlatformOperator): SuccessfulXmlSubmissionPlatformOperator =
-  SuccessfulXmlSubmissionPlatformOperator(
-    platformOperator.primaryContactDetails.emailAddress,
-    platformOperator.primaryContactDetails.contactName,
-    platformOperator.operatorName,
-    platformOperator.operatorId,
-    checksCompletedDateTime,
-    state.reportingPeriod.toString,
-    state.fileName)
 
 }
 
@@ -113,34 +83,21 @@ final case class FailedXmlSubmissionUser(to: List[String],
 
 object FailedXmlSubmissionUser {
   implicit val format: OFormat[FailedXmlSubmissionUser] = Json.format[FailedXmlSubmissionUser]
+  private val templateId = "dprs_failed_xml_submission_user"
 
-  def apply(email: String,
-            primaryContactName: String,
-            platformOperatorName: String,
-            checksCompletedDateTime: String,
-            fileName: String): FailedXmlSubmissionUser = FailedXmlSubmissionUser(
-    to = List(email),
-    templateId = "dprs_failed_xml_submission_user",
-    parameters = Map(
-      "userPrimaryContactName" -> primaryContactName,
-      "poBusinessName" -> platformOperatorName,
-      "checksCompletedDateTime" -> checksCompletedDateTime,
-      "fileName" -> fileName
-    )
-  )
-
-  def build(state: Rejected,
+  def apply(state: Rejected,
             checksCompletedDateTime: String,
             platformOperator: PlatformOperator,
-            subscriptionInfo: SubscriptionInfo): FailedXmlSubmissionUser = {
-    FailedXmlSubmissionUser(
-      subscriptionInfo.primaryContact.email,
-      subscriptionInfo.primaryContactName,
-      platformOperator.operatorName,
-      checksCompletedDateTime,
-      state.fileName)
-  }
-
+            subscriptionInfo: SubscriptionInfo): FailedXmlSubmissionUser = FailedXmlSubmissionUser(
+    to = List(subscriptionInfo.primaryContact.email),
+    templateId = templateId,
+    parameters = Map(
+      "userPrimaryContactName" -> subscriptionInfo.primaryContactName,
+      "poBusinessName" -> platformOperator.operatorName,
+      "checksCompletedDateTime" -> checksCompletedDateTime,
+      "fileName" -> state.fileName
+    )
+  )
 }
 
 final case class FailedXmlSubmissionPlatformOperator(to: List[String],
@@ -149,27 +106,18 @@ final case class FailedXmlSubmissionPlatformOperator(to: List[String],
 
 object FailedXmlSubmissionPlatformOperator {
   implicit val format: OFormat[FailedXmlSubmissionPlatformOperator] = Json.format[FailedXmlSubmissionPlatformOperator]
+  private val templateId = "dprs_failed_xml_submission_platform_operator"
 
-  def apply(email: String,
-            platformOperatorContactName: String,
-            platformOperatorName: String,
-            checksCompletedDateTime: String): FailedXmlSubmissionPlatformOperator = FailedXmlSubmissionPlatformOperator(
-    to = List(email),
-    templateId = "dprs_failed_xml_submission_platform_operator",
+  def apply(checksCompletedDateTime: String,
+            platformOperator: PlatformOperator): FailedXmlSubmissionPlatformOperator = FailedXmlSubmissionPlatformOperator(
+    to = List(platformOperator.primaryContactDetails.emailAddress),
+    templateId = templateId,
     parameters = Map(
-      "poPrimaryContactName" -> platformOperatorContactName,
-      "poBusinessName" -> platformOperatorName,
+      "poPrimaryContactName" -> platformOperator.primaryContactDetails.contactName,
+      "poBusinessName" -> platformOperator.operatorName,
       "checksCompletedDateTime" -> checksCompletedDateTime
     )
   )
-
-  def build(checksCompletedDateTime: String,
-            platformOperator: PlatformOperator): FailedXmlSubmissionPlatformOperator =
-  FailedXmlSubmissionPlatformOperator(
-      platformOperator.primaryContactDetails.emailAddress,
-      platformOperator.primaryContactDetails.contactName,
-      platformOperator.operatorName,
-      checksCompletedDateTime)
 
 }
 
