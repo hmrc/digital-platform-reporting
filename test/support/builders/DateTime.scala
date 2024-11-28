@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-package support.builders.operator
+package support.builders
 
-import models.operator.{AddressDetails, ContactDetails, TinDetails}
+object DateTime {
 
-object ContactDetailsBuilder {
+  val aCompletedDateTime: String = "09:30am on 17th November 2024"
 
-  val aContactDetails: ContactDetails = ContactDetails(
-    phoneNumber = None,
-    contactName = "default-contact-name",
-    emailAddress = "default.email@example.com"
-  )
 }

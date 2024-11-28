@@ -14,15 +14,22 @@
  * limitations under the License.
  */
 
-package support.builders.operator
+package support.builders
 
-import models.operator.{AddressDetails, ContactDetails, TinDetails}
+import models.submission.Submission.State.{Approved, Rejected}
 
-object ContactDetailsBuilder {
+import java.time.Year
 
-  val aContactDetails: ContactDetails = ContactDetails(
-    phoneNumber = None,
-    contactName = "default-contact-name",
-    emailAddress = "default.email@example.com"
+object StateBuilder {
+
+  val aStateApproved: Approved = Approved(
+    fileName = "test.xml",
+    reportingPeriod = Year.of(2024)
   )
+
+  val aStateRejected: Rejected = Rejected(
+    fileName = "test.xml",
+    reportingPeriod = Year.of(2024)
+  )
+
 }

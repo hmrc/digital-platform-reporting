@@ -26,7 +26,8 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.test.WireMockSupport
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, badRequest, post, urlMatching}
-import models.email.requests.{SendEmailRequest, SuccessfulXmlSubmissionUser}
+import play.api.http.Status.ACCEPTED
+import support.builders.SendEmailRequestBuilder.aSendEmailRequest
 import uk.gov.hmrc.http.HeaderCarrier
 
 class EmailConnectorSpec extends AnyFreeSpec
@@ -47,35 +48,26 @@ class EmailConnectorSpec extends AnyFreeSpec
 
   implicit private lazy val hc: HeaderCarrier = HeaderCarrier()
 
-  val sendEmailRequest: SendEmailRequest = SuccessfulXmlSubmissionUser(
-    to = List("default.email@example.com"),
-    templateId = "default-template-id",
-    parameters = Map(
-      "param-1" -> "value-1",
-      "param-" -> "value-2"
-    )
-  )
-
   ".send" - {
-    "must return true when when the server returns ACCEPTED" in {
+    "must return success when when the server returns ACCEPTED" in {
       wireMockServer.stubFor(post(urlMatching("/hmrc/email"))
-        .willReturn(aResponse.withStatus(202)))
+        .willReturn(aResponse.withStatus(ACCEPTED)))
 
-      underTest.send(sendEmailRequest).futureValue
+      underTest.send(aSendEmailRequest).futureValue
     }
 
-    "must return false when the server returns an error response" in {
+    "must return success when the server returns an error response" in {
       wireMockServer.stubFor(post(urlMatching("/hmrc/email"))
         .willReturn(badRequest()))
 
-      underTest.send(sendEmailRequest).futureValue
+      underTest.send(aSendEmailRequest).futureValue
     }
 
-    "must return false when sending email results in exception" in {
+    "must return success when sending email results in exception" in {
       wireMockServer.stubFor(post(urlMatching("/hmrc/email"))
         .willReturn(aResponse().withFault(Fault.RANDOM_DATA_THEN_CLOSE)))
 
-      underTest.send(sendEmailRequest).futureValue
+      underTest.send(aSendEmailRequest).futureValue
     }
   }
 }

@@ -14,15 +14,19 @@
  * limitations under the License.
  */
 
-package support.builders.operator
+package support.builders
 
-import models.operator.{AddressDetails, ContactDetails, TinDetails}
+import models.email.requests.{SendEmailRequest, SuccessfulXmlSubmissionUser}
 
-object ContactDetailsBuilder {
+object SendEmailRequestBuilder {
 
-  val aContactDetails: ContactDetails = ContactDetails(
-    phoneNumber = None,
-    contactName = "default-contact-name",
-    emailAddress = "default.email@example.com"
+  val aSendEmailRequest: SendEmailRequest = SuccessfulXmlSubmissionUser(
+    to = List("default.email@example.com"),
+    templateId = "default-template-id",
+    parameters = Map(
+      "param-1" -> "value-1",
+      "param-" -> "value-2"
+    )
   )
+
 }

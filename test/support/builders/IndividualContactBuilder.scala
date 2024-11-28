@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package support.builders.operator
+package support.builders
 
-import models.operator.{AddressDetails, ContactDetails, TinDetails}
+import models.subscription.IndividualContact
+import support.builders.IndividualBuilder.aIndividual
 
-object ContactDetailsBuilder {
+object IndividualContactBuilder {
 
-  val aContactDetails: ContactDetails = ContactDetails(
-    phoneNumber = None,
-    contactName = "default-contact-name",
-    emailAddress = "default.email@example.com"
+  val aIndividualContact: IndividualContact = IndividualContact(
+    individual = aIndividual,
+    email = "default-email",
+    phone= None
   )
+
 }

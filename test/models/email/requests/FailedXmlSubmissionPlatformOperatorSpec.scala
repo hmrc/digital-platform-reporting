@@ -16,11 +16,11 @@
 
 package models.email.requests
 
-import models.operator.responses.PlatformOperator
-import models.operator.{AddressDetails, ContactDetails}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.{EitherValues, OptionValues, TryValues}
+import support.builders.DateTime.aCompletedDateTime
+import support.builders.PlatformOperatorBuilder.aPlatformOperator
 
 class FailedXmlSubmissionPlatformOperatorSpec extends AnyFreeSpec
   with Matchers
@@ -28,29 +28,15 @@ class FailedXmlSubmissionPlatformOperatorSpec extends AnyFreeSpec
   with OptionValues
   with EitherValues {
 
-  val platformOperator: PlatformOperator = PlatformOperator(
-    operatorId = "operatorId",
-    operatorName = "operatorName",
-    tinDetails = Seq.empty,
-    businessName = None,
-    tradingName = None,
-    primaryContactDetails = ContactDetails(None, "name", "po.email@example.com"),
-    secondaryContactDetails = None,
-    addressDetails = AddressDetails("line 1", None, None, None, None, None),
-    notifications = Seq.empty
-  )
-
-  val checksCompletedDateTime = "09:30am on 17th November 2024"
-
   ".apply(...)" - {
     "must create FailedXmlSubmissionPlatformOperator object" in {
-      FailedXmlSubmissionPlatformOperator.apply(checksCompletedDateTime, platformOperator) mustBe FailedXmlSubmissionPlatformOperator(
-        to = List("po.email@example.com"),
+      FailedXmlSubmissionPlatformOperator.apply(aCompletedDateTime, aPlatformOperator) mustBe FailedXmlSubmissionPlatformOperator(
+        to = List(aPlatformOperator.primaryContactDetails.emailAddress),
         templateId = "dprs_failed_xml_submission_platform_operator",
         parameters = Map(
-          "poPrimaryContactName" -> "name",
-          "poBusinessName" -> "operatorName",
-          "checksCompletedDateTime" -> checksCompletedDateTime
+          "poPrimaryContactName" -> aPlatformOperator.primaryContactDetails.contactName,
+          "poBusinessName" -> aPlatformOperator.operatorName,
+          "checksCompletedDateTime" -> aCompletedDateTime
         )
       )
     }

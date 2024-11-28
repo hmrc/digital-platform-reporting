@@ -164,7 +164,7 @@ class CadxResultService @Inject()(
 
       compResult.onComplete {
         case Success(_) => logger.info("emailService.sendSuccessfulBusinessRulesChecksEmails successful")
-        case Failure(exception) => logger.warn(s"emailService.sendSuccessfulBusinessRulesChecksEmails failed, error: $exception")
+        case Failure(exception) => logger.warn("emailService.sendSuccessfulBusinessRulesChecksEmails failed", exception)
       }
 
       submissionRepository.save(submission.copy(state = Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = updatedInstance)).map { _ =>
@@ -197,7 +197,7 @@ class CadxResultService @Inject()(
 
       compResult.onComplete {
         case Success(_) => logger.info("emailService.sendFailedBusinessRulesChecksEmails successful")
-        case Failure(exception) => logger.warn(s"emailService.sendFailedBusinessRulesChecksEmails, error: $exception")
+        case Failure(exception) => logger.warn("emailService.sendFailedBusinessRulesChecksEmails failed", exception)
       }
 
       submissionRepository.save(submission.copy(state = State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = updatedInstance)).map { _ =>

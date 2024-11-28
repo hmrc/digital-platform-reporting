@@ -16,14 +16,12 @@
 
 package models.email.requests
 
-import models.operator.responses.PlatformOperator
-import models.operator.{AddressDetails, ContactDetails}
-import models.submission.Submission.State
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.{EitherValues, OptionValues, TryValues}
-
-import java.time.Year
+import support.builders.DateTime.aCompletedDateTime
+import support.builders.PlatformOperatorBuilder.aPlatformOperator
+import support.builders.StateBuilder.aStateApproved
 
 class SuccessfulXmlSubmissionPlatformOperatorSpec extends AnyFreeSpec
   with Matchers
@@ -31,34 +29,18 @@ class SuccessfulXmlSubmissionPlatformOperatorSpec extends AnyFreeSpec
   with OptionValues
   with EitherValues {
 
-  val stateApproved: State.Approved = State.Approved(fileName = "test.xml", reportingPeriod = Year.of(2024))
-
-  val platformOperator: PlatformOperator = PlatformOperator(
-    operatorId = "operatorId",
-    operatorName = "operatorName",
-    tinDetails = Seq.empty,
-    businessName = None,
-    tradingName = None,
-    primaryContactDetails = ContactDetails(None, "name", "po.email@example.com"),
-    secondaryContactDetails = None,
-    addressDetails = AddressDetails("line 1", None, None, None, None, None),
-    notifications = Seq.empty
-  )
-
-  val checksCompletedDateTime = "09:30am on 17th November 2024"
-
   ".apply(...)" - {
     "must create SuccessfulXmlSubmissionPlatformOperator object" in {
-      SuccessfulXmlSubmissionPlatformOperator.apply(stateApproved, checksCompletedDateTime, platformOperator) mustBe SuccessfulXmlSubmissionPlatformOperator(
-        to = List("po.email@example.com"),
+      SuccessfulXmlSubmissionPlatformOperator.apply(aStateApproved, aCompletedDateTime, aPlatformOperator) mustBe SuccessfulXmlSubmissionPlatformOperator(
+        to = List(aPlatformOperator.primaryContactDetails.emailAddress),
         templateId = "dprs_successful_xml_submission_platform_operator",
         parameters = Map(
-          "poPrimaryContactName" -> "name",
-          "poBusinessName" -> "operatorName",
-          "poId" -> "operatorId",
-          "checksCompletedDateTime" -> checksCompletedDateTime,
-          "reportingPeriod" -> "2024",
-          "fileName" -> "test.xml"
+          "poPrimaryContactName" -> aPlatformOperator.primaryContactDetails.contactName,
+          "poBusinessName" -> aPlatformOperator.operatorName,
+          "poId" -> aPlatformOperator.operatorId,
+          "checksCompletedDateTime" -> aCompletedDateTime,
+          "reportingPeriod" -> aStateApproved.reportingPeriod.toString,
+          "fileName" -> aStateApproved.fileName
         )
       )
     }
