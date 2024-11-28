@@ -20,14 +20,15 @@ import config.Service
 import connectors.SdesConnector.SdesCircuitBreaker
 import logging.Logging
 import models.sdes.FileNotifyRequest
+import models.sdes.list.SdesFile
 import org.apache.pekko.Done
 import org.apache.pekko.pattern.CircuitBreaker
 import play.api.Configuration
 import play.api.http.Status.NO_CONTENT
 import play.api.libs.json.Json
-import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
+import uk.gov.hmrc.http.HttpReads.Implicits.{readFromJson, readRaw}
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -42,14 +43,16 @@ class SdesConnector @Inject() (
                               )(using ExecutionContext) extends Logging {
 
   private val service: Service = configuration.get[Service]("microservice.services.sdes")
+  private val listService: Service = configuration.get[Service]("microservice.services.sdes-list-files")
   private val clientId: String = configuration.get[String]("sdes.client-id")
+  private val sdesKey: String = configuration.get[String]("sdes.sdes-key")
 
   def notify(request: FileNotifyRequest)(using HeaderCarrier): Future[Done] = sdesCircuitBreaker.breaker.withCircuitBreaker {
     httpClient
       .post(url"$service/notification/fileready")
       .withBody(Json.toJson(request))
       .setHeader("x-client-id" -> clientId)
-      .execute
+      .execute[HttpResponse]
       .flatMap { response =>
         if (response.status == NO_CONTENT) {
           Future.successful(Done)
@@ -60,6 +63,16 @@ class SdesConnector @Inject() (
         }
       }
   }
+
+  def listFiles(informationType: String)(using HeaderCarrier): Future[Seq[SdesFile]] =
+    httpClient
+      .get(url"$listService/files-available/list/$informationType")
+      .setHeader(
+        "x-client-id" -> clientId,
+        "X-SDES-Key" -> sdesKey
+      )
+      .execute[Seq[SdesFile]]
+
 }
 
 object SdesConnector {

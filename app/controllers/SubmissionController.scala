@@ -17,12 +17,15 @@
 package controllers
 
 import controllers.actions.AuthAction
+import models.audit.FileUploadedEvent
+import models.audit.FileUploadedEvent.FileUploadOutcome
+import models.audit.FileUploadedEvent.FileUploadOutcome.Rejected
 import models.submission.Submission.State.{Ready, Submitted, UploadFailed, Uploading, Validated}
 import models.submission.*
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.SubmissionRepository
-import services.{SubmissionService, UuidService, ValidationService, ViewSubmissionsService}
+import services.{AuditService, SubmissionService, UuidService, ValidationService, ViewSubmissionsService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.Clock
@@ -38,7 +41,8 @@ class SubmissionController @Inject() (
                                        auth: AuthAction,
                                        validationService: ValidationService,
                                        submissionService: SubmissionService,
-                                       viewSubmissionsService: ViewSubmissionsService
+                                       viewSubmissionsService: ViewSubmissionsService,
+                                       auditService: AuditService
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def start(id: Option[String]): Action[StartSubmissionRequest] =
@@ -46,7 +50,7 @@ class SubmissionController @Inject() (
       id.map { id =>
         submissionRepository.get(request.dprsId, id).flatMap {
           _.map { submission =>
-            if (submission.state.isInstanceOf[Validated]) {
+            if (submission.state.isInstanceOf[Validated] || submission.state.isInstanceOf[UploadFailed]) {
 
               val updatedSubmission = submission.copy(
                 state = Ready,
@@ -67,6 +71,7 @@ class SubmissionController @Inject() (
 
         val submission = Submission(
           _id = uuidService.generate(),
+          submissionType = Submission.SubmissionType.Xml,
           dprsId = request.dprsId,
           operatorId = request.body.operatorId,
           operatorName = request.body.operatorName,
@@ -120,11 +125,23 @@ class SubmissionController @Inject() (
       _.map { submission =>
         if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[Uploading.type] || submission.state.isInstanceOf[UploadFailed]) {
 
-          validationService.validateXml(request.body.downloadUrl, submission.operatorId).flatMap { maybeReportingPeriod =>
+          validationService.validateXml(request.body.dprsId, request.body.downloadUrl, submission.operatorId).flatMap { maybeReportingPeriod =>
 
-            val updatedSubmission = maybeReportingPeriod.left.map { error =>
+            val auditEvent = FileUploadedEvent(
+              conversationId = submission._id,
+              dprsId = submission.dprsId,
+              operatorId = submission.operatorId,
+              operatorName = submission.operatorName,
+              fileName = Some(request.body.fileName),
+              outcome = maybeReportingPeriod
+                .map(_ => FileUploadOutcome.Accepted)
+                .left.map(e => FileUploadOutcome.Rejected(e))
+                .merge
+            )
+
+            val updatedSubmission = maybeReportingPeriod.left.map { failureReason =>
               submission.copy(
-                state = UploadFailed(error.reason),
+                state = UploadFailed(failureReason, Some(request.body.fileName)),
                 updated = clock.instant()
               )
             }.map { reportingPeriod =>
@@ -139,6 +156,8 @@ class SubmissionController @Inject() (
                 updated = clock.instant()
               )
             }.merge
+
+            auditService.audit(auditEvent)
 
             submissionRepository.save(updatedSubmission).map { _ =>
               Ok(Json.toJson(updatedSubmission))
@@ -159,10 +178,21 @@ class SubmissionController @Inject() (
       _.map { submission =>
         if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[Uploading.type] || submission.state.isInstanceOf[UploadFailed]) {
 
+          val auditEvent = FileUploadedEvent(
+            conversationId = submission._id,
+            dprsId = submission.dprsId,
+            operatorId = submission.operatorId,
+            operatorName = submission.operatorName,
+            fileName = None,
+            outcome = FileUploadOutcome.Rejected(request.body.reason)
+          )
+
           val updatedSubmission = submission.copy(
-            state = UploadFailed(request.body.reason),
+            state = UploadFailed(request.body.reason, None),
             updated = clock.instant()
           )
+
+          auditService.audit(auditEvent)
 
           submissionRepository.save(updatedSubmission).map { _ =>
             Ok(Json.toJson(updatedSubmission))
@@ -200,12 +230,18 @@ class SubmissionController @Inject() (
     }
   }
 
-  def list(): Action[ViewSubmissionsInboundRequest] = auth(parse.json[ViewSubmissionsInboundRequest]).async {
+  def listDeliveredSubmissions(): Action[ViewSubmissionsInboundRequest] = auth(parse.json[ViewSubmissionsInboundRequest]).async {
     implicit request =>
       val outboundRequest = ViewSubmissionsRequest(request.dprsId, request.body)
 
-      viewSubmissionsService.getSubmissions(outboundRequest).map { response =>
-        if (response.nonEmpty) Ok(Json.toJson(response)) else NotFound
+      viewSubmissionsService.getDeliveredSubmissions(outboundRequest).map { response =>
+        if (response.submissionsExist) Ok(Json.toJson(response)) else NotFound
       }
+  }
+  
+  def listUndeliveredSubmissions(): Action[AnyContent] = auth.async { implicit request =>
+    viewSubmissionsService.getUndeliveredSubmissions(request.dprsId).map { response =>
+      Ok(Json.toJson(response))
+    }
   }
 }

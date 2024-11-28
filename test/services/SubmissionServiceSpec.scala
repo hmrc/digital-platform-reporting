@@ -17,12 +17,15 @@
 package services
 
 import connectors.{DownloadConnector, PlatformOperatorConnector, SubmissionConnector, SubscriptionConnector}
-import models.assumed.{AssumingOperatorAddress, AssumingPlatformOperator}
+import models.assumed.AssumingPlatformOperator
+import models.audit.AddSubmissionEvent
+import models.audit.AddSubmissionEvent.DeliveryRoute.{Dct52A, Dprs0502}
 import models.operator.TinType.{Utr, Vrn}
 import models.operator.responses.PlatformOperator
 import models.operator.{AddressDetails, ContactDetails, TinDetails}
 import models.submission.Submission
 import models.submission.Submission.State.{Ready, Submitted, Validated}
+import models.submission.Submission.SubmissionType
 import models.subscription.responses.SubscriptionInfo
 import models.subscription.{Individual, IndividualContact, Organisation, OrganisationContact}
 import org.apache.pekko.Done
@@ -75,6 +78,7 @@ class SubmissionServiceSpec
   private val mockPlatformOperatorConnector: PlatformOperatorConnector = mock[PlatformOperatorConnector]
   private val mockSubmissionRepository: SubmissionRepository = mock[SubmissionRepository]
   private val mockUuidService: UuidService = mock[UuidService]
+  private val mockAuditService: AuditService = mock[AuditService]
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
@@ -90,7 +94,8 @@ class SubmissionServiceSpec
         bind[AssumedReportingService].toInstance(mockAssumedReportingService),
         bind[PlatformOperatorConnector].toInstance(mockPlatformOperatorConnector),
         bind[SubmissionRepository].toInstance(mockSubmissionRepository),
-        bind[UuidService].toInstance(mockUuidService)
+        bind[UuidService].toInstance(mockUuidService),
+        bind[AuditService].toInstance(mockAuditService)
       )
       .build()
 
@@ -108,7 +113,8 @@ class SubmissionServiceSpec
       mockAssumedReportingService,
       mockPlatformOperatorConnector,
       mockSubmissionRepository,
-      mockUuidService
+      mockUuidService,
+      mockAuditService
     )
   }
 
@@ -132,6 +138,7 @@ class SubmissionServiceSpec
 
               val submission = Submission(
                 _id = submissionId,
+                submissionType = SubmissionType.Xml,
                 dprsId = dprsId,
                 operatorId = "operatorId",
                 operatorName = "operatorName",
@@ -160,6 +167,17 @@ class SubmissionServiceSpec
               val innerContent = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SubmissionSampleNoXmlDeclaration.xml")).mkString
               val fileSource = Source.single(ByteString.fromString(innerContent))
 
+              val expectedAudit = AddSubmissionEvent(
+                conversationId = submissionId,
+                dprsId = dprsId,
+                operatorId = "operatorId",
+                operatorName = "operatorName",
+                fileName = fileName,
+                fileSize = 3_000_000L,
+                deliveryRoute = Dprs0502,
+                processedAt = now
+              )
+
               when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
               when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.failed(new RuntimeException()))
               when(mockDownloadConnector.download(any())).thenReturn(Future.successful(fileSource))
@@ -173,6 +191,7 @@ class SubmissionServiceSpec
               verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
               verify(mockSubmissionConnector).submit(eqTo(submissionId), requestBodyCaptor.capture())(using any())
               verify(mockSdesService, never()).enqueueSubmission(any(), any(), any())
+              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
 
               val result = requestBodyCaptor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
               val document = validate(result)
@@ -183,7 +202,7 @@ class SubmissionServiceSpec
               (document \ "requestCommon" \ "conversationID").text mustEqual submissionId
               (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0.0"
 
-              (document \ "requestAdditionalDetail" \ "fileName").text mustEqual fileName
+              (document \ "requestAdditionalDetail" \ "fileName").text mustEqual "test"
               (document \ "requestAdditionalDetail" \ "subscriptionID").text mustEqual subscription.id
               (document \ "requestAdditionalDetail" \ "tradingName").text mustEqual subscription.tradingName.value
               (document \ "requestAdditionalDetail" \ "isManual").text mustEqual "false"
@@ -206,6 +225,7 @@ class SubmissionServiceSpec
 
               val submission = Submission(
                 _id = submissionId,
+                submissionType = SubmissionType.Xml,
                 dprsId = dprsId,
                 operatorId = "operatorId",
                 operatorName = "operatorName",
@@ -233,6 +253,17 @@ class SubmissionServiceSpec
               val innerContent = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SubmissionSampleNoXmlDeclaration.xml")).mkString
               val fileSource = Source.single(ByteString.fromString(innerContent))
 
+              val expectedAudit = AddSubmissionEvent(
+                conversationId = submissionId,
+                dprsId = dprsId,
+                operatorId = "operatorId",
+                operatorName = "operatorName",
+                fileName = fileName,
+                fileSize = 1337L,
+                deliveryRoute = Dprs0502,
+                processedAt = now
+              )
+
               when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
               when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.failed(new RuntimeException()))
               when(mockDownloadConnector.download(any())).thenReturn(Future.successful(fileSource))
@@ -246,6 +277,7 @@ class SubmissionServiceSpec
               verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
               verify(mockSubmissionConnector).submit(eqTo(submissionId), requestBodyCaptor.capture())(using any())
               verify(mockSdesService, never()).enqueueSubmission(any(), any(), any())
+              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
 
               val result = requestBodyCaptor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
               val document = validate(result)
@@ -256,7 +288,7 @@ class SubmissionServiceSpec
               (document \ "requestCommon" \ "conversationID").text mustEqual submissionId
               (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0.0"
 
-              (document \ "requestAdditionalDetail" \ "fileName").text mustEqual fileName
+              (document \ "requestAdditionalDetail" \ "fileName").text mustEqual "test"
               (document \ "requestAdditionalDetail" \ "subscriptionID").text mustEqual subscription.id
               (document \ "requestAdditionalDetail" \ "tradingName") mustBe empty
               (document \ "requestAdditionalDetail" \ "isManual").text mustEqual "false"
@@ -277,6 +309,7 @@ class SubmissionServiceSpec
 
             val submission = Submission(
               _id = submissionId,
+              submissionType = SubmissionType.Xml,
               dprsId = dprsId,
               operatorId = "operatorId",
               operatorName = "operatorName",
@@ -302,7 +335,7 @@ class SubmissionServiceSpec
               secondaryContact = Some(organisationContact)
             )
 
-            val innerContent = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SubmissionSample.xml")).mkString
+            val innerContent = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SubmissionSampleAssumed.xml")).mkString
             val fileSource = Source.single(ByteString.fromString(innerContent))
 
             when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
@@ -328,7 +361,7 @@ class SubmissionServiceSpec
             (document \ "requestCommon" \ "conversationID").text mustEqual submissionId
             (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0.0"
 
-            (document \ "requestAdditionalDetail" \ "fileName").text mustEqual fileName
+            (document \ "requestAdditionalDetail" \ "fileName").text mustEqual "test"
             (document \ "requestAdditionalDetail" \ "subscriptionID").text mustEqual subscription.id
             (document \ "requestAdditionalDetail" \ "tradingName").text mustEqual subscription.tradingName.value
             (document \ "requestAdditionalDetail" \ "isManual").text mustEqual "false"
@@ -355,6 +388,7 @@ class SubmissionServiceSpec
 
           val submission = Submission(
             _id = submissionId,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = "operatorId",
             operatorName = "operatorName",
@@ -380,6 +414,17 @@ class SubmissionServiceSpec
             secondaryContact = Some(organisationContact)
           )
 
+          val expectedAudit = AddSubmissionEvent(
+            conversationId = submissionId,
+            dprsId = dprsId,
+            operatorId = "operatorId",
+            operatorName = "operatorName",
+            fileName = fileName,
+            fileSize = 3_000_001L,
+            deliveryRoute = Dct52A,
+            processedAt = now
+          )
+
           when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
           when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.successful(Done))
           when(mockDownloadConnector.download(any())).thenReturn(Future.failed(new RuntimeException()))
@@ -391,6 +436,7 @@ class SubmissionServiceSpec
           verify(mockSdesService).enqueueSubmission(submissionId, submission.state.asInstanceOf[Validated], subscription)
           verify(mockDownloadConnector, never()).download(any())
           verify(mockSubmissionConnector, never()).submit(any(), any())(using any())
+          verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
         }
       }
     }
@@ -401,6 +447,7 @@ class SubmissionServiceSpec
 
         val submission = Submission(
           _id = "id",
+          submissionType = SubmissionType.Xml,
           dprsId = "dprsId",
           operatorId = "operatorId",
           operatorName = "operatorName",
@@ -468,17 +515,11 @@ class SubmissionServiceSpec
             issuedBy = "GB"
           )
         ),
-        address = AssumingOperatorAddress(
-          line1 = "assumed line1",
-          line2 = Some("assumed line2"),
-          city = "assumed city",
-          region = Some("assumed regionName"),
-          postCode = "assumed postcode",
-          country = "US"
-        )
+        registeredCountry = "US",
+        address = "assumed line 1\nassumed line 2\nassumed line 3"
       )
 
-      val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/test.xml").toURI)
+      val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/create/test.xml").toURI)
       val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
       expectedPayloadSource.close()
 
@@ -488,6 +529,7 @@ class SubmissionServiceSpec
       val expectedFileName = s"$messageRef.xml"
       val expectedSubmission = Submission(
         _id = submissionId,
+        submissionType = SubmissionType.ManualAssumedReport,
         dprsId = dprsId,
         operatorId = operator.operatorId,
         operatorName = operator.operatorName,
@@ -500,8 +542,8 @@ class SubmissionServiceSpec
         updated = now
       )
 
-      val individualContact = IndividualContact(Individual("first", "last"), "individual email", Some("0777777"))
-      val organisationContact = OrganisationContact(Organisation("org name"), "org email", Some("0787777"))
+      val individualContact = IndividualContact(Individual("first", "last"), "individual@email", Some("0777777"))
+      val organisationContact = OrganisationContact(Organisation("org name"), "org@email", Some("0787777"))
       val subscription = SubscriptionInfo(
         id = subscriptionId,
         gbUser = true,
@@ -512,7 +554,7 @@ class SubmissionServiceSpec
 
       when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
       when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
-      when(mockAssumedReportingService.createSubmission(any(), any(), any())).thenReturn(assumedReportingPayload)
+      when(mockAssumedReportingService.createSubmission(any(), any(), any(), any())(using any())).thenReturn(Future.successful(assumedReportingPayload))
       when(mockUuidService.generate()).thenReturn(submissionId)
       when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
       when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.successful(Done))
@@ -522,9 +564,8 @@ class SubmissionServiceSpec
 
       verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
       verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-      verify(mockAssumedReportingService).createSubmission(operator, assumingOperator, Year.of(2024))
       verify(mockSubmissionRepository).save(expectedSubmission)
-      verify(mockAssumedReportingService).createSubmission(eqTo(operator), eqTo(assumingOperator), eqTo(Year.of(2024)))
+      verify(mockAssumedReportingService).createSubmission(eqTo(dprsId), eqTo(operator), eqTo(assumingOperator), eqTo(Year.of(2024)))(using any())
 
       val captor: ArgumentCaptor[Source[ByteString, ?]] = ArgumentCaptor.forClass(classOf[Source[ByteString, ?]])
       verify(mockSubmissionConnector).submit(eqTo(submissionId), captor.capture())(using any())
@@ -538,19 +579,136 @@ class SubmissionServiceSpec
       (document \ "requestCommon" \ "conversationID").text mustEqual submissionId
       (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0.0"
 
-      (document \ "requestAdditionalDetail" \ "fileName").text mustEqual expectedFileName
+      (document \ "requestAdditionalDetail" \ "fileName").text mustEqual messageRef
       (document \ "requestAdditionalDetail" \ "subscriptionID").text mustEqual subscription.id
       (document \ "requestAdditionalDetail" \ "tradingName").text mustEqual subscription.tradingName.value
       (document \ "requestAdditionalDetail" \ "isManual").text mustEqual "true"
       (document \ "requestAdditionalDetail" \ "isGBUser").text mustEqual subscription.gbUser.toString
 
       (document \ "requestAdditionalDetail" \ "primaryContact" \ "phoneNumber").text mustEqual individualContact.phone.value
-      (document \ "requestAdditionalDetail" \ "primaryContact" \ "emailAddress").text mustEqual individualContact.email
+      (document \ "requestAdditionalDetail" \ "primaryContact" \ "emailAddress").text mustEqual "individual@email"
       (document \ "requestAdditionalDetail" \ "primaryContact" \ "individualDetails" \ "firstName").text mustEqual individualContact.individual.firstName
       (document \ "requestAdditionalDetail" \ "primaryContact" \ "individualDetails" \ "lastName").text mustEqual individualContact.individual.lastName
 
       (document \ "requestAdditionalDetail" \ "secondaryContact" \ "phoneNumber").text mustEqual organisationContact.phone.value
-      (document \ "requestAdditionalDetail" \ "secondaryContact" \ "emailAddress").text mustEqual organisationContact.email
+      (document \ "requestAdditionalDetail" \ "secondaryContact" \ "emailAddress").text mustEqual "org@email"
+      (document \ "requestAdditionalDetail" \ "secondaryContact" \ "organisationDetails" \ "organisationName").text mustEqual organisationContact.organisation.name
+
+      (document \ "requestDetail" \ "_").last mustEqual expectedPayload
+    }
+  }
+
+  "submitAssumedReportingDeletion" - {
+
+    "must create and submit an assumed reporting deletion for the given operator" in {
+
+      val dprsId = "dprsId"
+      val submissionId = "submissionId"
+      val subscriptionId = "subscriptionId"
+
+      val operator = PlatformOperator(
+        operatorId = "operatorId",
+        operatorName = "operatorName",
+        tinDetails = Seq(
+          TinDetails(
+            tin = "tin1",
+            tinType = Utr,
+            issuedBy = "GB"
+          ),
+          TinDetails(
+            tin = "tin2",
+            tinType = Vrn,
+            issuedBy = "GB"
+          )
+        ),
+        businessName = Some("businessName"),
+        tradingName = Some("tradingName"),
+        primaryContactDetails = ContactDetails(Some("phoneNumber"), "primaryContactName", "primaryEmail"),
+        secondaryContactDetails = None,
+        addressDetails = AddressDetails(
+          line1 = "line1",
+          line2 = Some("line2"),
+          line3 = Some("line3"),
+          line4 = Some("line4"),
+          postCode = Some("postcode"),
+          countryCode = Some("GB")
+        ),
+        notifications = Seq.empty
+      )
+
+      val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/delete/test.xml").toURI)
+      val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
+      expectedPayloadSource.close()
+
+      val messageRef = "GB2024GB-operatorId-86233cb7-4922-4e54-a5ff-75f5e62eec0d"
+      val assumedReportingPayload = AssumedReportingPayload(messageRef, expectedPayload)
+
+      val expectedFileName = s"$messageRef.xml"
+      val expectedSubmission = Submission(
+        _id = submissionId,
+        submissionType = SubmissionType.ManualAssumedReport,
+        dprsId = dprsId,
+        operatorId = operator.operatorId,
+        operatorName = operator.operatorName,
+        assumingOperatorName = None,
+        state = Submitted(
+          fileName = expectedFileName,
+          reportingPeriod = Year.of(2024)
+        ),
+        created = now,
+        updated = now
+      )
+
+      val individualContact = IndividualContact(Individual("first", "last"), "individual@email", Some("0777777"))
+      val organisationContact = OrganisationContact(Organisation("org name"), "org@email", Some("0787777"))
+      val subscription = SubscriptionInfo(
+        id = subscriptionId,
+        gbUser = true,
+        tradingName = Some("tradingName"),
+        primaryContact = individualContact,
+        secondaryContact = Some(organisationContact)
+      )
+
+      when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+      when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
+      when(mockAssumedReportingService.createDeleteSubmission(any(), any(), any())(using any())).thenReturn(Future.successful(assumedReportingPayload))
+      when(mockUuidService.generate()).thenReturn(submissionId)
+      when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+      when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.successful(Done))
+
+      val submission = submissionService.submitAssumedReportingDeletion(dprsId, operator.operatorId, Year.of(2024))(using HeaderCarrier()).futureValue
+      submission mustEqual expectedSubmission
+
+      verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+      verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
+      verify(mockSubmissionRepository).save(expectedSubmission)
+      verify(mockAssumedReportingService).createDeleteSubmission(eqTo(dprsId), eqTo(operator.operatorId), eqTo(Year.of(2024)))(using any())
+
+      val captor: ArgumentCaptor[Source[ByteString, ?]] = ArgumentCaptor.forClass(classOf[Source[ByteString, ?]])
+      verify(mockSubmissionConnector).submit(eqTo(submissionId), captor.capture())(using any())
+
+      val result = captor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
+      val document = validate(result)
+
+      document.docElem.label mustEqual "DPISubmissionRequest"
+
+      (document \ "requestCommon" \ "receiptDate").text mustEqual DateTimeFormats.ISO8601Formatter.format(now)
+      (document \ "requestCommon" \ "conversationID").text mustEqual submissionId
+      (document \ "requestCommon" \ "schemaVersion").text mustEqual "1.0.0"
+
+      (document \ "requestAdditionalDetail" \ "fileName").text mustEqual messageRef
+      (document \ "requestAdditionalDetail" \ "subscriptionID").text mustEqual subscription.id
+      (document \ "requestAdditionalDetail" \ "tradingName").text mustEqual subscription.tradingName.value
+      (document \ "requestAdditionalDetail" \ "isManual").text mustEqual "true"
+      (document \ "requestAdditionalDetail" \ "isGBUser").text mustEqual subscription.gbUser.toString
+
+      (document \ "requestAdditionalDetail" \ "primaryContact" \ "phoneNumber").text mustEqual individualContact.phone.value
+      (document \ "requestAdditionalDetail" \ "primaryContact" \ "emailAddress").text mustEqual "individual@email"
+      (document \ "requestAdditionalDetail" \ "primaryContact" \ "individualDetails" \ "firstName").text mustEqual individualContact.individual.firstName
+      (document \ "requestAdditionalDetail" \ "primaryContact" \ "individualDetails" \ "lastName").text mustEqual individualContact.individual.lastName
+
+      (document \ "requestAdditionalDetail" \ "secondaryContact" \ "phoneNumber").text mustEqual organisationContact.phone.value
+      (document \ "requestAdditionalDetail" \ "secondaryContact" \ "emailAddress").text mustEqual "org@email"
       (document \ "requestAdditionalDetail" \ "secondaryContact" \ "organisationDetails" \ "organisationName").text mustEqual organisationContact.organisation.name
 
       (document \ "requestDetail" \ "_").last mustEqual expectedPayload

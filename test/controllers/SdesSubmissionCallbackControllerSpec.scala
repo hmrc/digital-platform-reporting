@@ -17,10 +17,16 @@
 package controllers
 
 import models.sdes.{NotificationCallback, NotificationType}
+import models.submission.Submission.State.*
 import models.submission.{CadxValidationError, Submission}
-import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
-import org.apache.pekko.Done
-import org.mockito.ArgumentMatchers.any
+import models.submission.Submission.{SubmissionType, UploadFailureReason}
+import models.submission.Submission.UploadFailureReason.{NotXml, PlatformOperatorIdMissing, ReportingPeriodInvalid, SchemaValidationError}
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.{Done, NotUsed}
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.util.ByteString
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify, when}
 import org.scalacheck.Gen
@@ -37,7 +43,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
-import services.SdesService
+import services.{CadxResultWorkItemService, SdesService}
 import uk.gov.hmrc.http.StringContextOps
 
 import java.time.temporal.ChronoUnit
@@ -59,24 +65,32 @@ class SdesSubmissionCallbackControllerSpec
   private val mockSdesService = mock[SdesService]
   private val mockSubmissionRepository = mock[SubmissionRepository]
   private val mockCadxValidationErrorRepository = mock[CadxValidationErrorRepository]
+  private val mockCadxResultWorkItemService = mock[CadxResultWorkItemService]
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
     .overrides(
       bind[SdesService].toInstance(mockSdesService),
       bind[SubmissionRepository].toInstance(mockSubmissionRepository),
       bind[CadxValidationErrorRepository].toInstance(mockCadxValidationErrorRepository),
-      bind[Clock].toInstance(clock)
+      bind[CadxResultWorkItemService].toInstance(mockCadxResultWorkItemService),
+      bind[Clock].toInstance(clock),
     )
     .build()
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset(mockSdesService, mockSubmissionRepository)
+    Mockito.reset(
+      mockSdesService,
+      mockSubmissionRepository,
+      mockCadxValidationErrorRepository,
+      mockCadxResultWorkItemService,
+    )
   }
 
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
-  private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
+  private val uploadFailureReasonGen: Gen[UploadFailureReason] = Gen.oneOf(NotXml, SchemaValidationError, PlatformOperatorIdMissing, ReportingPeriodInvalid)
+  private val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason, None))
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
   private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
   private val rejectedGen: Gen[Rejected] = Gen.const(Rejected("test.xml", Year.of(2024)))
@@ -98,6 +112,7 @@ class SdesSubmissionCallbackControllerSpec
 
         val submission = Submission(
           _id = submissionId,
+          submissionType = SubmissionType.Xml,
           dprsId = "dprsId",
           operatorId = "operatorId",
           operatorName = "operatorName",
@@ -159,6 +174,7 @@ class SdesSubmissionCallbackControllerSpec
         val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen, validatedGen, approvedGen, rejectedGen).sample.value
         val submission = Submission(
           _id = submissionId,
+          submissionType = SubmissionType.Xml,
           dprsId = "dprsId",
           operatorId = "operatorId",
           operatorName = "operatorName",
@@ -186,9 +202,33 @@ class SdesSubmissionCallbackControllerSpec
       }
     }
 
+    "when the notification is file ready" - {
+
+      val notificationCallback = NotificationCallback(
+        notification = NotificationType.FileReady,
+        filename = "test.xml",
+        correlationID = submissionId,
+        failureReason = None
+      )
+
+      "must enqueue the result file in the CadxResultWorkItemRepository and return OK" in {
+
+        when(mockCadxResultWorkItemService.enqueueResult(any())).thenReturn(Future.successful(Done))
+
+        val request = FakeRequest(routes.SdesSubmissionCallbackController.callback())
+          .withBody(Json.toJson(notificationCallback))
+
+        val result = route(app, request).value
+
+        status(result) mustBe OK
+
+        verify(mockCadxResultWorkItemService).enqueueResult("test.xml")
+      }
+    }
+
     "when the notification is any other status" - {
 
-      val notification = Gen.oneOf(NotificationType.FileReady, NotificationType.FileReceived, NotificationType.FileProcessed).sample.value
+      val notification = Gen.oneOf(NotificationType.FileReceived, NotificationType.FileProcessed).sample.value
       val notificationCallback = NotificationCallback(
         notification = notification,
         filename = "test.xml",

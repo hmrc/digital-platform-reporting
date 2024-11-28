@@ -21,7 +21,7 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Source
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -60,6 +60,7 @@ class CadxValidationErrorControllerSpec
   private val now = Instant.now()
   private val dprsId = "dprs id"
   private val submissionId = "submissionId"
+  private val errorLimit = 1337
 
   private val validEnrolments = Enrolments(Set(
     Enrolment(
@@ -80,13 +81,16 @@ class CadxValidationErrorControllerSpec
             bind[CadxValidationErrorRepository].toInstance(mockCadxValidationErrorRepository),
             bind[AuthConnector].toInstance(mockAuthConnector)
           )
+          .configure(
+            "cadx.max-errors" -> 1337
+          )
           .build()
 
       val error1 = CadxValidationError.FileError(submissionId, dprsId, "001", None, now)
       val error2 = CadxValidationError.RowError(submissionId, dprsId, "001", None, "docRef\n", now)
 
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-      when(mockCadxValidationErrorRepository.getErrorsForSubmission(any(), any())).thenReturn(Source(Seq(error1, error2)))
+      when(mockCadxValidationErrorRepository.getErrorsForSubmission(any(), any(), any())).thenReturn(Source(Seq(error1, error2)))
 
       running(app) {
         given Materializer = app.materializer
@@ -100,6 +104,8 @@ class CadxValidationErrorControllerSpec
         val results = contentAsString(result).split("\n").map(Json.parse(_).as[CadxValidationError])
         results must contain only (error1, error2)
       }
+
+      verify(mockCadxValidationErrorRepository).getErrorsForSubmission(dprsId, submissionId, errorLimit)
     }
   }
 }

@@ -23,10 +23,10 @@ import models.yearFormat
 import java.time.Year
 
 final case class AssumedReportingSubmissionRequest(
-                                                   operatorId: String,
-                                                   assumingOperator: AssumingPlatformOperator,
-                                                   reportingPeriod: Year
-                                                 )
+                                                    operatorId: String,
+                                                    assumingOperator: AssumingPlatformOperator,
+                                                    reportingPeriod: Year
+                                                  )
 
 object AssumedReportingSubmissionRequest {
 

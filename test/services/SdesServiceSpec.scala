@@ -70,7 +70,7 @@ class SdesServiceSpec
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
       .configure(
-        "sdes.information-type" -> "information-type",
+        "sdes.submission.information-type" -> "information-type",
         "sdes.recipient-or-sender" -> "recipient-or-sender",
         "sdes.submission.retry-after" -> "30m"
       )
@@ -222,21 +222,21 @@ class SdesServiceSpec
             checksum = FileChecksum("SHA-256", checksum),
             size = size,
             properties = List(
-              FileProperty("/requestCommon/conversationID", submissionId),
-              FileProperty("/requestCommon/receiptDate", ISO8601Formatter.format(now)),
-              FileProperty("/requestCommon/regime", "DPI"),
-              FileProperty("/requestCommon/schemaVersion", "1.0.0"),
-              FileProperty("/requestAdditionalDetail/fileName", fileName),
-              FileProperty("/requestAdditionalDetail/subscriptionID", subscriptionId),
-              FileProperty("/requestAdditionalDetail/tradingName", tradingName),
-              FileProperty("/requestAdditionalDetail/isGBUser", "true"),
-              FileProperty("/requestAdditionalDetail/primaryContact/emailAddress", individualContact.email),
-              FileProperty("/requestAdditionalDetail/primaryContact/phoneNumber", individualContact.phone.value),
-              FileProperty("/requestAdditionalDetail/primaryContact/individualDetails/firstName", individualContact.individual.firstName),
-              FileProperty("/requestAdditionalDetail/primaryContact/individualDetails/lastName", individualContact.individual.lastName),
-              FileProperty("/requestAdditionalDetail/secondaryContact/emailAddress", organisationContact.email),
-              FileProperty("/requestAdditionalDetail/secondaryContact/phoneNumber", organisationContact.phone.value),
-              FileProperty("/requestAdditionalDetail/secondaryContact/organisationDetails/organisationName", organisationContact.organisation.name)
+              FileProperty("requestCommon/conversationID", submissionId),
+              FileProperty("requestCommon/receiptDate", ISO8601Formatter.format(now)),
+              FileProperty("requestCommon/regime", "DPI"),
+              FileProperty("requestCommon/schemaVersion", "1.0.0"),
+              FileProperty("requestAdditionalDetail/fileName", "test"),
+              FileProperty("requestAdditionalDetail/subscriptionID", subscriptionId),
+              FileProperty("requestAdditionalDetail/tradingName", tradingName),
+              FileProperty("requestAdditionalDetail/isGBUser", "true"),
+              FileProperty("requestAdditionalDetail/primaryContact/emailAddress", individualContact.email),
+              FileProperty("requestAdditionalDetail/primaryContact/phoneNumber", individualContact.phone.value),
+              FileProperty("requestAdditionalDetail/primaryContact/individualDetails/firstName", individualContact.individual.firstName),
+              FileProperty("requestAdditionalDetail/primaryContact/individualDetails/lastName", individualContact.individual.lastName),
+              FileProperty("requestAdditionalDetail/secondaryContact/emailAddress", organisationContact.email),
+              FileProperty("requestAdditionalDetail/secondaryContact/phoneNumber", organisationContact.phone.value),
+              FileProperty("requestAdditionalDetail/secondaryContact/organisationDetails/organisationName", organisationContact.organisation.name)
             )
           ),
           audit = FileAudit(
@@ -295,15 +295,15 @@ class SdesServiceSpec
             checksum = FileChecksum("SHA-256", checksum),
             size = size,
             properties = List(
-              FileProperty("/requestCommon/conversationID", submissionId),
-              FileProperty("/requestCommon/receiptDate", ISO8601Formatter.format(now)),
-              FileProperty("/requestCommon/regime", "DPI"),
-              FileProperty("/requestCommon/schemaVersion", "1.0.0"),
-              FileProperty("/requestAdditionalDetail/fileName", fileName),
-              FileProperty("/requestAdditionalDetail/subscriptionID", subscriptionId),
-              FileProperty("/requestAdditionalDetail/isGBUser", "false"),
-              FileProperty("/requestAdditionalDetail/primaryContact/emailAddress", organisationContact.email),
-              FileProperty("/requestAdditionalDetail/primaryContact/organisationDetails/organisationName", organisationContact.organisation.name)
+              FileProperty("requestCommon/conversationID", submissionId),
+              FileProperty("requestCommon/receiptDate", ISO8601Formatter.format(now)),
+              FileProperty("requestCommon/regime", "DPI"),
+              FileProperty("requestCommon/schemaVersion", "1.0.0"),
+              FileProperty("requestAdditionalDetail/fileName", "test"),
+              FileProperty("requestAdditionalDetail/subscriptionID", subscriptionId),
+              FileProperty("requestAdditionalDetail/isGBUser", "false"),
+              FileProperty("requestAdditionalDetail/primaryContact/emailAddress", organisationContact.email),
+              FileProperty("requestAdditionalDetail/primaryContact/organisationDetails/organisationName", organisationContact.organisation.name)
             )
           ),
           audit = FileAudit(
@@ -430,21 +430,21 @@ class SdesServiceSpec
         checksum = FileChecksum("SHA-256", checksum),
         size = size,
         properties = List(
-          FileProperty("/requestCommon/conversationID", submissionId),
-          FileProperty("/requestCommon/receiptDate", ISO8601Formatter.format(now)),
-          FileProperty("/requestCommon/regime", "DPI"),
-          FileProperty("/requestCommon/schemaVersion", "1.0.0"),
-          FileProperty("/requestAdditionalDetail/fileName", fileName),
-          FileProperty("/requestAdditionalDetail/subscriptionID", subscriptionId),
-          FileProperty("/requestAdditionalDetail/tradingName", tradingName),
-          FileProperty("/requestAdditionalDetail/isGBUser", "true"),
-          FileProperty("/requestAdditionalDetail/primaryContact/emailAddress", individualContact.email),
-          FileProperty("/requestAdditionalDetail/primaryContact/phoneNumber", individualContact.phone.value),
-          FileProperty("/requestAdditionalDetail/primaryContact/individualDetails/firstName", individualContact.individual.firstName),
-          FileProperty("/requestAdditionalDetail/primaryContact/individualDetails/lastName", individualContact.individual.lastName),
-          FileProperty("/requestAdditionalDetail/secondaryContact/emailAddress", organisationContact.email),
-          FileProperty("/requestAdditionalDetail/secondaryContact/phoneNumber", organisationContact.phone.value),
-          FileProperty("/requestAdditionalDetail/secondaryContact/organisationDetails/organisationName", organisationContact.organisation.name)
+          FileProperty("requestCommon/conversationID", submissionId),
+          FileProperty("requestCommon/receiptDate", ISO8601Formatter.format(now)),
+          FileProperty("requestCommon/regime", "DPI"),
+          FileProperty("requestCommon/schemaVersion", "1.0.0"),
+          FileProperty("requestAdditionalDetail/fileName", "test"),
+          FileProperty("requestAdditionalDetail/subscriptionID", subscriptionId),
+          FileProperty("requestAdditionalDetail/tradingName", tradingName),
+          FileProperty("requestAdditionalDetail/isGBUser", "true"),
+          FileProperty("requestAdditionalDetail/primaryContact/emailAddress", individualContact.email),
+          FileProperty("requestAdditionalDetail/primaryContact/phoneNumber", individualContact.phone.value),
+          FileProperty("requestAdditionalDetail/primaryContact/individualDetails/firstName", individualContact.individual.firstName),
+          FileProperty("requestAdditionalDetail/primaryContact/individualDetails/lastName", individualContact.individual.lastName),
+          FileProperty("requestAdditionalDetail/secondaryContact/emailAddress", organisationContact.email),
+          FileProperty("requestAdditionalDetail/secondaryContact/phoneNumber", organisationContact.phone.value),
+          FileProperty("requestAdditionalDetail/secondaryContact/organisationDetails/organisationName", organisationContact.organisation.name)
         )
       ),
       audit = FileAudit(

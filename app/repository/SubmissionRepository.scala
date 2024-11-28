@@ -16,6 +16,7 @@
 
 package repository
 
+import models.submission.Submission.SubmissionType
 import config.AppConfig
 import models.submission
 import models.submission.{IdAndLastUpdated, Submission}
@@ -45,7 +46,7 @@ class SubmissionRepository @Inject() (
   indexes = SubmissionRepository.indexes(configuration),
   replaceIndexes = true
 ) {
-  
+
   def save(submission: Submission): Future[Done] = Mdc.preservingMdc {
     collection.replaceOne(
       filter = Filters.and(
@@ -80,7 +81,7 @@ class SubmissionRepository @Inject() (
         .toFuture()
     }
   }
-  
+
   def getBySubscriptionId(dprsId: String): Future[Seq[Submission]] = Mdc.preservingMdc {
     collection.find(
       filter = Filters.eq("dprsId", dprsId)
@@ -92,10 +93,29 @@ class SubmissionRepository @Inject() (
       filter = Filters.eq("_id", id)
     ).limit(1).headOption()
   }
+
+  def countSubmittedXmlSubmissions(dprsId: String): Future[Long] = Mdc.preservingMdc {
+    collection.countDocuments(
+      filter = submittedXmlSubmissionsFilter(dprsId)
+    ).toFuture()
+  }
+
+  def getSubmittedXmlSubmissions(dprsId: String): Future[Seq[Submission]] = Mdc.preservingMdc {
+    collection.find(
+      filter = submittedXmlSubmissionsFilter(dprsId)
+    ).toFuture()
+  }
+
+  private def submittedXmlSubmissionsFilter(dprsId: String) =
+    Filters.and(
+      Filters.eq("dprsId", dprsId),
+      Filters.eq("submissionType", SubmissionType.Xml.toString),
+      Filters.eq("state.type", "Submitted")
+    )
 }
 
 object SubmissionRepository {
-  
+
   def indexes(configuration: Configuration): Seq[IndexModel] =
     Seq(
       IndexModel(

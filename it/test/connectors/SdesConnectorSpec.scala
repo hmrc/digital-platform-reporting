@@ -19,13 +19,14 @@ package connectors
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.http.Fault
 import connectors.SdesConnector.SdesCircuitBreaker
+import models.sdes.list.{MetadataValue, SdesFile}
 import models.sdes.{FileAudit, FileChecksum, FileMetadata, FileNotifyRequest}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatestplus.play.guice.GuiceOneAppPerTest
 import play.api.Application
-import play.api.http.Status.{INTERNAL_SERVER_ERROR, NO_CONTENT}
+import play.api.http.Status.{INTERNAL_SERVER_ERROR, NO_CONTENT, OK}
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.Helpers.running
@@ -40,12 +41,14 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
       .configure(
+        "microservice.services.sdes-list-files.port" -> wireMockPort,
         "microservice.services.sdes.port" -> wireMockPort,
         "microservice.services.sdes.basePath" -> "",
         "sdes.client-id" -> "client-id",
         "sdes.max-failures" -> 1,
         "sdes.reset-timeout" -> "1 second",
-        "sdes.call-timeout" -> "30 seconds"
+        "sdes.call-timeout" -> "30 seconds",
+        "sdes.sdes-key" -> "sdes-key"
       )
       .build()
 
@@ -97,6 +100,7 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
     }
 
     "must return a failed future when there is a connection error" in {
+
       val connector = app.injector.instanceOf[SdesConnector]
 
       wireMockServer.stubFor(
@@ -158,6 +162,64 @@ class SdesConnectorSpec extends AnyFreeSpec with Matchers with ScalaFutures with
       connector.notify(request)(using hc).failed.futureValue
 
       wireMockServer.verify(1, postRequestedFor(urlMatching(url)))
+    }
+  }
+
+  "listFiles" - {
+
+    val hc = HeaderCarrier()
+    val url = "/digital-platform-reporting-stubs/files-available/list/file-type"
+
+    "must return a list of files when SDES responds with OK" in {
+
+      val connector = app.injector.instanceOf[SdesConnector]
+
+      val expectedResponse = Seq(SdesFile(
+        fileName = "test.xml",
+        fileSize = 1337L,
+        downloadUrl = url"http://example.com/test.xml",
+        metadata = Seq(
+          MetadataValue("foo", "bar")
+        )
+      ))
+
+      wireMockServer.stubFor(
+        get(urlEqualTo(url))
+          .withHeader("x-client-id", equalTo("client-id"))
+          .withHeader("X-SDES-Key", equalTo("sdes-key"))
+          .willReturn(aResponse().withBody(Json.toJson(expectedResponse).toString).withStatus(OK))
+      )
+
+      val result = connector.listFiles("file-type")(using hc).futureValue
+      result mustEqual expectedResponse
+    }
+
+    "must return a failed future when SDES responds with anything else" in {
+
+      val connector = app.injector.instanceOf[SdesConnector]
+
+      wireMockServer.stubFor(
+        get(urlEqualTo(url))
+          .withHeader("x-client-id", equalTo("client-id"))
+          .withHeader("X-SDES-Key", equalTo("sdes-key"))
+          .willReturn(aResponse().withStatus(INTERNAL_SERVER_ERROR))
+      )
+
+      connector.listFiles("file-type")(using hc).failed.futureValue
+    }
+
+    "must return a failed future when there is a connection error" in {
+
+      val connector = app.injector.instanceOf[SdesConnector]
+
+      wireMockServer.stubFor(
+        get(urlEqualTo(url))
+          .withHeader("x-client-id", equalTo("client-id"))
+          .withHeader("X-SDES-Key", equalTo("sdes-key"))
+          .willReturn(aResponse().withFault(Fault.RANDOM_DATA_THEN_CLOSE))
+      )
+
+      connector.listFiles("file-type")(using hc).failed.futureValue
     }
   }
 }

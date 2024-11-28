@@ -138,14 +138,11 @@ class SubmissionConnectorSpec
     val conversationId = UUID.randomUUID().toString
     val expectedDate = RFC7231Formatter.format(now.atZone(ZoneOffset.UTC))
 
-    "must return the inner DPI_OECD body from the response when the server responds OK" in {
+    "must return the DPI_OECD body from the response when the server responds OK" in {
 
-      val payloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/0504_success.xml").toURI)
-      val payload = Utility.trim(XML.loadString(payloadSource.mkString))
-      payloadSource.close()
-
-      val expectedBodySource = scala.io.Source.fromFile(getClass.getResource("/assumed/test.xml").toURI)
-      val expectedBody = scalaxb.fromXML[DPI_OECD](Utility.trim(XML.loadString(expectedBodySource.mkString)))
+      val expectedBodySource = scala.io.Source.fromFile(getClass.getResource("/assumed/create/test.xml").toURI)
+      val payload = expectedBodySource.mkString
+      val expectedBody = scalaxb.fromXML[DPI_OECD](Utility.trim(XML.loadString(payload)))
       expectedBodySource.close()
 
       wireMockServer.stubFor(
@@ -159,36 +156,14 @@ class SubmissionConnectorSpec
           .willReturn(
             aResponse()
               .withStatus(OK)
-              .withBody(payload.toString)
-          )
-      )
-
-      when(mockUuidService.generate()).thenReturn(correlationId, conversationId)
-
-      val result = connector.getManualAssumedReportingSubmission(caseId)(using HeaderCarrier()).futureValue.value
-      result mustEqual expectedBody
-    }
-
-    "must return None when the server responds with NOT_FOUND" in {
-
-      wireMockServer.stubFor(
-        get(urlPathEqualTo("/digital-platform-reporting-stubs/dac6/dprs0504/v1/caseId"))
-          .withHeader("Authorization", equalTo("Bearer token"))
-          .withHeader("X-Forwarded-Host", equalTo("digital-platform-reporting"))
-          .withHeader("X-Correlation-ID", equalTo(correlationId))
-          .withHeader("X-Conversation-ID", equalTo(conversationId))
-          .withHeader("Accept", equalTo("application/xml"))
-          .withHeader("Date", equalTo(expectedDate))
-          .willReturn(
-            aResponse()
-              .withStatus(NOT_FOUND)
+              .withBody(payload)
           )
       )
 
       when(mockUuidService.generate()).thenReturn(correlationId, conversationId)
 
       val result = connector.getManualAssumedReportingSubmission(caseId)(using HeaderCarrier()).futureValue
-      result mustBe None
+      result mustEqual expectedBody
     }
 
     "must fail when the server responds with anything else" in {

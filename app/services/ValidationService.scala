@@ -16,14 +16,18 @@
 
 package services
 
+import cats.data.EitherT
 import connectors.DownloadConnector
+import models.submission.Submission.UploadFailureReason
+import models.submission.Submission.UploadFailureReason.*
+import org.apache.pekko.Done
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.StreamConverters
 import org.xml.sax.Attributes
 import org.xml.sax.helpers.DefaultHandler
 import play.api.{Configuration, Environment}
 import services.ValidatingSaxHandler.{FatalSaxParsingException, platformOperatorPath, reportingPeriodPath}
-import services.ValidationService.ValidationError
+import uk.gov.hmrc.http.HeaderCarrier
 
 import java.net.URL
 import java.nio.file.Paths
@@ -43,7 +47,8 @@ import scala.xml.SAXParseException
 class ValidationService @Inject() (
                                    downloadConnector: DownloadConnector,
                                    configuration: Configuration,
-                                   environment: Environment
+                                   environment: Environment,
+                                   assumedReportingService: AssumedReportingService
                                   )(using ExecutionContext, Materializer) {
 
   private val schemaPath = configuration.get[String]("validation.schema-path")
@@ -55,35 +60,53 @@ class ValidationService @Inject() (
   private val schema = schemaFactory.newSchema(schemaFile)
 
   private val parserFactory = SAXParserFactory.newInstance()
+  parserFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+  parserFactory.setFeature("http://xml.org/sax/features/external-general-entities", false)
+  parserFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+  parserFactory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+  parserFactory.setXIncludeAware(false)
   parserFactory.setNamespaceAware(true)
   parserFactory.setSchema(schema)
 
-  def validateXml(downloadUrl: URL, platformOperatorId: String): Future[Either[ValidationError, Year]] = {
+  def validateXml(dprsId: String, downloadUrl: URL, platformOperatorId: String): Future[Either[UploadFailureReason, Year]] = {
     val parser = parserFactory.newSAXParser()
     // TODO use blocking execution context
-    downloadConnector.download(downloadUrl).map { source =>
+    downloadConnector.download(downloadUrl).flatMap { source =>
       val inputStream = source.runWith(StreamConverters.asInputStream())
       try {
         val handler = new ValidatingSaxHandler(platformOperatorId)
         parser.parse(inputStream, handler)
 
-        for {
-          _               <- handler.getPlatformOperatorId
+        val result = for {
+          operatorId      <- handler.getPlatformOperatorId
           reportingPeriod <- handler.getReportingPeriod
+          _               <- checkForManualAssumedReport(dprsId, operatorId, reportingPeriod)
         } yield reportingPeriod
+        
+        result.value
       } catch {
         case _: FatalSaxParsingException =>
-          Left(ValidationError("not-xml"))
+          Future.successful(Left(NotXml))
         case _: SAXParseException =>
-          Left(ValidationError("schema"))
+          Future.successful(Left(SchemaValidationError))
       }
     }
   }
-}
 
-object ValidationService {
+  private def checkForManualAssumedReport(dprsId: String, operatorId: String, reportingPeriod: Year): EitherT[Future, UploadFailureReason, Done] = {
 
-  final case class ValidationError(reason: String)
+    given hc: HeaderCarrier = HeaderCarrier()
+    
+    EitherT(assumedReportingService.getSubmission(dprsId, operatorId, reportingPeriod).map(
+      _.map { assumedReport =>
+        if (assumedReport.isDeleted) {
+          Right(Done)
+        } else {
+          Left(ManualAssumedReportExists)
+        }
+      }.getOrElse(Right(Done))
+    ))
+  }
 }
 
 final class ValidatingSaxHandler(platformOperatorId: String) extends DefaultHandler {
@@ -111,19 +134,19 @@ final class ValidatingSaxHandler(platformOperatorId: String) extends DefaultHand
       case _ => ()
     }
 
-  def getPlatformOperatorId: Either[ValidationError, String] =
-    if (platformOperatorBuilder.length == 0) {
-      Left(ValidationError("poid.missing"))
+  def getPlatformOperatorId(using ExecutionContext): EitherT[Future, UploadFailureReason, String] =
+    EitherT.fromEither(if (platformOperatorBuilder.length == 0) {
+      Left(PlatformOperatorIdMissing)
     } else if (platformOperatorBuilder.toString != platformOperatorId) {
-      Left(ValidationError("poid.incorrect"))
+      Left(PlatformOperatorIdMismatch(platformOperatorId, platformOperatorBuilder.toString))
     } else {
       Right(platformOperatorBuilder.toString)
-    }
+    })
 
-  def getReportingPeriod: Either[ValidationError, Year] =
-    Try(Year.from(DateTimeFormatter.ISO_DATE.parse(reportingPeriodBuilder.toString)))
+  def getReportingPeriod(using ExecutionContext): EitherT[Future, UploadFailureReason, Year] =
+    EitherT.fromEither(Try(Year.from(DateTimeFormatter.ISO_DATE.parse(reportingPeriodBuilder.toString)))
       .toEither
-      .left.map(_ => ValidationError("reporting-period.invalid"))
+      .left.map(_ => ReportingPeriodInvalid))
 }
 
 object ValidatingSaxHandler {

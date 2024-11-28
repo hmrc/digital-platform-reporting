@@ -16,9 +16,10 @@
 
 package models.submission
 
+import models.submission.Submission.UploadFailureReason
 import play.api.libs.json.{Json, OFormat}
 
-final case class UploadFailedRequest(dprsId: String, reason: String)
+final case class UploadFailedRequest(dprsId: String, reason: UploadFailureReason)
 
 object UploadFailedRequest {
 

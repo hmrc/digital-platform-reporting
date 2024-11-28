@@ -16,9 +16,13 @@
 
 package controllers
 
-import models.submission.Submission.State
-import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
+import models.audit.FileUploadedEvent
+import models.audit.FileUploadedEvent.FileUploadOutcome
 import models.submission.*
+import models.submission.Submission.State.*
+import models.submission.Submission.UploadFailureReason.*
+import models.submission.Submission.{State, SubmissionType, UploadFailureReason}
+import models.submission.SubmissionStatus.Pending
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
@@ -37,8 +41,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import repository.SubmissionRepository
-import services.ValidationService.ValidationError
-import services.{SubmissionService, UuidService, ValidationService, ViewSubmissionsService}
+import services.*
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.StringContextOps
 
@@ -64,6 +67,7 @@ class SubmissionControllerSpec
   private val mockValidationService = mock[ValidationService]
   private val mockSubmissionService = mock[SubmissionService]
   private val mockViewSubmissionsService = mock[ViewSubmissionsService]
+  private val mockAuditService = mock[AuditService]
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
@@ -74,18 +78,20 @@ class SubmissionControllerSpec
       bind[AuthConnector].toInstance(mockAuthConnector),
       bind[ValidationService].toInstance(mockValidationService),
       bind[SubmissionService].toInstance(mockSubmissionService),
-      bind[ViewSubmissionsService].toInstance(mockViewSubmissionsService)
+      bind[ViewSubmissionsService].toInstance(mockViewSubmissionsService),
+      bind[AuditService].toInstance(mockAuditService)
     )
     .build()
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset(mockSubmissionRepository, mockAuthConnector, mockValidationService, mockSubmissionService, mockViewSubmissionsService)
+    Mockito.reset(mockSubmissionRepository, mockAuthConnector, mockValidationService, mockSubmissionService, mockViewSubmissionsService, mockAuditService)
   }
 
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
-  private val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
+  private val uploadFailureReasonGen: Gen[UploadFailureReason] = Gen.oneOf(NotXml, SchemaValidationError, PlatformOperatorIdMissing, ReportingPeriodInvalid)
+  private val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason, Some("some-file-name")))
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
   private val submittedGen: Gen[Submitted] = Gen.const(Submitted("test.xml", Year.of(2024)))
   private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
@@ -116,6 +122,7 @@ class SubmissionControllerSpec
 
         val expectedSubmission = Submission(
           _id = uuid,
+          submissionType = SubmissionType.Xml,
           dprsId = dprsId,
           operatorId = operatorId,
           operatorName = operatorName,
@@ -150,6 +157,7 @@ class SubmissionControllerSpec
 
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -189,6 +197,7 @@ class SubmissionControllerSpec
           val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -243,6 +252,7 @@ class SubmissionControllerSpec
 
         val existingSubmission = Submission(
           _id = uuid,
+          submissionType = SubmissionType.Xml,
           dprsId = dprsId,
           operatorId = operatorId,
           operatorName = operatorName,
@@ -295,6 +305,7 @@ class SubmissionControllerSpec
           val state = Gen.oneOf(readyGen, uploadFailedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -332,6 +343,7 @@ class SubmissionControllerSpec
           val state = Gen.oneOf(uploadingGen, validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -390,13 +402,13 @@ class SubmissionControllerSpec
         "when the submission fails validation" - {
 
           "must set the state of the submission to UpdateFailed and return OK" in {
-
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
               .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)))
 
             val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
               _id = uuid,
+              submissionType = SubmissionType.Xml,
               dprsId = dprsId,
               operatorId = operatorId,
               operatorName = operatorName,
@@ -407,12 +419,21 @@ class SubmissionControllerSpec
             )
 
             val expectedSubmission = existingSubmission.copy(
-              state = UploadFailed("error"),
+              state = UploadFailed(SchemaValidationError, Some(fileName)),
               updated = now
             )
 
+            val expectedAudit = FileUploadedEvent(
+              conversationId = uuid,
+              dprsId = dprsId,
+              operatorId = operatorId,
+              operatorName = operatorName,
+              fileName = Some(fileName),
+              outcome = FileUploadOutcome.Rejected(UploadFailureReason.SchemaValidationError)
+            )
+
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockValidationService.validateXml(any(), any())).thenReturn(Future.successful(Left(ValidationError("error"))))
+            when(mockValidationService.validateXml(any(), any(), any())).thenReturn(Future.successful(Left(SchemaValidationError)))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
@@ -422,7 +443,8 @@ class SubmissionControllerSpec
 
             verify(mockSubmissionRepository).get(dprsId, uuid)
             verify(mockSubmissionRepository).save(expectedSubmission)
-            verify(mockValidationService).validateXml(downloadUrl, operatorId)
+            verify(mockValidationService).validateXml(dprsId, downloadUrl, operatorId)
+            verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
           }
         }
 
@@ -436,6 +458,7 @@ class SubmissionControllerSpec
             val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
               _id = uuid,
+              submissionType = SubmissionType.Xml,
               dprsId = dprsId,
               operatorId = operatorId,
               operatorName = operatorName,
@@ -450,8 +473,17 @@ class SubmissionControllerSpec
               updated = now
             )
 
+            val expectedAudit = FileUploadedEvent(
+              conversationId = uuid,
+              dprsId = dprsId,
+              operatorId = operatorId,
+              operatorName = operatorName,
+              fileName = Some(fileName),
+              outcome = FileUploadOutcome.Accepted
+            )
+
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockValidationService.validateXml(any(), any())).thenReturn(Future.successful(Right(Year.of(2024))))
+            when(mockValidationService.validateXml(any(), any(), any())).thenReturn(Future.successful(Right(Year.of(2024))))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
@@ -461,7 +493,8 @@ class SubmissionControllerSpec
 
             verify(mockSubmissionRepository).get(dprsId, uuid)
             verify(mockSubmissionRepository).save(expectedSubmission)
-            verify(mockValidationService).validateXml(downloadUrl, operatorId)
+            verify(mockValidationService).validateXml(dprsId, downloadUrl, operatorId)
+            verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
           }
         }
       }
@@ -476,6 +509,7 @@ class SubmissionControllerSpec
           val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -529,12 +563,13 @@ class SubmissionControllerSpec
           val request = FakeRequest(routes.SubmissionController.uploadFailed(uuid))
             .withBody(Json.toJson(UploadFailedRequest(
               dprsId = dprsId,
-              reason = "some reason"
+              reason = UpscanError(UpscanFailureReason.Rejected)
             )))
 
           val state = Gen.oneOf(readyGen, uploadFailedGen, uploadingGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -545,8 +580,17 @@ class SubmissionControllerSpec
           )
 
           val expectedSubmission = existingSubmission.copy(
-            state = UploadFailed("some reason"),
+            state = UploadFailed(UpscanError(UpscanFailureReason.Rejected), None),
             updated = now
+          )
+
+          val expectedAudit = FileUploadedEvent(
+            conversationId = uuid,
+            dprsId = dprsId,
+            operatorId = operatorId,
+            operatorName = operatorName,
+            fileName = None,
+            outcome = FileUploadOutcome.Rejected(UpscanError(UpscanFailureReason.Rejected))
           )
 
           when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
@@ -559,6 +603,7 @@ class SubmissionControllerSpec
 
           verify(mockSubmissionRepository).get(dprsId, uuid)
           verify(mockSubmissionRepository).save(expectedSubmission)
+          verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
         }
       }
 
@@ -569,12 +614,13 @@ class SubmissionControllerSpec
           val request = FakeRequest(routes.SubmissionController.uploadFailed(uuid))
             .withBody(Json.toJson(UploadFailedRequest(
               dprsId = dprsId,
-              reason = "some reason"
+              reason = SchemaValidationError
             )))
 
           val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -604,7 +650,7 @@ class SubmissionControllerSpec
         val request = FakeRequest(routes.SubmissionController.uploadFailed(uuid))
           .withBody(Json.toJson(UploadFailedRequest(
             dprsId = dprsId,
-            reason = "some reason"
+            reason = SchemaValidationError
           )))
 
         when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))
@@ -632,6 +678,7 @@ class SubmissionControllerSpec
 
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -671,6 +718,7 @@ class SubmissionControllerSpec
           val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
+            submissionType = SubmissionType.Xml,
             dprsId = dprsId,
             operatorId = operatorId,
             operatorName = operatorName,
@@ -715,7 +763,7 @@ class SubmissionControllerSpec
     }
   }
 
-  "list" - {
+  "listDeliveredSubmissions" - {
 
     "when there are delivered submissions" - {
 
@@ -726,21 +774,23 @@ class SubmissionControllerSpec
           fileName = "filename",
           operatorId = "operatorId",
           operatorName = "operatorName",
-          reportingPeriod = "2024",
+          reportingPeriod = Year.of(2024),
           submissionDateTime = now,
           submissionStatus = SubmissionStatus.Success,
-          assumingReporterName = None
+          assumingReporterName = None,
+          submissionCaseId = Some("submissionCaseId"),
+          isDeleted = false
         ))
-        val summary = SubmissionsSummary(deliveredSubmissions, Nil)
+        val summary = SubmissionsSummary(deliveredSubmissions, 1, true, 0L)
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-        when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(summary))
+        when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
 
         val requestJson = Json.obj(
           "assumedReporting" -> false
         )
 
-        val request = FakeRequest(routes.SubmissionController.list()).withJsonBody(requestJson)
+        val request = FakeRequest(routes.SubmissionController.listDeliveredSubmissions()).withJsonBody(requestJson)
 
         val result = route(app, request).value
 
@@ -749,7 +799,7 @@ class SubmissionControllerSpec
 
         val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
         val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
-        verify(mockViewSubmissionsService, times(1)).getSubmissions(eqTo(expectedRequest))(any())
+        verify(mockViewSubmissionsService, times(1)).getDeliveredSubmissions(eqTo(expectedRequest))(any())
       }
     }
 
@@ -757,26 +807,16 @@ class SubmissionControllerSpec
 
       "must return OK with the submissions in the body" in {
 
-        val localSubmissions = Seq(SubmissionSummary(
-          submissionId = "id",
-          fileName = "filename",
-          operatorId = "operatorId",
-          operatorName = "operatorName",
-          reportingPeriod = "2024",
-          submissionDateTime = now,
-          submissionStatus = SubmissionStatus.Success,
-          assumingReporterName = None
-        ))
-        val summary = SubmissionsSummary(Nil, localSubmissions)
+        val summary = SubmissionsSummary(Nil, 0, false, 1L)
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-        when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(summary))
+        when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
 
         val requestJson = Json.obj(
           "assumedReporting" -> false
         )
 
-        val request = FakeRequest(routes.SubmissionController.list()).withJsonBody(requestJson)
+        val request = FakeRequest(routes.SubmissionController.listDeliveredSubmissions()).withJsonBody(requestJson)
 
         val result = route(app, request).value
 
@@ -785,10 +825,10 @@ class SubmissionControllerSpec
 
         val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
         val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
-        verify(mockViewSubmissionsService, times(1)).getSubmissions(eqTo(expectedRequest))(any())
+        verify(mockViewSubmissionsService, times(1)).getDeliveredSubmissions(eqTo(expectedRequest))(any())
       }
     }
-    
+
     "when there are delivered and local submissions" - {
 
       "must return OK the submissions in the body" in {
@@ -798,32 +838,24 @@ class SubmissionControllerSpec
           fileName = "filename",
           operatorId = "operatorId",
           operatorName = "operatorName",
-          reportingPeriod = "2024",
+          reportingPeriod = Year.of(2024),
           submissionDateTime = now,
           submissionStatus = SubmissionStatus.Success,
-          assumingReporterName = None
+          assumingReporterName = None,
+          submissionCaseId = Some("submissionCaseId"),
+          isDeleted = false
         ))
 
-        val localSubmissions = Seq(SubmissionSummary(
-          submissionId = "id2",
-          fileName = "filename2",
-          operatorId = "operatorId",
-          operatorName = "operatorName",
-          reportingPeriod = "2024",
-          submissionDateTime = now,
-          submissionStatus = SubmissionStatus.Success,
-          assumingReporterName = None
-        ))
-        val summary = SubmissionsSummary(deliveredSubmissions, localSubmissions)
-        
+        val summary = SubmissionsSummary(deliveredSubmissions, 1, true, 1L)
+
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-        when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(summary))
+        when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(summary))
 
         val requestJson = Json.obj(
           "assumedReporting" -> false
         )
 
-        val request = FakeRequest(routes.SubmissionController.list()).withJsonBody(requestJson)
+        val request = FakeRequest(routes.SubmissionController.listDeliveredSubmissions()).withJsonBody(requestJson)
 
         val result = route(app, request).value
 
@@ -832,7 +864,7 @@ class SubmissionControllerSpec
 
         val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
         val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
-        verify(mockViewSubmissionsService, times(1)).getSubmissions(eqTo(expectedRequest))(any())
+        verify(mockViewSubmissionsService, times(1)).getDeliveredSubmissions(eqTo(expectedRequest))(any())
       }
     }
 
@@ -841,22 +873,64 @@ class SubmissionControllerSpec
       "must return NOT_FOUND" in {
 
         when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-        when(mockViewSubmissionsService.getSubmissions(any())(any())).thenReturn(Future.successful(SubmissionsSummary(Nil, Nil)))
+        when(mockViewSubmissionsService.getDeliveredSubmissions(any())(any())).thenReturn(Future.successful(SubmissionsSummary(Nil, 0, false, 0L)))
 
         val requestJson = Json.obj(
           "assumedReporting" -> false
         )
 
-        val request = FakeRequest(routes.SubmissionController.list()).withJsonBody(requestJson)
+        val request = FakeRequest(routes.SubmissionController.listDeliveredSubmissions()).withJsonBody(requestJson)
 
         val result = route(app, request).value
 
         status(result) mustEqual NOT_FOUND
-        
+
         val expectedInboundRequest = ViewSubmissionsInboundRequest(false)
         val expectedRequest = ViewSubmissionsRequest(dprsId, expectedInboundRequest)
-        verify(mockViewSubmissionsService, times(1)).getSubmissions(eqTo(expectedRequest))(any())
+        verify(mockViewSubmissionsService, times(1)).getDeliveredSubmissions(eqTo(expectedRequest))(any())
       }
+    }
+  }
+
+  "listUndeliveredSubmissions" - {
+
+    "must return OK and an array of submissions where there are undelivered submissions" in {
+
+      val existingSubmission = SubmissionSummary(
+        submissionId = uuid,
+        fileName = "filename",
+        operatorId = operatorId,
+        operatorName = operatorName,
+        reportingPeriod = Year.of(2024),
+        submissionDateTime = now,
+        submissionStatus = Pending,
+        assumingReporterName = None,
+        submissionCaseId = None,
+        isDeleted = false
+      )
+
+      when(mockViewSubmissionsService.getUndeliveredSubmissions(any())(any())).thenReturn(Future.successful(Seq(existingSubmission)))
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
+
+      val request = FakeRequest(routes.SubmissionController.listUndeliveredSubmissions())
+
+      val result = route(app, request).value
+
+      status(result) mustEqual OK
+      contentAsJson(result) mustEqual Json.toJson(Seq(existingSubmission))
+    }
+
+    "must return OK and an empty array when there are no undelivered submissions" in {
+
+      when(mockViewSubmissionsService.getUndeliveredSubmissions(any())(any())).thenReturn(Future.successful(Nil))
+      when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
+
+      val request = FakeRequest(routes.SubmissionController.listUndeliveredSubmissions())
+
+      val result = route(app, request).value
+
+      status(result) mustEqual OK
+      contentAsJson(result) mustEqual Json.arr()
     }
   }
 }

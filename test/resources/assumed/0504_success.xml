@@ -5,7 +5,7 @@
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
               xmlns:cadx="http://www.hmrc.gsi.gov.uk/dpi/cadx">
   <processingDate>2024-12-01T12:30:45</processingDate>
-  <dpi:DPI_OECD version="1">
+  <dpi:DPI_OECD version="1.0">
     <dpi:MessageSpec>
       <dpi:SendingEntityIN>operatorId</dpi:SendingEntityIN>
       <dpi:TransmittingCountry>GB</dpi:TransmittingCountry>
@@ -22,7 +22,9 @@
         <dpi:TIN issuedBy="GB">tin1</dpi:TIN>
         <dpi:TIN issuedBy="GB">tin2</dpi:TIN>
         <dpi:Name>operatorName</dpi:Name>
+        <dpi:PlatformBusinessName>operatorName</dpi:PlatformBusinessName>
         <dpi:PlatformBusinessName>businessName</dpi:PlatformBusinessName>
+        <dpi:PlatformBusinessName>tradingName</dpi:PlatformBusinessName>
         <dpi:Address legalAddressType="OECD304">
           <dpi:CountryCode>GB</dpi:CountryCode>
           <dpi:AddressFix>
@@ -34,7 +36,7 @@
         <dpi:AssumedReporting>true</dpi:AssumedReporting>
         <dpi:DocSpec>
           <stf:DocTypeIndic>OECD1</stf:DocTypeIndic>
-          <stf:DocRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d-eb6bb8e968794f4ebebf7d2f6a6d95c9
+          <stf:DocRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d_eb6bb8e968794f4ebebf7d2f6a6d95c9
           </stf:DocRefId>
         </dpi:DocSpec>
       </dpi:PlatformOperator>
@@ -57,7 +59,7 @@
           </dpi:Address>
           <dpi:DocSpec>
             <stf:DocTypeIndic>OECD1</stf:DocTypeIndic>
-            <stf:DocRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d-a84001baef8a45f6a47fd5eca823fc33
+            <stf:DocRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d_a84001baef8a45f6a47fd5eca823fc33
             </stf:DocRefId>
           </dpi:DocSpec>
         </dpi:AssumingPlatformOperator>

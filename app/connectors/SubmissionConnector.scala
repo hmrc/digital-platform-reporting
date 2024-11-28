@@ -18,7 +18,7 @@ package connectors
 
 import config.AppConfig
 import connectors.SubmissionConnector.{GetManualAssumedReportingSubmissionFailure, SubmissionFailed}
-import generated.{DPI_OECD, SuccessType, Generated_SuccessTypeFormat}
+import generated.{DPI_OECD, Generated_DPI_OECDFormat}
 import org.apache.pekko.Done
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
@@ -34,7 +34,7 @@ import utils.DateTimeFormats.RFC7231Formatter
 import java.time.Clock
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.xml.XML
+import scala.xml.{Utility, XML}
 
 @Singleton
 class SubmissionConnector @Inject() (
@@ -71,7 +71,7 @@ class SubmissionConnector @Inject() (
       }
   }
 
-  def getManualAssumedReportingSubmission(submissionCaseId: String)(using HeaderCarrier): Future[Option[DPI_OECD]] = {
+  def getManualAssumedReportingSubmission(submissionCaseId: String)(using HeaderCarrier): Future[DPI_OECD] = {
 
     val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
@@ -81,15 +81,14 @@ class SubmissionConnector @Inject() (
       .setHeader("X-Correlation-ID" -> correlationId)
       .setHeader("X-Conversation-ID" -> conversationId)
       .setHeader("X-Forwarded-Host" -> appConfig.AppName)
+      .setHeader(HeaderNames.CONTENT_TYPE -> "application/xml")
       .setHeader(HeaderNames.ACCEPT -> "application/xml")
       .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
       .execute[HttpResponse]
       .flatMap { response =>
         response.status match {
           case OK =>
-            Future.successful(Some(scalaxb.fromXML[SuccessType](XML.loadString(response.body)).DPI_OECD))
-          case NOT_FOUND =>
-            Future.successful(None)
+            Future.successful(scalaxb.fromXML[DPI_OECD](Utility.trim(XML.loadString(response.body))))
           case _ =>
             Future.failed(GetManualAssumedReportingSubmissionFailure(submissionCaseId, response.status))
         }

@@ -27,6 +27,7 @@ import repository.SdesSubmissionWorkItemRepository
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.workitem.ProcessingStatus
 import utils.DateTimeFormats
+import utils.FileUtils.stripExtension
 
 import java.time.{Clock, Duration}
 import javax.inject.{Inject, Singleton}
@@ -41,7 +42,7 @@ class SdesService @Inject()(
                            )(using ExecutionContext) {
 
   private val retryTimeout: Duration = configuration.get[Duration]("sdes.submission.retry-after")
-  private val informationType: String = configuration.get[String]("sdes.information-type")
+  private val informationType: String = configuration.get[String]("sdes.submission.information-type")
   private val recipientOrSender: String = configuration.get[String]("sdes.recipient-or-sender")
 
   def enqueueSubmission(submissionId: String, state: Validated, subscription: SubscriptionInfo): Future[Done] = {
@@ -90,27 +91,27 @@ class SdesService @Inject()(
 
   private def requestCommon(workItem: SdesSubmissionWorkItem): List[FileProperty] =
     List(
-      FileProperty("/requestCommon/conversationID", workItem.submissionId),
-      FileProperty("/requestCommon/receiptDate", DateTimeFormats.ISO8601Formatter.format(clock.instant())),
-      FileProperty("/requestCommon/regime", "DPI"),
-      FileProperty("/requestCommon/schemaVersion", "1.0.0")
+      FileProperty("requestCommon/conversationID", workItem.submissionId),
+      FileProperty("requestCommon/receiptDate", DateTimeFormats.ISO8601Formatter.format(clock.instant())),
+      FileProperty("requestCommon/regime", "DPI"),
+      FileProperty("requestCommon/schemaVersion", "1.0.0")
     )
 
   private def additionalDetail(workItem: SdesSubmissionWorkItem): List[FileProperty] = {
 
     val primaryContact = contactDetail(workItem.subscriptionInfo.primaryContact).map { property =>
-      property.copy(name = s"/requestAdditionalDetail/primaryContact/${property.name}")
+      property.copy(name = s"requestAdditionalDetail/primaryContact/${property.name}")
     }
 
     val secondaryContact = workItem.subscriptionInfo.secondaryContact.flatMap(contactDetail).map { property =>
-      property.copy(name = s"/requestAdditionalDetail/secondaryContact/${property.name}")
+      property.copy(name = s"requestAdditionalDetail/secondaryContact/${property.name}")
     }
 
     List(
-      Some(FileProperty("/requestAdditionalDetail/fileName", workItem.fileName)),
-      Some(FileProperty("/requestAdditionalDetail/subscriptionID", workItem.subscriptionInfo.id)),
-      workItem.subscriptionInfo.tradingName.map(FileProperty("/requestAdditionalDetail/tradingName", _)),
-      Some(FileProperty("/requestAdditionalDetail/isGBUser", workItem.subscriptionInfo.gbUser.toString)),
+      Some(FileProperty("requestAdditionalDetail/fileName", stripExtension(workItem.fileName))),
+      Some(FileProperty("requestAdditionalDetail/subscriptionID", workItem.subscriptionInfo.id)),
+      workItem.subscriptionInfo.tradingName.map(FileProperty("requestAdditionalDetail/tradingName", _)),
+      Some(FileProperty("requestAdditionalDetail/isGBUser", workItem.subscriptionInfo.gbUser.toString)),
     ).flatten ++ primaryContact ++ secondaryContact
   }
 

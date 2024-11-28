@@ -17,7 +17,9 @@
 package repository
 
 import models.submission.Submission
-import models.submission.Submission.State.{Ready, Submitted, Validated}
+import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, Validated}
+import models.submission.Submission.SubmissionType
+import models.submission.Submission.SubmissionType.ManualAssumedReport
 import org.mongodb.scala.model.Indexes
 import org.scalactic.source.Position
 import org.scalatest.concurrent.IntegrationPatience
@@ -53,8 +55,8 @@ class SubmissionRepositorySpec
       bind[MongoComponent].toInstance(mongoComponent),
     )
     .configure(
-      "mongodb.submission.ttl" -> "10days",
-      "submissions.blocked-threshold" -> "5minutes"
+      "mongodb.submission.ttl" -> "5minutes",
+      "submissions.blocked-threshold" -> "1minutes"
     )
     .build()
 
@@ -70,6 +72,7 @@ class SubmissionRepositorySpec
 
   private val submission = Submission(
     _id = "id",
+    submissionType = SubmissionType.Xml,
     dprsId = "dprsId",
     operatorId = "operatorId",
     operatorName = "operatorName",
@@ -81,7 +84,7 @@ class SubmissionRepositorySpec
 
   "must have the correct ttl index" in {
     val ttlIndex = repository.indexes.find(_.getOptions.getName == "updated_ttl_idx").value
-    ttlIndex.getOptions.getExpireAfter(TimeUnit.DAYS) mustEqual 10
+    ttlIndex.getOptions.getExpireAfter(TimeUnit.MINUTES) mustEqual 5
     ttlIndex.getKeys mustEqual Indexes.ascending("updated")
   }
 
@@ -160,7 +163,7 @@ class SubmissionRepositorySpec
   "getBlockedSubmissionIds" - {
     "must retrieve submissions that haven't updated recently and are are in Submitted state" in {
       val oldInstant = Instant.now()
-                        .plus(Duration.ofHours(-2))
+                        .plus(Duration.ofMinutes(-2))
                         .truncatedTo(ChronoUnit.MILLIS)
 
       val oldSubmissionNotSubmitted = submission.copy(
@@ -199,6 +202,54 @@ class SubmissionRepositorySpec
   }
 
 
+
+  "countSubmittedXmlSubmissions" - {
+
+    "must count XML submissions for this user that are in a Submitted state" in {
+      val submission1 = submission.copy(_id = "id1", state = Submitted("filename", Year.of(2024)))
+      val submission2 = submission.copy(_id = "id2", state = Submitted("filename", Year.of(2024)), submissionType = ManualAssumedReport)
+      val submission3 = submission.copy(_id = "id3", state = Approved("filename", Year.of(2024)))
+      val submission4 = submission.copy(_id = "id4", state = Rejected("filename", Year.of(2024)))
+      val submission5 = submission.copy(_id = "id5", state = Submitted("filename", Year.of(2024)), dprsId = "dprsId2")
+      insert(submission1).futureValue
+      insert(submission2).futureValue
+      insert(submission3).futureValue
+      insert(submission4).futureValue
+      insert(submission5).futureValue
+      repository.countSubmittedXmlSubmissions("dprsId").futureValue mustEqual 1L
+    }
+
+    "must return 0 when no submissions exist" in {
+      insert(submission).futureValue
+      repository.countSubmittedXmlSubmissions("dprsId2").futureValue mustEqual 0L
+    }
+
+    mustPreserveMdc(repository.countSubmittedXmlSubmissions("dprsId"))
+  }
+
+  "getSubmittedXmlSubmissions" - {
+
+    "must get XML submissions for this user that are in a Submitted state" in {
+      val submission1 = submission.copy(_id = "id1", state = Submitted("filename", Year.of(2024)))
+      val submission2 = submission.copy(_id = "id2", state = Submitted("filename", Year.of(2024)), submissionType = ManualAssumedReport)
+      val submission3 = submission.copy(_id = "id3", state = Approved("filename", Year.of(2024)))
+      val submission4 = submission.copy(_id = "id4", state = Rejected("filename", Year.of(2024)))
+      val submission5 = submission.copy(_id = "id5", state = Submitted("filename", Year.of(2024)), dprsId = "dprsId2")
+      insert(submission1).futureValue
+      insert(submission2).futureValue
+      insert(submission3).futureValue
+      insert(submission4).futureValue
+      insert(submission5).futureValue
+      repository.getSubmittedXmlSubmissions("dprsId").futureValue mustEqual Seq(submission1)
+    }
+
+    "must return Nil when no submissions exist" in {
+      insert(submission).futureValue
+      repository.getSubmittedXmlSubmissions("dprsId2").futureValue mustBe empty
+    }
+
+    mustPreserveMdc(repository.getSubmittedXmlSubmissions("dprsId"))
+  }
 
   private def mustPreserveMdc[A](f: => Future[A])(implicit pos: Position): Unit =
     "must preserve MDC" in {

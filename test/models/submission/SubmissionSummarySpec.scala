@@ -17,6 +17,8 @@
 package models.submission
 
 import models.submission.Submission.State.*
+import models.submission.Submission.UploadFailureReason.{NotXml, PlatformOperatorIdMissing, ReportingPeriodInvalid, SchemaValidationError}
+import models.submission.Submission.{SubmissionType, UploadFailureReason}
 import org.scalacheck.Gen
 import org.scalatest.OptionValues
 import org.scalatest.freespec.AnyFreeSpec
@@ -38,21 +40,24 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
         fileName = "filename",
         operatorId = "operatorId",
         operatorName = "operatorName",
-        reportingPeriod = "reportingPeriod",
+        reportingPeriod = Year.of(2024),
+        submissionCaseId = "submissionCaseId",
         submissionDateTime = now,
         submissionStatus = SubmissionStatus.Pending,
-        assumingReporterName = None
+        assumingReporterName = Some("assumingReporter")
       )
       
-      SubmissionSummary(deliveredSubmission) mustEqual SubmissionSummary(
+      SubmissionSummary(deliveredSubmission, true) mustEqual SubmissionSummary(
         submissionId = "conversationId",
         fileName = "filename",
         operatorId = "operatorId",
         operatorName = "operatorName",
-        reportingPeriod = "reportingPeriod",
+        reportingPeriod = Year.of(2024),
         submissionDateTime = now,
         submissionStatus = SubmissionStatus.Pending,
-        assumingReporterName = None
+        assumingReporterName = Some("assumingReporter"),
+        submissionCaseId = Some("submissionCaseId"),
+        isDeleted = true
       )
     }
   }
@@ -63,10 +68,11 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
 
       val submission = Submission(
         _id = "id",
+        submissionType = SubmissionType.Xml,
         dprsId = "dprsId",
         operatorId = "operatorId",
         operatorName = "operatorName",
-        assumingOperatorName = None,
+        assumingOperatorName = Some("assumingReporter"),
         state = Submitted("filename", Year.of(2024)),
         created = now,
         updated = now
@@ -77,10 +83,12 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
         fileName = "filename",
         operatorId = "operatorId",
         operatorName = "operatorName",
-        reportingPeriod = "2024",
+        reportingPeriod = Year.of(2024),
         submissionDateTime = now,
         submissionStatus = SubmissionStatus.Pending,
-        assumingReporterName = None
+        assumingReporterName = Some("assumingReporter"),
+        submissionCaseId = None,
+        isDeleted = false
       )
     }
     
@@ -88,7 +96,8 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
 
       val readyGen: Gen[Ready.type] = Gen.const(Ready)
       val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
-      val uploadFailedGen: Gen[UploadFailed] = Gen.asciiPrintableStr.map(UploadFailed.apply)
+      val uploadFailureReasonGen: Gen[UploadFailureReason] = Gen.oneOf(NotXml, SchemaValidationError, PlatformOperatorIdMissing, ReportingPeriodInvalid)
+      val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason, None))
       val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
       val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
       val rejectedGen: Gen[Rejected] = Gen.const(Rejected("test.xml", Year.of(2024)))
@@ -97,6 +106,7 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
       
       val submission = Submission(
         _id = "id",
+        submissionType = SubmissionType.Xml,
         dprsId = "dprsId",
         operatorId = "operatorId",
         operatorName = "operatorName",

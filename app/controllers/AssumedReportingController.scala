@@ -17,12 +17,13 @@
 package controllers
 
 import controllers.actions.AuthAction
-import models.submission.AssumedReportingSubmissionRequest
+import models.submission.{AssumedReportingSubmission, AssumedReportingSubmissionRequest}
 import play.api.libs.json.Json
-import play.api.mvc.{Action, ControllerComponents}
-import services.SubmissionService
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import services.{AssumedReportingService, SubmissionService, ViewSubmissionsService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import java.time.Year
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
@@ -30,6 +31,8 @@ import scala.concurrent.ExecutionContext
 class AssumedReportingController @Inject() (
                                              cc: ControllerComponents,
                                              submissionService: SubmissionService,
+                                             assumedReportingService: AssumedReportingService,
+                                             viewSubmissionsService: ViewSubmissionsService,
                                              auth: AuthAction
                                            )(using ExecutionContext) extends BackendController(cc) {
 
@@ -42,4 +45,31 @@ class AssumedReportingController @Inject() (
         reportingPeriod = request.body.reportingPeriod
       ).map(submission => Ok(Json.toJson(submission)))
     }
+
+  def delete(operatorId: String, reportingPeriod: Year): Action[AnyContent] =
+    auth.async { implicit request =>
+      submissionService.submitAssumedReportingDeletion(
+        dprsId = request.dprsId,
+        operatorId = operatorId,
+        reportingPeriod = reportingPeriod
+      ).map(submission => Ok(Json.toJson(submission)))
+    }
+    
+  def get(operatorId: String, reportingPeriod: Year): Action[AnyContent] = auth.async { implicit request =>
+    assumedReportingService.getSubmission(request.dprsId, operatorId, reportingPeriod)
+      .map(_.map(submission => Ok(Json.toJson(submission)))
+        .getOrElse(NotFound)
+      )
+  }
+  
+  def list(): Action[AnyContent] = auth.async { implicit request =>
+    viewSubmissionsService.getAssumedReports(request.dprsId)
+      .map { submissions =>
+        if (submissions.isEmpty) {
+          NotFound
+        } else {
+          Ok(Json.toJson(submissions))
+        }
+      }
+  }
 }

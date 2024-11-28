@@ -16,8 +16,12 @@
 
 package services
 
+import cats.implicits.*
 import connectors.DeliveredSubmissionConnector
 import models.submission.*
+import models.submission.DeliveredSubmissionSortBy.SubmissionDate
+import models.submission.SortOrder.Descending
+import models.submission.SubmissionStatus.{Pending, Rejected, Success}
 import repository.SubmissionRepository
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -25,22 +29,77 @@ import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
 class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
-                                       repository: SubmissionRepository)
+                                       repository: SubmissionRepository,
+                                       assumedReportingService: AssumedReportingService)
                                       (implicit ec: ExecutionContext) {
 
-  def getSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] =
+  def getDeliveredSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] =
     for {
-      deliveredSubmissions  <- connector.get(request)
-      repositorySubmissions <- repository.getBySubscriptionId(request.subscriptionId)
+      deliveredSubmissions      <- connector.get(request)
+      repositorySubmissionCount <- repository.countSubmittedXmlSubmissions(request.subscriptionId)
     } yield {
 
-      val deliveredSubmissionSummaries = deliveredSubmissions.map(_.submissions.map(x => SubmissionSummary(x))).getOrElse(Nil)
-      val deliveredSubmissionIds = deliveredSubmissionSummaries.map(_.submissionId)
-      val undeliveredSubmissions =
-        repositorySubmissions
-          .filter(x => !deliveredSubmissionIds.contains(x._id))
-          .flatMap(x => SubmissionSummary(x))
+      val deliveredSubmissionSummaries = deliveredSubmissions.map(_.submissions.map(x => SubmissionSummary(x, false))).getOrElse(Nil)
+      val deliveredSubmissionsCount = deliveredSubmissions.map(_.resultsCount).getOrElse(0)
 
-      SubmissionsSummary(deliveredSubmissionSummaries, undeliveredSubmissions)
+      SubmissionsSummary(
+        deliveredSubmissionSummaries,
+        deliveredSubmissionsCount,
+        deliveredSubmissions.nonEmpty,
+        repositorySubmissionCount
+      )
     }
+    
+  def getUndeliveredSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] =
+    repository.getSubmittedXmlSubmissions(dprsId).map { submissions =>
+      submissions
+        .sortBy(_.created)
+        .reverse
+        .flatMap(x => SubmissionSummary(x))
+    }
+    
+  def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] = {
+    getAllAssumedReportingSubmissions(dprsId).flatMap { deliveredSubmissions =>
+      val consolidatedSubmissions = deliveredSubmissions
+        .groupBy(submission => (submission.operatorId, submission.reportingPeriod))
+        .map(_._2.sortBy(_.submissionDateTime).reverse.head)
+        .toList
+        .sortBy(_.submissionDateTime).reverse
+        
+      consolidatedSubmissions.traverse { submission =>
+        assumedReportingService
+          .getSubmission(dprsId, submission.operatorId, submission.reportingPeriod)
+          .map(_.map(assumedReport => SubmissionSummary(submission, assumedReport.isDeleted)))
+      }
+      .map(_.flatten)
+    }
+  }
+
+  private def getAllAssumedReportingSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[DeliveredSubmission]] =
+    connector.get(buildAssumedReportingRequest(dprsId, 1)).flatMap(_.map { page1 =>
+      if (page1.resultsCount <= 10) {
+        Future.successful(page1.submissions)
+      } else {
+        val numberOfPages = (page1.resultsCount + 9) / 10
+
+        (2 to numberOfPages).toList.traverse { page =>
+          connector.get(buildAssumedReportingRequest(dprsId, page)).flatMap(_.map { result =>
+            Future.successful(result.submissions)
+          }.getOrElse(Future.successful(Nil)))
+        }.map(_.flatten ++ page1.submissions)
+      }
+    }.getOrElse(Future.successful(Nil)))
+
+  private def buildAssumedReportingRequest(dprsId: String, page: Int): ViewSubmissionsRequest =
+    ViewSubmissionsRequest(
+      subscriptionId = dprsId,
+      assumedReporting = true,
+      pageNumber = page,
+      sortBy = SubmissionDate,
+      sortOrder = Descending,
+      reportingPeriod = None,
+      operatorId = None,
+      fileName = None,
+      statuses = Seq(Pending, Success, Rejected)
+    )
 }

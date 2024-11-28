@@ -17,6 +17,9 @@
 package models.submission
 
 import models.submission.Submission.State.*
+import models.submission.Submission.{SubmissionType, UploadFailureReason}
+import models.submission.Submission.UploadFailureReason.*
+import models.submission.UpscanFailureReason.Quarantine
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
@@ -34,6 +37,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.Xml,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -45,6 +49,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "Xml",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -68,6 +73,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.ManualAssumedReport,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -79,6 +85,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "ManualAssumedReport",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -102,23 +109,28 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.Xml,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
       assumingOperatorName = None,
-      state = UploadFailed("some reason"),
+      state = UploadFailed(SchemaValidationError, Some("some-file-name")),
       created = created,
       updated = updated
     )
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "Xml",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
       "state" -> Json.obj(
         "type" -> "UploadFailed",
-        "reason" -> "some reason"
+        "reason" -> Json.obj(
+          "type" -> "SchemaValidationError"
+        ),
+        "fileName" -> "some-file-name"
       ),
       "created" -> created,
       "updated" -> updated
@@ -137,6 +149,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.Xml,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -154,6 +167,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "Xml",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -182,6 +196,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.Xml,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -196,6 +211,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "Xml",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -221,6 +237,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.Xml,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -235,6 +252,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "Xml",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -260,6 +278,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.Xml,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -274,6 +293,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "Xml",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -299,6 +319,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val submission = Submission(
       _id = "id",
+      submissionType = SubmissionType.ManualAssumedReport,
       dprsId = "dprsId",
       operatorId = "operatorId",
       operatorName = "operatorName",
@@ -313,6 +334,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     val json = Json.obj(
       "_id" -> "id",
+      "submissionType" -> "ManualAssumedReport",
       "dprsId" -> "dprsId",
       "operatorId" -> "operatorId",
       "operatorName" -> "operatorName",
@@ -332,6 +354,268 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
     "must write to json" in {
       Json.toJsObject(submission) mustEqual json
+    }
+  }
+
+  "when the submission type is invalid" - {
+
+    val json = Json.obj(
+      "_id" -> "id",
+      "submissionType" -> "invalid",
+      "dprsId" -> "dprsId",
+      "operatorId" -> "operatorId",
+      "operatorName" -> "operatorName",
+      "assumingOperatorName" -> "assumingOperator",
+      "state" -> Json.obj(
+        "type" -> "Submitted",
+        "fileName" -> "test.xml",
+        "reportingPeriod" -> 2024
+      ),
+      "created" -> created,
+      "updated" -> updated
+    )
+
+    "must fail to read from json" in {
+      Json.fromJson[Submission](json).isError mustBe true
+    }
+  }
+
+  "when there is no submission type" - {
+
+    "when there is no assuming operator name" - {
+
+      val submission = Submission(
+        _id = "id",
+        submissionType = SubmissionType.Xml,
+        dprsId = "dprsId",
+        operatorId = "operatorId",
+        operatorName = "operatorName",
+        assumingOperatorName = None,
+        state = Ready,
+        created = created,
+        updated = updated
+      )
+
+      val json = Json.obj(
+        "_id" -> "id",
+        "dprsId" -> "dprsId",
+        "operatorId" -> "operatorId",
+        "operatorName" -> "operatorName",
+        "state" -> Json.obj(
+          "type" -> "Ready"
+        ),
+        "created" -> created,
+        "updated" -> updated
+      )
+
+      "must read from json and set submissionType to Xml" in {
+        Json.fromJson[Submission](json).get mustEqual submission
+      }
+    }
+
+    "when there is an assuming operator name" - {
+
+      val submission = Submission(
+        _id = "id",
+        submissionType = SubmissionType.ManualAssumedReport,
+        dprsId = "dprsId",
+        operatorId = "operatorId",
+        operatorName = "operatorName",
+        assumingOperatorName = Some("assumingOperatorName"),
+        state = Ready,
+        created = created,
+        updated = updated
+      )
+
+      val json = Json.obj(
+        "_id" -> "id",
+        "dprsId" -> "dprsId",
+        "operatorId" -> "operatorId",
+        "operatorName" -> "operatorName",
+        "assumingOperatorName" -> "assumingOperatorName",
+        "state" -> Json.obj(
+          "type" -> "Ready"
+        ),
+        "created" -> created,
+        "updated" -> updated
+      )
+
+      "must read from json and set submissionType to ManualAssumedReport" in {
+        Json.fromJson[Submission](json).get mustEqual submission
+      }
+    }
+  }
+
+  "upload failure reason" - {
+
+    "when the reason is NotXml" - {
+
+      val json = Json.obj(
+        "type" -> "NotXml"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual NotXml
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](NotXml) mustEqual json
+      }
+    }
+
+    "when the reason is SchemaValidationError" - {
+
+      val json = Json.obj(
+        "type" -> "SchemaValidationError"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual SchemaValidationError
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](SchemaValidationError) mustEqual json
+      }
+    }
+
+    "when the reason is ManualAssumedReportExists" - {
+
+      val json = Json.obj(
+        "type" -> "ManualAssumedReportExists"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual ManualAssumedReportExists
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](ManualAssumedReportExists) mustEqual json
+      }
+    }
+
+    "when the reason is PlatformOperatorIdMissing" - {
+
+      val json = Json.obj(
+        "type" -> "PlatformOperatorIdMissing"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual PlatformOperatorIdMissing
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](PlatformOperatorIdMissing) mustEqual json
+      }
+    }
+
+    "when the reason is PlatformOperatorIdMismatch" - {
+
+      val failureReason = PlatformOperatorIdMismatch("expected", "actual")
+      val json = Json.obj(
+        "type" -> "PlatformOperatorIdMismatch",
+        "expectedId" -> "expected",
+        "actualId" -> "actual"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual failureReason
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](failureReason) mustEqual json
+      }
+    }
+
+    "when the reason is ReportingPeriodInvalid" - {
+
+      val json = Json.obj(
+        "type" -> "ReportingPeriodInvalid"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual ReportingPeriodInvalid
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](ReportingPeriodInvalid) mustEqual json
+      }
+    }
+
+    "when the reason is UpscanError" - {
+
+      val failureReason = UpscanError(Quarantine)
+      val json = Json.obj(
+        "type" -> "UpscanError",
+        "failureReason" -> Quarantine.entryName
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual failureReason
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](failureReason) mustEqual json
+      }
+    }
+
+    "when the reason is EntityTooSmall" - {
+
+      val json = Json.obj(
+        "type" -> "EntityTooSmall"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual EntityTooSmall
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](EntityTooSmall) mustEqual json
+      }
+    }
+
+    "when the reason is EntityTooLarge" - {
+
+      val json = Json.obj(
+        "type" -> "EntityTooLarge"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual EntityTooLarge
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](EntityTooLarge) mustEqual json
+      }
+    }
+
+    "when the reason is InvalidArgument" - {
+
+      val json = Json.obj(
+        "type" -> "InvalidArgument"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual InvalidArgument
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](InvalidArgument) mustEqual json
+      }
+    }
+    
+    "when the reason is UnknownFailure" - {
+
+      val json = Json.obj(
+        "type" -> "UnknownFailure"
+      )
+
+      "must read from json" in {
+        Json.fromJson[UploadFailureReason](json).get mustEqual UnknownFailure
+      }
+
+      "must write to json" in {
+        Json.toJsObject[UploadFailureReason](UnknownFailure) mustEqual json
+      }
     }
   }
 }

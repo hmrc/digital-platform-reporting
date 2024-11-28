@@ -11,13 +11,14 @@ object AppDependencies {
     "com.beachape"            %% "enumeratum-play"                    % "1.8.2",
     "org.typelevel"           %% "cats-core"                          % "2.12.0",
     "uk.gov.hmrc"             %% "internal-auth-client-play-30"       % "3.0.0",
-    "javax.xml.bind"          %  "jaxb-api"                           % "2.3.1"
+    "javax.xml.bind"          %  "jaxb-api"                           % "2.3.1",
+    "org.apache.pekko"        %% "pekko-connectors-xml"               % "1.0.0"
   )
 
   val test: Seq[ModuleID] = Seq(
     "uk.gov.hmrc"             %% "bootstrap-test-play-30"     % bootstrapVersion,
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-test-play-30"    % hmrcMongoVersion,
-    "org.scalacheck"          %% "scalacheck"                 % "1.18.0"
+    "org.scalatestplus"       %% "scalacheck-1-17"            % "3.2.18.0"
   ).map(_ % Test)
 
   val it: Seq[Nothing] = Seq.empty

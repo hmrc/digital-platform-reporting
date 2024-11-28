@@ -32,7 +32,7 @@ class AdminController @Inject()(submissionRepository: SubmissionRepository,
   private def permission(path: String) = Predicate.Permission(
     Resource(
       ResourceType("digital-platform-reporting"),
-      ResourceLocation(path)
+      ResourceLocation(path.stripPrefix("/").stripSuffix("/"))
     ),
     IAAction("ADMIN")
   )

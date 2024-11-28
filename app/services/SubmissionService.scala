@@ -19,6 +19,8 @@ package services
 import cats.data.OptionT
 import connectors.{DownloadConnector, PlatformOperatorConnector, SubmissionConnector, SubscriptionConnector}
 import models.assumed.AssumingPlatformOperator
+import models.audit.AddSubmissionEvent
+import models.audit.AddSubmissionEvent.DeliveryRoute.{Dct52A, Dprs0502}
 import models.submission.Submission
 import models.submission.Submission.State.{Submitted, Validated}
 import models.subscription.responses.SubscriptionInfo
@@ -29,10 +31,12 @@ import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
 import play.api.Configuration
 import repository.SubmissionRepository
-import services.SubmissionService.InvalidSubmissionStateException
+import services.SubmissionService.{InvalidSubmissionStateException, NoPlatformOperatorException}
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.DateTimeFormats
+import utils.FileUtils.stripExtension
 
+import java.io.ByteArrayInputStream
 import java.time.{Clock, Year}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -49,7 +53,8 @@ class SubmissionService @Inject() (
                                     uuidService: UuidService,
                                     platformOperatorConnector: PlatformOperatorConnector,
                                     assumedReportingService: AssumedReportingService,
-                                    submissionRepository: SubmissionRepository
+                                    submissionRepository: SubmissionRepository,
+                                    auditService: AuditService
                                   )(using Materializer, ExecutionContext) {
 
   private val sdesSubmissionThreshold: Long = configuration.get[Long]("sdes.size-threshold")
@@ -58,6 +63,20 @@ class SubmissionService @Inject() (
     submission.state match {
       case state: Validated =>
         subscriptionConnector.get(submission.dprsId).flatMap { subscription =>
+
+          val auditEvent = AddSubmissionEvent(
+            conversationId = submission._id,
+            dprsId = submission.dprsId,
+            operatorId = submission.operatorId,
+            operatorName = submission.operatorName,
+            fileName = state.fileName,
+            fileSize = state.size,
+            deliveryRoute = if (state.size <= sdesSubmissionThreshold) Dprs0502 else Dct52A,
+            processedAt = clock.instant()
+          )
+
+          auditService.audit(auditEvent)
+
           if (state.size <= sdesSubmissionThreshold) {
             submitDirect(submission, state, subscription)
           } else {
@@ -65,17 +84,18 @@ class SubmissionService @Inject() (
           }
         }
       case _ =>
-        Future.failed(InvalidSubmissionStateException(submission._id))
+        Future.failed(InvalidSubmissionStateException(submission._id, submission.state))
     }
 
-  def submitAssumedReporting(dprsId: String, operatorId: String, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year)(using HeaderCarrier): Future[Submission] = {
+  def submitAssumedReporting(dprsId: String, operatorId: String, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year)(using HeaderCarrier): Future[Submission] =
     for {
       subscription <- subscriptionConnector.get(dprsId)
-      operator     <- OptionT(platformOperatorConnector.get(dprsId, operatorId)).getOrElseF(Future.failed(new RuntimeException())) // TODO
-      payload      =  assumedReportingService.createSubmission(operator, assumingOperator, reportingPeriod)
+      operator     <- OptionT(platformOperatorConnector.get(dprsId, operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(dprsId, operatorId)))
+      payload      <- assumedReportingService.createSubmission(dprsId, operator, assumingOperator, reportingPeriod)
       fileName     =  s"${payload.messageRef}.xml"
       submission   =  Submission(
         _id = uuidService.generate(),
+        submissionType = Submission.SubmissionType.ManualAssumedReport,
         dprsId = dprsId,
         operatorId = operatorId,
         operatorName = operator.operatorName,
@@ -92,7 +112,32 @@ class SubmissionService @Inject() (
       submissionSource  =  createSubmissionSource(submissionBody)
       _                 <- submissionConnector.submit(submission._id, submissionSource)
     } yield submission
-  }
+
+  def submitAssumedReportingDeletion(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Submission] =
+    for {
+      subscription <- subscriptionConnector.get(dprsId)
+      operator <- OptionT(platformOperatorConnector.get(dprsId, operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(dprsId, operatorId)))
+      payload <- assumedReportingService.createDeleteSubmission(dprsId, operator.operatorId, reportingPeriod)
+      fileName = s"${payload.messageRef}.xml"
+      submission = Submission(
+        _id = uuidService.generate(),
+        submissionType = Submission.SubmissionType.ManualAssumedReport,
+        dprsId = dprsId,
+        operatorId = operatorId,
+        operatorName = operator.operatorName,
+        assumingOperatorName = None,
+        state = Submitted(
+          fileName = fileName,
+          reportingPeriod = reportingPeriod
+        ),
+        created = clock.instant(),
+        updated = clock.instant()
+      )
+      _                 <- submissionRepository.save(submission)
+      submissionBody    =  addEnvelope(ByteString.fromString(payload.body.toString), submission._id, fileName, subscription, isManual = true)
+      submissionSource  =  createSubmissionSource(submissionBody)
+      _                 <- submissionConnector.submit(submission._id, submissionSource)
+    } yield submission
 
   private def submitDirect(submission: Submission, state: Validated, subscription: SubscriptionInfo)(using HeaderCarrier): Future[Done] =
     for {
@@ -124,6 +169,7 @@ class SubmissionService @Inject() (
         {requestAdditionalDetail(fileName, subscription, isManual)}
     </cadx:DPISubmissionRequest>
 
+
   private def requestCommon(submissionId: String): Elem =
     <requestCommon>
       <receiptDate>{DateTimeFormats.ISO8601Formatter.format(clock.instant())}</receiptDate>
@@ -134,12 +180,12 @@ class SubmissionService @Inject() (
 
   private def requestDetail(body: ByteString): Elem =
     <requestDetail>
-      {scala.xml.XML.loadString(body.utf8String)}
+      {scala.xml.XML.load(new ByteArrayInputStream(body.toArray))}
     </requestDetail>
 
   private def requestAdditionalDetail(fileName: String, subscription: SubscriptionInfo, isManual: Boolean): Elem =
     <requestAdditionalDetail>
-      <fileName>{fileName}</fileName>
+      <fileName>{stripExtension(fileName)}</fileName>
       <subscriptionID>{subscription.id}</subscriptionID>
       {subscription.tradingName.map { tradingName =>
         <tradingName>{tradingName}</tradingName>
@@ -180,5 +226,11 @@ class SubmissionService @Inject() (
 
 object SubmissionService {
 
-  final case class InvalidSubmissionStateException(submissionId: String) extends Throwable
+  final case class InvalidSubmissionStateException(submissionId: String, state: Submission.State) extends Throwable {
+    override def getMessage: String = s"Submission state was invalid for submission: $submissionId, expected Validated was: ${state.getClass.getSimpleName}"
+  }
+
+  final case class NoPlatformOperatorException(dprsId: String, operatorId: String) extends Throwable {
+    override def getMessage: String = s"No operator found for operator id: $operatorId, on behalf of DPRS ID: $dprsId"
+  }
 }

@@ -45,14 +45,17 @@ class CadxValidationErrorRepository @Inject() (
   def save(validationError: CadxValidationError): Future[Done] =
     collection.insertOne(validationError).toFuture().map(_ => Done)
 
-  def getErrorsForSubmission(dprsId: String, submissionId: String): Source[CadxValidationError, NotUsed] =
+  def saveBatch(validationErrors: Seq[CadxValidationError]): Future[Done] =
+    collection.insertMany(validationErrors).toFuture().map(_ => Done)
+
+  def getErrorsForSubmission(dprsId: String, submissionId: String, limit: Int): Source[CadxValidationError, NotUsed] =
     Source.fromPublisher {
       collection.find(
         Filters.and(
           Filters.eq("dprsId", dprsId),
           Filters.eq("submissionId", submissionId)
         )
-      )
+      ).limit(limit)
     }
 }
 

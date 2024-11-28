@@ -102,22 +102,56 @@ class CadxValidationErrorRepositorySpec
     }
   }
 
+  "saveBatch" - {
+
+    "must save the errors to the repository" in {
+
+      repository.saveBatch(Seq(fileError, rowError)).futureValue
+
+      val result = findAll().futureValue
+
+      result must contain only(fileError, rowError)
+    }
+  }
+
   "getErrorsForSubmission" - {
 
-    "must return all errors for the given submission id" in {
+    "when there are fewer errors than the limit" - {
 
-      given Materializer = app.materializer
+      "must return all errors for the given submission id" in {
 
-      insert(fileError).futureValue
-      insert(rowError).futureValue
-      insert(fileError.copy(dprsId = "dprsId2")).futureValue
-      insert(rowError.copy(dprsId = "dprsId3")).futureValue
-      insert(fileError.copy(submissionId = "submissionId2")).futureValue
-      insert(rowError.copy(submissionId = "submissionId3")).futureValue
+        given Materializer = app.materializer
 
-      val source = repository.getErrorsForSubmission(dprsId, submissionId)
-      val result = source.runWith(Sink.fold(Seq.empty[CadxValidationError])(_ :+ _)).futureValue
-      result must contain only(fileError, rowError)
+        insert(fileError).futureValue
+        insert(rowError).futureValue
+        insert(fileError.copy(dprsId = "dprsId2")).futureValue
+        insert(rowError.copy(dprsId = "dprsId3")).futureValue
+        insert(fileError.copy(submissionId = "submissionId2")).futureValue
+        insert(rowError.copy(submissionId = "submissionId3")).futureValue
+
+        val source = repository.getErrorsForSubmission(dprsId, submissionId, 10)
+        val result = source.runWith(Sink.fold(Seq.empty[CadxValidationError])(_ :+ _)).futureValue
+        result must contain only(fileError, rowError)
+      }
+    }
+
+    "when there are more errors than the limit" - {
+
+      "must only return errors up to the limit" in {
+
+        given Materializer = app.materializer
+
+        val fileError2 = fileError.copy(code = "2")
+        val fileError3 = fileError.copy(code = "3")
+
+        insert(fileError).futureValue
+        insert(fileError2).futureValue
+        insert(fileError3).futureValue
+
+        val source = repository.getErrorsForSubmission(dprsId, submissionId, 2)
+        val result = source.runWith(Sink.fold(Seq.empty[CadxValidationError])(_ :+ _)).futureValue
+        result must contain only(fileError, fileError2)
+      }
     }
   }
 }
