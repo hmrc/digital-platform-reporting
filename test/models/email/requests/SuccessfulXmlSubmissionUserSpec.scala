@@ -16,7 +16,6 @@
 
 package models.email.requests
 
-import models.operator.{AddressDetails, ContactDetails}
 import models.operator.responses.PlatformOperator
 import models.submission.Submission.State.Approved
 import models.subscription.responses.SubscriptionInfo
@@ -24,6 +23,7 @@ import models.subscription.{Individual, IndividualContact}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.{EitherValues, OptionValues, TryValues}
+import support.builders.PlatformOperatorBuilder.aPlatformOperator
 
 import java.time.Year
 
@@ -34,33 +34,22 @@ class SuccessfulXmlSubmissionUserSpec extends AnyFreeSpec
   with EitherValues {
 
   val stateApproved: Approved = Approved("test.xml", Year.of(2024))
-  val platformOperator: PlatformOperator = PlatformOperator(
-    operatorId = "operatorId",
-    operatorName = "operatorName",
-    tinDetails = Seq.empty,
-    businessName = None,
-    tradingName = None,
-    primaryContactDetails = ContactDetails(None, "name", "po.email@example.com"),
-    secondaryContactDetails = None,
-    addressDetails = AddressDetails("line 1", None, None, None, None, None),
-    notifications = Seq.empty
-  )
   val checksCompletedDateTime = "09:30am on 17th November 2024"
   val expectedIndividual: IndividualContact = IndividualContact(Individual("first", "last"), "user.email@example.com", None)
   val subscriptionInfo: SubscriptionInfo = SubscriptionInfo("DPRS123", gbUser = true, None, expectedIndividual, None)
 
   ".apply(...)" - {
     "must create SuccessfulXmlSubmissionUser object" in {
-      SuccessfulXmlSubmissionUser.apply(stateApproved, checksCompletedDateTime, platformOperator, subscriptionInfo) mustBe SuccessfulXmlSubmissionUser(
+      SuccessfulXmlSubmissionUser.apply(stateApproved, checksCompletedDateTime, aPlatformOperator, subscriptionInfo) mustBe SuccessfulXmlSubmissionUser(
         to = List("user.email@example.com"),
         templateId = "dprs_successful_xml_submission_user",
         parameters = Map(
-          "userPrimaryContactName" -> "first last",
-          "poBusinessName" -> "operatorName",
-          "poId" -> "operatorId",
+          "userPrimaryContactName" -> subscriptionInfo.primaryContactName,
+          "poBusinessName" -> aPlatformOperator.operatorName,
+          "poId" -> aPlatformOperator.operatorId,
           "checksCompletedDateTime" -> checksCompletedDateTime,
-          "reportingPeriod" -> "2024",
-          "fileName" -> "test.xml"
+          "reportingPeriod" -> stateApproved.reportingPeriod.toString,
+          "fileName" -> stateApproved.fileName
         )
       )
     }
