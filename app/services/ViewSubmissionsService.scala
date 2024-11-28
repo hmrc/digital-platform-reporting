@@ -36,10 +36,13 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
   def getDeliveredSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] =
     for {
       deliveredSubmissions      <- connector.get(request)
+      localSubmissions          <- repository.getBySubscriptionId(request.subscriptionId)
+      localSubmissionIds        = localSubmissions.map(_._id)
       repositorySubmissionCount <- repository.countSubmittedXmlSubmissions(request.subscriptionId)
     } yield {
 
-      val deliveredSubmissionSummaries = deliveredSubmissions.map(_.submissions.map(x => SubmissionSummary(x, false))).getOrElse(Nil)
+      val submissions = deliveredSubmissions.map(_.submissions).getOrElse(Nil)
+      val deliveredSubmissionSummaries = submissions.map(s => SubmissionSummary(s, false, localSubmissionIds.contains(s.conversationId)))
       val deliveredSubmissionsCount = deliveredSubmissions.map(_.resultsCount).getOrElse(0)
 
       SubmissionsSummary(
@@ -58,23 +61,27 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
         .flatMap(x => SubmissionSummary(x))
     }
     
-  def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] = {
+  def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] =
     getAllAssumedReportingSubmissions(dprsId).flatMap { deliveredSubmissions =>
-      val consolidatedSubmissions = deliveredSubmissions
-        .groupBy(submission => (submission.operatorId, submission.reportingPeriod))
-        .map(_._2.sortBy(_.submissionDateTime).reverse.head)
-        .toList
-        .sortBy(_.submissionDateTime).reverse
-        
-      consolidatedSubmissions.traverse { submission =>
-        assumedReportingService
-          .getSubmission(dprsId, submission.operatorId, submission.reportingPeriod)
-          .map(_.map(assumedReport => SubmissionSummary(submission, assumedReport.isDeleted)))
-      }
-      .map(_.flatten)
-    }
-  }
+      repository.getBySubscriptionId(dprsId).flatMap { localSubmissions =>
 
+        val localSubmissionIds = localSubmissions.map(_._id)
+
+        val consolidatedSubmissions = deliveredSubmissions
+          .groupBy(submission => (submission.operatorId, submission.reportingPeriod))
+          .map(_._2.sortBy(_.submissionDateTime).reverse.head)
+          .toList
+          .sortBy(_.submissionDateTime).reverse
+
+        consolidatedSubmissions.traverse { submission =>
+            assumedReportingService
+              .getSubmission(dprsId, submission.operatorId, submission.reportingPeriod)
+              .map(_.map(assumedReport => SubmissionSummary(submission, assumedReport.isDeleted, localSubmissionIds.contains(submission.conversationId))))
+          }
+          .map(_.flatten)
+      }
+    }
+    
   private def getAllAssumedReportingSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[DeliveredSubmission]] =
     connector.get(buildAssumedReportingRequest(dprsId, 1)).flatMap(_.map { page1 =>
       if (page1.resultsCount <= 10) {
