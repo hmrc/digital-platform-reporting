@@ -16,16 +16,18 @@
 
 package repository
 
-import models.submission.Submission
 import models.submission.Submission.SubmissionType
+import config.AppConfig
+import models.submission
+import models.submission.{IdAndLastUpdated, Submission}
 import org.apache.pekko.Done
-import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import org.mongodb.scala.model.*
+import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import play.api.Configuration
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.play.http.logging.Mdc
-
+import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.Duration
@@ -34,7 +36,9 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class SubmissionRepository @Inject() (
                                        mongoComponent: MongoComponent,
-                                       configuration: Configuration
+                                       configuration: Configuration,
+                                       clock: Clock,
+                                       appConfig: AppConfig
                                      )(implicit val ec: ExecutionContext) extends PlayMongoRepository[Submission](
   collectionName = "submissions",
   mongoComponent = mongoComponent,
@@ -63,7 +67,21 @@ class SubmissionRepository @Inject() (
       )
     ).limit(1).headOption()
   }
-  
+
+  def getBlockedSubmissionIds(): Future[Seq[IdAndLastUpdated]] = {
+    val cutoff = Instant.now(clock).minus(appConfig.blockedSubmissionThreshold)
+    Mdc.preservingMdc {
+      collection.find(
+          filter = Filters.and(
+            Filters.eq("state.type", "Submitted"),
+            Filters.lt("updated", cutoff)
+          )
+        ).limit(1000)
+        .map(s => submission.IdAndLastUpdated(s._id, s.updated))
+        .toFuture()
+    }
+  }
+
   def getBySubscriptionId(dprsId: String): Future[Seq[Submission]] = Mdc.preservingMdc {
     collection.find(
       filter = Filters.eq("dprsId", dprsId)
@@ -75,19 +93,19 @@ class SubmissionRepository @Inject() (
       filter = Filters.eq("_id", id)
     ).limit(1).headOption()
   }
-  
+
   def countSubmittedXmlSubmissions(dprsId: String): Future[Long] = Mdc.preservingMdc {
     collection.countDocuments(
       filter = submittedXmlSubmissionsFilter(dprsId)
     ).toFuture()
   }
-  
+
   def getSubmittedXmlSubmissions(dprsId: String): Future[Seq[Submission]] = Mdc.preservingMdc {
     collection.find(
       filter = submittedXmlSubmissionsFilter(dprsId)
     ).toFuture()
   }
-  
+
   private def submittedXmlSubmissionsFilter(dprsId: String) =
     Filters.and(
       Filters.eq("dprsId", dprsId),
@@ -110,6 +128,11 @@ object SubmissionRepository {
         Indexes.ascending("dprsId"),
         IndexOptions()
           .name("dprs_id_idx")
+      ),
+      IndexModel(
+        Indexes.ascending("state.type"),
+        IndexOptions()
+          .name("state_type_idx")
       )
     )
 }

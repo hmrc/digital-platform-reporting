@@ -35,7 +35,7 @@ import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
-import java.time.{Instant, Year}
+import java.time.{Duration, Instant, Year}
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
@@ -55,7 +55,8 @@ class SubmissionRepositorySpec
       bind[MongoComponent].toInstance(mongoComponent),
     )
     .configure(
-      "mongodb.submission.ttl" -> "5minutes"
+      "mongodb.submission.ttl" -> "5minutes",
+      "submissions.blocked-threshold" -> "1minutes"
     )
     .build()
 
@@ -125,7 +126,7 @@ class SubmissionRepositorySpec
       repository.get("dprsId2", "id").futureValue mustBe None
     }
   }
-  
+
   "getBySubscriptionId" - {
 
     "must retrieve the right submissions from mongo" in {
@@ -158,6 +159,49 @@ class SubmissionRepositorySpec
 
     mustPreserveMdc(repository.getById("id"))
   }
+
+  "getBlockedSubmissionIds" - {
+    "must retrieve submissions that haven't updated recently and are are in Submitted state" in {
+      val oldInstant = Instant.now()
+                        .plus(Duration.ofMinutes(-2))
+                        .truncatedTo(ChronoUnit.MILLIS)
+
+      val oldSubmissionNotSubmitted = submission.copy(
+        _id = "getBlockedSubmissionIds-1",
+        state = Ready,
+        updated = oldInstant
+      )
+      val recentSubmissionNotSubmitted = submission.copy(
+        _id = "getBlockedSubmissionIds-2",
+        state = Ready,
+        updated = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+      )
+      val oldSubmissionInSubmittedState = submission.copy(
+        _id = "getBlockedSubmissionIds-3",
+        state = Submitted("Filename", Year.of(2024)),
+        updated = oldInstant
+      )
+      val recentSubmissionInSubmittedState = submission.copy(
+        _id = "getBlockedSubmissionIds-4",
+        state = Submitted("Filename", Year.of(2024)),
+        updated = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+      )
+
+      insert(oldSubmissionNotSubmitted).futureValue
+      insert(recentSubmissionNotSubmitted).futureValue
+      insert(oldSubmissionInSubmittedState).futureValue
+      insert(recentSubmissionInSubmittedState).futureValue
+
+      val result = repository.getBlockedSubmissionIds().futureValue
+      result.size mustBe 1
+      result.head.id mustBe "getBlockedSubmissionIds-3"
+      result.head.lastUpdated mustEqual(oldInstant)
+    }
+
+    mustPreserveMdc(repository.getBlockedSubmissionIds())
+  }
+
+
 
   "countSubmittedXmlSubmissions" - {
 
@@ -206,7 +250,7 @@ class SubmissionRepositorySpec
 
     mustPreserveMdc(repository.getSubmittedXmlSubmissions("dprsId"))
   }
-  
+
   private def mustPreserveMdc[A](f: => Future[A])(implicit pos: Position): Unit =
     "must preserve MDC" in {
 
