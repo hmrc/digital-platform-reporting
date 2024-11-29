@@ -41,7 +41,7 @@ class DateTimeFormatsSpec extends AnyFreeSpec with Matchers {
 
   "EmailDateTimeFormatter" - {
     "must format" in {
-      localDateTime.format(DateTimeFormats.EmailDateTimeFormatter).replace("AM", "am").replace("PM", "pm") mustBe "2:23am (GMT) on 9 August 2024"
+      localDateTime.format(DateTimeFormats.EmailDateTimeFormatter).replace("AM", "am").replace("PM", "pm") mustBe "2:23am GMT on 9 August 2024"
     }
   }
 

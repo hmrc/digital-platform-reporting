@@ -30,7 +30,7 @@ object DateTimeFormats {
     .withZone(ZoneId.of("UTC"))
 
   val EmailDateTimeFormatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("h:mma (z) 'on' d MMMM yyyy")
+    .ofPattern("h:mma z 'on' d MMMM yyyy")
     .withZone(ZoneId.of("GMT"))
 
 }
