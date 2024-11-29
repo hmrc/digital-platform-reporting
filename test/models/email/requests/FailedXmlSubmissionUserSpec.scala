@@ -17,28 +17,23 @@
 package models.email.requests
 
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.{EitherValues, OptionValues, TryValues}
-import support.builders.DateTime.aCompletedDateTime
+import support.SpecBase
 import support.builders.PlatformOperatorBuilder.aPlatformOperator
 import support.builders.StateBuilder.aStateRejected
 import support.builders.SubscriptionInfoBuilder.aSubscriptionInfo
 
-class FailedXmlSubmissionUserSpec extends AnyFreeSpec
-  with Matchers
-  with TryValues
-  with OptionValues
-  with EitherValues {
+class FailedXmlSubmissionUserSpec extends SpecBase {
 
   ".apply(...)" - {
     "must create FailedXmlSubmissionUser object" in {
-      FailedXmlSubmissionUser.apply(aStateRejected, aCompletedDateTime, aPlatformOperator, aSubscriptionInfo) mustBe FailedXmlSubmissionUser(
+      val anyString = "any-date-time-string"
+      FailedXmlSubmissionUser.apply(aStateRejected, anyString, aPlatformOperator, aSubscriptionInfo) mustBe FailedXmlSubmissionUser(
         to = List(aSubscriptionInfo.primaryContact.email),
         templateId = "dprs_failed_xml_submission_user",
         parameters = Map(
           "userPrimaryContactName" -> aSubscriptionInfo.primaryContactName,
           "poBusinessName" -> aPlatformOperator.operatorName,
-          "checksCompletedDateTime" -> aCompletedDateTime,
+          "checksCompletedDateTime" -> anyString,
           "fileName" -> aStateRejected.fileName
         )
       )

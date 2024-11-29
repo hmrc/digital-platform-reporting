@@ -17,26 +17,21 @@
 package models.email.requests
 
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.{EitherValues, OptionValues, TryValues}
-import support.builders.DateTime.aCompletedDateTime
+import support.SpecBase
 import support.builders.PlatformOperatorBuilder.aPlatformOperator
 
-class FailedXmlSubmissionPlatformOperatorSpec extends AnyFreeSpec
-  with Matchers
-  with TryValues
-  with OptionValues
-  with EitherValues {
+class FailedXmlSubmissionPlatformOperatorSpec extends SpecBase {
 
   ".apply(...)" - {
     "must create FailedXmlSubmissionPlatformOperator object" in {
-      FailedXmlSubmissionPlatformOperator.apply(aCompletedDateTime, aPlatformOperator) mustBe FailedXmlSubmissionPlatformOperator(
+      val anyString = "any-date-time-string"
+      FailedXmlSubmissionPlatformOperator.apply(anyString, aPlatformOperator) mustBe FailedXmlSubmissionPlatformOperator(
         to = List(aPlatformOperator.primaryContactDetails.emailAddress),
         templateId = "dprs_failed_xml_submission_platform_operator",
         parameters = Map(
           "poPrimaryContactName" -> aPlatformOperator.primaryContactDetails.contactName,
           "poBusinessName" -> aPlatformOperator.operatorName,
-          "checksCompletedDateTime" -> aCompletedDateTime
+          "checksCompletedDateTime" -> anyString
         )
       )
     }

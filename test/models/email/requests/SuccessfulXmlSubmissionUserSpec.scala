@@ -17,33 +17,29 @@
 package models.email.requests
 
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.{EitherValues, OptionValues, TryValues}
+import support.SpecBase
 import support.builders.PlatformOperatorBuilder.aPlatformOperator
-import support.builders.SubscriptionInfoBuilder.aSubscriptionInfo
 import support.builders.StateBuilder.aStateApproved
-import support.builders.DateTime.aCompletedDateTime
+import support.builders.SubscriptionInfoBuilder.aSubscriptionInfo
 
-class SuccessfulXmlSubmissionUserSpec extends AnyFreeSpec
-  with Matchers
-  with TryValues
-  with OptionValues
-  with EitherValues {
+class SuccessfulXmlSubmissionUserSpec extends SpecBase {
 
   ".apply(...)" - {
     "must create SuccessfulXmlSubmissionUser object" in {
-      SuccessfulXmlSubmissionUser.apply(aStateApproved, aCompletedDateTime, aPlatformOperator, aSubscriptionInfo) mustBe SuccessfulXmlSubmissionUser(
-        to = List(aSubscriptionInfo.primaryContact.email),
-        templateId = "dprs_successful_xml_submission_user",
-        parameters = Map(
-          "userPrimaryContactName" -> aSubscriptionInfo.primaryContactName,
-          "poBusinessName" -> aPlatformOperator.operatorName,
-          "poId" -> aPlatformOperator.operatorId,
-          "checksCompletedDateTime" -> aCompletedDateTime,
-          "reportingPeriod" -> aStateApproved.reportingPeriod.toString,
-          "fileName" -> aStateApproved.fileName
+      val anyString = "any-date-time-string"
+      SuccessfulXmlSubmissionUser.apply(aStateApproved, anyString, aPlatformOperator, aSubscriptionInfo) mustBe
+        SuccessfulXmlSubmissionUser(
+          to = List(aSubscriptionInfo.primaryContact.email),
+          templateId = "dprs_successful_xml_submission_user",
+          parameters = Map(
+            "userPrimaryContactName" -> aSubscriptionInfo.primaryContactName,
+            "poBusinessName" -> aPlatformOperator.operatorName,
+            "poId" -> aPlatformOperator.operatorId,
+            "checksCompletedDateTime" -> anyString,
+            "reportingPeriod" -> aStateApproved.reportingPeriod.toString,
+            "fileName" -> aStateApproved.fileName
+          )
         )
-      )
     }
   }
 

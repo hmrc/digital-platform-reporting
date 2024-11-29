@@ -17,33 +17,27 @@
 package models.email.requests
 
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.{EitherValues, OptionValues, TryValues}
-import support.builders.DateTime.aCompletedDateTime
+import support.SpecBase
 import support.builders.PlatformOperatorBuilder.aPlatformOperator
 import support.builders.StateBuilder.aStateApproved
 
-class SuccessfulXmlSubmissionPlatformOperatorSpec extends AnyFreeSpec
-  with Matchers
-  with TryValues
-  with OptionValues
-  with EitherValues {
+class SuccessfulXmlSubmissionPlatformOperatorSpec extends SpecBase {
 
   ".apply(...)" - {
     "must create SuccessfulXmlSubmissionPlatformOperator object" in {
-      SuccessfulXmlSubmissionPlatformOperator.apply(aStateApproved, aCompletedDateTime, aPlatformOperator) mustBe SuccessfulXmlSubmissionPlatformOperator(
+      val anyString = "any-date-time-string"
+      SuccessfulXmlSubmissionPlatformOperator.apply(aStateApproved, anyString, aPlatformOperator) mustBe SuccessfulXmlSubmissionPlatformOperator(
         to = List(aPlatformOperator.primaryContactDetails.emailAddress),
         templateId = "dprs_successful_xml_submission_platform_operator",
         parameters = Map(
           "poPrimaryContactName" -> aPlatformOperator.primaryContactDetails.contactName,
           "poBusinessName" -> aPlatformOperator.operatorName,
           "poId" -> aPlatformOperator.operatorId,
-          "checksCompletedDateTime" -> aCompletedDateTime,
+          "checksCompletedDateTime" -> anyString,
           "reportingPeriod" -> aStateApproved.reportingPeriod.toString,
           "fileName" -> aStateApproved.fileName
         )
       )
     }
   }
-
 }
