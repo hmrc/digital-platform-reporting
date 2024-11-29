@@ -203,8 +203,8 @@ class CadxResultServiceSpec
               ByteString.fromString(Utility.trim(scalaxb.toXML(approvedResponse, "BREResponse", generated.defaultScope).head).toString)
             }
 
-            "subscription and platformOperator returned successfully" in {
-              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
+            "when submission type is ManualAssumedReport do not send emails" in {
+              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission.copy(submissionType = SubmissionType.ManualAssumedReport))))
               when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
               when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
               when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
@@ -214,51 +214,74 @@ class CadxResultServiceSpec
               cadxResultService.processResult(source).futureValue
 
               verify(mockSubmissionRepository).getById(submission._id)
-              verify(mockSubmissionRepository).save(expectedSubmission)
+              verify(mockSubmissionRepository).save(expectedSubmission.copy(submissionType = SubmissionType.ManualAssumedReport))
               verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
               verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
-              verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
-              verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-              verify(mockEmailService).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
+              verify(mockSubscriptionConnector, never()).get(eqTo(dprsId))(using any())
+              verify(mockPlatformOperatorConnector, never()).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
+              verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
             }
 
-            "subscription returned failure" in {
-              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
-              when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
-              when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
-              when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.failed(new Exception("foo")))
-              when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
-              when(mockEmailService.sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
+            "when submission type is XML send emails" - {
 
-              cadxResultService.processResult(source).futureValue
+              "subscription and platformOperator returned successfully" in {
+                when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
+                when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+                when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
+                when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+                when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
+                when(mockEmailService.sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
 
-              verify(mockSubmissionRepository).getById(submission._id)
-              verify(mockSubmissionRepository).save(expectedSubmission)
-              verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
-              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
-              verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
-              verify(mockPlatformOperatorConnector, never()).get(any(), any())(using any())
-              verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())
+                cadxResultService.processResult(source).futureValue
+
+                verify(mockSubmissionRepository).getById(submission._id)
+                verify(mockSubmissionRepository).save(expectedSubmission)
+                verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
+                verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+                verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+                verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
+                verify(mockEmailService).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
+              }
+
+              "subscription returned failure" in {
+                when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
+                when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+                when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
+                when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.failed(new Exception("foo")))
+                when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
+                when(mockEmailService.sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
+
+                cadxResultService.processResult(source).futureValue
+
+                verify(mockSubmissionRepository).getById(submission._id)
+                verify(mockSubmissionRepository).save(expectedSubmission)
+                verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
+                verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+                verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+                verify(mockPlatformOperatorConnector, never()).get(any(), any())(using any())
+                verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())
+              }
+
+              "platformOperator returned failure" in {
+                when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
+                when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+                when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
+                when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+                when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
+                when(mockEmailService.sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
+
+                cadxResultService.processResult(source).futureValue
+
+                verify(mockSubmissionRepository).getById(submission._id)
+                verify(mockSubmissionRepository).save(expectedSubmission)
+                verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
+                verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+                verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+                verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
+                verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())
+              }
             }
 
-            "platformOperator returned failure" in {
-              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
-              when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
-              when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
-              when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
-              when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
-              when(mockEmailService.sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
-
-              cadxResultService.processResult(source).futureValue
-
-              verify(mockSubmissionRepository).getById(submission._id)
-              verify(mockSubmissionRepository).save(expectedSubmission)
-              verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
-              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
-              verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
-              verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-              verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())
-            }
           }
 
           "when there is unexpected content in the ValidationErrors element" in {
@@ -377,8 +400,9 @@ class CadxResultServiceSpec
               ByteString.fromString(Utility.trim(scalaxb.toXML(rejectedResponse, "BREResponse", generated.defaultScope).head).toString)
             }
 
-            "subscription and platformOperator returned successfully" in {
-              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
+            "when submission type is ManualAssumedReport do not send emails" in {
+
+              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission.copy(submissionType = SubmissionType.ManualAssumedReport))))
               when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
               when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
               when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
@@ -390,69 +414,99 @@ class CadxResultServiceSpec
               val captor: ArgumentCaptor[Seq[CadxValidationError]] = ArgumentCaptor.forClass(classOf[Seq[CadxValidationError]])
 
               verify(mockSubmissionRepository).getById(submission._id)
-              verify(mockSubmissionRepository).save(expectedSubmission)
+              verify(mockSubmissionRepository).save(expectedSubmission.copy(submissionType = SubmissionType.ManualAssumedReport))
               verify(mockCadxValidationErrorRepository, times(2)).saveBatch(captor.capture())
               verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
-              verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
-              verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-              verify(mockEmailService).sendFailedBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
-
-              val results = captor.getAllValues
-
-              results.get(0) mustEqual (0 until 1000).map(_ => expectedFileError)
-              results.get(1) mustEqual (0 until 200).flatMap(_ => Seq(expectedRowError1, expectedRowError2))
-            }
-
-            "subscription returned failure" in {
-              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
-              when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
-              when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
-              when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.failed(new Exception("foo")))
-              when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
-              when(mockEmailService.sendFailedBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
-
-              cadxResultService.processResult(source).futureValue
-
-              val captor: ArgumentCaptor[Seq[CadxValidationError]] = ArgumentCaptor.forClass(classOf[Seq[CadxValidationError]])
-
-              verify(mockSubmissionRepository).getById(submission._id)
-              verify(mockSubmissionRepository).save(expectedSubmission)
-              verify(mockCadxValidationErrorRepository, times(2)).saveBatch(captor.capture())
-              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
-              verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
-              verify(mockPlatformOperatorConnector, never()).get(any(), any())(using any())
+              verify(mockSubscriptionConnector, never()).get(eqTo(dprsId))(using any())
+              verify(mockPlatformOperatorConnector, never()).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
               verify(mockEmailService, never()).sendFailedBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
 
               val results = captor.getAllValues
 
               results.get(0) mustEqual (0 until 1000).map(_ => expectedFileError)
               results.get(1) mustEqual (0 until 200).flatMap(_ => Seq(expectedRowError1, expectedRowError2))
+
             }
 
-            "platformOperator returned failure" in {
-              when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
-              when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
-              when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
-              when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
-              when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
-              when(mockEmailService.sendFailedBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
+            "when submission type is XML send emails" - {
 
-              cadxResultService.processResult(source).futureValue
+              "subscription and platformOperator returned successfully" in {
+                when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
+                when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+                when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
+                when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+                when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
+                when(mockEmailService.sendFailedBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
 
-              val captor: ArgumentCaptor[Seq[CadxValidationError]] = ArgumentCaptor.forClass(classOf[Seq[CadxValidationError]])
+                cadxResultService.processResult(source).futureValue
 
-              verify(mockSubmissionRepository).getById(submission._id)
-              verify(mockSubmissionRepository).save(expectedSubmission)
-              verify(mockCadxValidationErrorRepository, times(2)).saveBatch(captor.capture())
-              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
-              verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
-              verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-              verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())
+                val captor: ArgumentCaptor[Seq[CadxValidationError]] = ArgumentCaptor.forClass(classOf[Seq[CadxValidationError]])
 
-              val results = captor.getAllValues
+                verify(mockSubmissionRepository).getById(submission._id)
+                verify(mockSubmissionRepository).save(expectedSubmission)
+                verify(mockCadxValidationErrorRepository, times(2)).saveBatch(captor.capture())
+                verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+                verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+                verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
+                verify(mockEmailService).sendFailedBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
 
-              results.get(0) mustEqual (0 until 1000).map(_ => expectedFileError)
-              results.get(1) mustEqual (0 until 200).flatMap(_ => Seq(expectedRowError1, expectedRowError2))
+                val results = captor.getAllValues
+
+                results.get(0) mustEqual (0 until 1000).map(_ => expectedFileError)
+                results.get(1) mustEqual (0 until 200).flatMap(_ => Seq(expectedRowError1, expectedRowError2))
+              }
+
+              "subscription returned failure" in {
+                when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
+                when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+                when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
+                when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.failed(new Exception("foo")))
+                when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
+                when(mockEmailService.sendFailedBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
+
+                cadxResultService.processResult(source).futureValue
+
+                val captor: ArgumentCaptor[Seq[CadxValidationError]] = ArgumentCaptor.forClass(classOf[Seq[CadxValidationError]])
+
+                verify(mockSubmissionRepository).getById(submission._id)
+                verify(mockSubmissionRepository).save(expectedSubmission)
+                verify(mockCadxValidationErrorRepository, times(2)).saveBatch(captor.capture())
+                verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+                verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+                verify(mockPlatformOperatorConnector, never()).get(any(), any())(using any())
+                verify(mockEmailService, never()).sendFailedBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
+
+                val results = captor.getAllValues
+
+                results.get(0) mustEqual (0 until 1000).map(_ => expectedFileError)
+                results.get(1) mustEqual (0 until 200).flatMap(_ => Seq(expectedRowError1, expectedRowError2))
+              }
+
+              "platformOperator returned failure" in {
+                when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
+                when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+                when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
+                when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+                when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
+                when(mockEmailService.sendFailedBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
+
+                cadxResultService.processResult(source).futureValue
+
+                val captor: ArgumentCaptor[Seq[CadxValidationError]] = ArgumentCaptor.forClass(classOf[Seq[CadxValidationError]])
+
+                verify(mockSubmissionRepository).getById(submission._id)
+                verify(mockSubmissionRepository).save(expectedSubmission)
+                verify(mockCadxValidationErrorRepository, times(2)).saveBatch(captor.capture())
+                verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+                verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+                verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
+                verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())
+
+                val results = captor.getAllValues
+
+                results.get(0) mustEqual (0 until 1000).map(_ => expectedFileError)
+                results.get(1) mustEqual (0 until 200).flatMap(_ => Seq(expectedRowError1, expectedRowError2))
+              }
             }
 
           }

@@ -24,6 +24,7 @@ import models.audit.CadxSubmissionResponseEvent.FileStatus.{Failed, Passed}
 import models.submission.CadxValidationError.{FileError, RowError}
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Submitted}
+import models.submission.Submission.SubmissionType.Xml
 import models.submission.{CadxValidationError, Submission}
 import org.apache.pekko.stream.connectors.xml.{ParseEvent, StartElement}
 import org.apache.pekko.stream.connectors.xml.scaladsl.XmlParsing
@@ -157,14 +158,17 @@ class CadxResultService @Inject()(
       lazy val updatedInstance = clock.instant()
       lazy val checksCompletedDateTime = EmailDateTimeFormatter.format(updatedInstance).replace("AM", "am").replace("PM", "pm")
 
-      val compResult = for {
-        subscription      <- subscriptionConnector.get(submission.dprsId)
-        platformOperator  <- OptionT(platformOperatorConnector.get(submission.dprsId, submission.operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
-      } yield emailService.sendSuccessfulBusinessRulesChecksEmails(Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), checksCompletedDateTime, platformOperator, subscription)
+      if (submission.submissionType == Xml) {
+        val compResult = for {
+          subscription <- subscriptionConnector.get(submission.dprsId)
+          platformOperator <- OptionT(platformOperatorConnector.get(submission.dprsId, submission.operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
+          _ <- emailService.sendSuccessfulBusinessRulesChecksEmails(Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), checksCompletedDateTime, platformOperator, subscription)
+        } yield Done
 
-      compResult.onComplete {
-        case Success(_) => logger.info("emailService.sendSuccessfulBusinessRulesChecksEmails successful")
-        case Failure(exception) => logger.warn("emailService.sendSuccessfulBusinessRulesChecksEmails failed", exception)
+        compResult.onComplete {
+          case Success(_) => logger.info("emailService.sendSuccessfulBusinessRulesChecksEmails successful")
+          case Failure(exception) => logger.warn("emailService.sendSuccessfulBusinessRulesChecksEmails failed", exception)
+        }
       }
 
       submissionRepository.save(submission.copy(state = Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = updatedInstance)).map { _ =>
@@ -190,14 +194,17 @@ class CadxResultService @Inject()(
       lazy val updatedInstance = clock.instant()
       lazy val checksCompletedDateTime = EmailDateTimeFormatter.format(updatedInstance).replace("AM", "am").replace("PM", "pm")
 
-      val compResult = for {
-        subscription      <- subscriptionConnector.get(submission.dprsId)
-        platformOperator  <- OptionT(platformOperatorConnector.get(submission.dprsId, submission.operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
-      } yield emailService.sendFailedBusinessRulesChecksEmails(State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), checksCompletedDateTime, platformOperator, subscription)
+      if (submission.submissionType == Xml) {
+        val compResult = for {
+          subscription <- subscriptionConnector.get(submission.dprsId)
+          platformOperator <- OptionT(platformOperatorConnector.get(submission.dprsId, submission.operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
+          _ <- emailService.sendFailedBusinessRulesChecksEmails(State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), checksCompletedDateTime, platformOperator, subscription)
+        } yield Done
 
-      compResult.onComplete {
-        case Success(_) => logger.info("emailService.sendFailedBusinessRulesChecksEmails successful")
-        case Failure(exception) => logger.warn("emailService.sendFailedBusinessRulesChecksEmails failed", exception)
+        compResult.onComplete {
+          case Success(_) => logger.info("emailService.sendFailedBusinessRulesChecksEmails successful")
+          case Failure(exception) => logger.warn("emailService.sendFailedBusinessRulesChecksEmails failed", exception)
+        }
       }
 
       submissionRepository.save(submission.copy(state = State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = updatedInstance)).map { _ =>
