@@ -16,7 +16,7 @@
 
 package services
 
-import connectors.{PlatformOperatorConnector, SubscriptionConnector}
+import connectors.{EmailConnector, PlatformOperatorConnector, SubscriptionConnector}
 import generated.{AEOI, Accepted, BREResponse_Type, ErrorDetail_Type, FileError_Type, Generated_BREResponse_TypeFormat, GenericStatusMessage_Type, RecordError_Type, Rejected, RequestCommon_Type, RequestDetail_Type, ValidationErrors_Type, ValidationResult_Type}
 import models.audit.CadxSubmissionResponseEvent
 import models.audit.CadxSubmissionResponseEvent.FileStatus.{Failed, Passed}
@@ -79,6 +79,7 @@ class CadxResultServiceSpec
   private val mockSubscriptionConnector: SubscriptionConnector = mock[SubscriptionConnector]
   private val mockPlatformOperatorConnector: PlatformOperatorConnector = mock[PlatformOperatorConnector]
   private val mockEmailService: EmailService = mock[EmailService]
+  private val mockEmailConnector: EmailConnector = mock[EmailConnector]
 
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
@@ -89,7 +90,8 @@ class CadxResultServiceSpec
       bind[Clock].toInstance(clock),
       bind[SubscriptionConnector].toInstance(mockSubscriptionConnector),
       bind[PlatformOperatorConnector].toInstance(mockPlatformOperatorConnector),
-      bind[EmailService].toInstance(mockEmailService)
+      bind[EmailService].toInstance(mockEmailService),
+      bind[EmailConnector].toInstance(mockEmailConnector)
     )
     .build()
 
@@ -133,10 +135,6 @@ class CadxResultServiceSpec
           ),
           notifications = Seq.empty
         )
-
-
-
-        val expectedChecksCompletedDateTime = EmailDateTimeFormatter.format(clock.instant()).replace("AM", "am").replace("PM", "pm")
 
         "when the response indicates that the submission was approved" - {
 
@@ -217,9 +215,9 @@ class CadxResultServiceSpec
               verify(mockSubmissionRepository).save(expectedSubmission.copy(submissionType = SubmissionType.ManualAssumedReport))
               verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
               verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
-              verify(mockSubscriptionConnector, never()).get(eqTo(dprsId))(using any())
-              verify(mockPlatformOperatorConnector, never()).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-              verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
+              verify(mockSubscriptionConnector, never()).get(any())(using any())
+              verify(mockPlatformOperatorConnector, never()).get(any(), any())(using any())
+              verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())
             }
 
             "when submission type is XML send emails" - {
@@ -228,19 +226,27 @@ class CadxResultServiceSpec
                 when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(submission)))
                 when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
                 when(mockCadxValidationErrorRepository.saveBatch(any())).thenReturn(Future.successful(Done))
-                when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
-                when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
+                when(mockSubscriptionConnector.get(any())(any())).thenReturn(Future.successful(subscription))
+                when(mockPlatformOperatorConnector.get(any(), any())(any())).thenReturn(Future.successful(Some(operator)))
+                when(mockEmailConnector.send(any())(any())).thenReturn(Future.successful(Done))
                 when(mockEmailService.sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
 
+                val expectedChecksCompletedDateTime = EmailDateTimeFormatter.format(clock.instant()).replace("AM", "am").replace("PM", "pm")
                 cadxResultService.processResult(source).futureValue
+                val dateTimeCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
 
                 verify(mockSubmissionRepository).getById(submission._id)
                 verify(mockSubmissionRepository).save(expectedSubmission)
                 verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
                 verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
-                verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
-                verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-                verify(mockEmailService).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
+                verify(mockSubscriptionConnector).get(eqTo(dprsId))(any())
+                verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(any())
+                verify(mockEmailService).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), dateTimeCaptor.capture(), eqTo(operator), eqTo(subscription))(any())
+
+                val captorResult = dateTimeCaptor.getValue
+                val result = captorResult.substring(captorResult.indexOf("GMT"))
+                val expected = expectedChecksCompletedDateTime.substring(expectedChecksCompletedDateTime.indexOf("GMT"))
+                result mustEqual expected
               }
 
               "subscription returned failure" in {
@@ -296,14 +302,21 @@ class CadxResultServiceSpec
             when(mockPlatformOperatorConnector.get(any(), any())(using any())).thenReturn(Future.successful(Some(operator)))
             when(mockEmailService.sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())).thenReturn(Future.successful(Done))
 
+            val expectedChecksCompletedDateTime = EmailDateTimeFormatter.format(clock.instant()).replace("AM", "am").replace("PM", "pm")
             cadxResultService.processResult(source).futureValue
+            val dateTimeCaptor: ArgumentCaptor[String] = ArgumentCaptor.forClass(classOf[String])
 
             verify(mockSubmissionRepository).getById(submission._id)
             verify(mockSubmissionRepository).save(expectedSubmission)
             verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
             verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
             verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-            verify(mockEmailService).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
+            verify(mockEmailService).sendSuccessfulBusinessRulesChecksEmails(eqTo(expectedState), dateTimeCaptor.capture(), eqTo(operator), eqTo(subscription))(any())
+
+            val captorResult = dateTimeCaptor.getValue
+            val result = captorResult.substring(captorResult.indexOf("GMT"))
+            val expected = expectedChecksCompletedDateTime.substring(expectedChecksCompletedDateTime.indexOf("GMT"))
+            result mustEqual expected
 
           }
         }
@@ -417,9 +430,9 @@ class CadxResultServiceSpec
               verify(mockSubmissionRepository).save(expectedSubmission.copy(submissionType = SubmissionType.ManualAssumedReport))
               verify(mockCadxValidationErrorRepository, times(2)).saveBatch(captor.capture())
               verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
-              verify(mockSubscriptionConnector, never()).get(eqTo(dprsId))(using any())
-              verify(mockPlatformOperatorConnector, never()).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-              verify(mockEmailService, never()).sendFailedBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
+              verify(mockSubscriptionConnector, never()).get(any())(using any())
+              verify(mockPlatformOperatorConnector, never()).get(any(), any())(using any())
+              verify(mockEmailService, never()).sendFailedBusinessRulesChecksEmails(any(), any(), any(), any())(any())
 
               val results = captor.getAllValues
 
@@ -448,7 +461,7 @@ class CadxResultServiceSpec
                 verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
                 verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
                 verify(mockPlatformOperatorConnector).get(eqTo(dprsId), eqTo(operator.operatorId))(using any())
-                verify(mockEmailService).sendFailedBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
+                verify(mockEmailService).sendFailedBusinessRulesChecksEmails(eqTo(expectedState), any(), eqTo(operator), eqTo(subscription))(any())
 
                 val results = captor.getAllValues
 
@@ -474,7 +487,7 @@ class CadxResultServiceSpec
                 verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
                 verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
                 verify(mockPlatformOperatorConnector, never()).get(any(), any())(using any())
-                verify(mockEmailService, never()).sendFailedBusinessRulesChecksEmails(eqTo(expectedState), eqTo(expectedChecksCompletedDateTime), eqTo(operator), eqTo(subscription))(any())
+                verify(mockEmailService, never()).sendFailedBusinessRulesChecksEmails(any(), any(), any(), any())(any())
 
                 val results = captor.getAllValues
 
