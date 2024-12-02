@@ -38,4 +38,11 @@ class DateTimeFormatsSpec extends AnyFreeSpec with Matchers {
       DateTimeFormats.ISO8601Formatter.format(instant) mustBe "1970-01-01T00:00:01Z"
     }
   }
+
+  "EmailDateTimeFormatter" - {
+    "must format" in {
+      localDateTime.format(DateTimeFormats.EmailDateTimeFormatter).replace("AM", "am").replace("PM", "pm") mustBe "2:23am GMT on 9 August 2024"
+    }
+  }
+
 }

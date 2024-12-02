@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
-package utils
+package support.builders
 
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import models.operator.{TinDetails, TinType}
 
-object DateTimeFormats {
+object TinDetailsBuilder {
 
-  val RFC7231Formatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("EEE, dd MMM yyyy HH:mm:ss zzz")
-    .withZone(ZoneId.of("UTC"))
-
-  val ISO8601Formatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
-    .withZone(ZoneId.of("UTC"))
-
-  val EmailDateTimeFormatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("h:mma z 'on' d MMMM yyyy")
-    .withZone(ZoneId.of("GMT"))
-
+  val aTinDetails: TinDetails = TinDetails(
+    tin = "default-tax-number",
+    tinType = TinType.Utr,
+    issuedBy = "default-issued-by",
+  )
 }

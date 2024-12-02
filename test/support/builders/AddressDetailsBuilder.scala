@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package utils
+package support.builders
 
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import models.operator.AddressDetails
 
-object DateTimeFormats {
+object AddressDetailsBuilder {
 
-  val RFC7231Formatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("EEE, dd MMM yyyy HH:mm:ss zzz")
-    .withZone(ZoneId.of("UTC"))
-
-  val ISO8601Formatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
-    .withZone(ZoneId.of("UTC"))
-
-  val EmailDateTimeFormatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("h:mma z 'on' d MMMM yyyy")
-    .withZone(ZoneId.of("GMT"))
-
+  val anAddressDetails: AddressDetails = AddressDetails(
+    line1 = "default-line-1",
+    line2 = None,
+    line3 = None,
+    line4 = None,
+    postCode = None,
+    countryCode = None
+  )
 }

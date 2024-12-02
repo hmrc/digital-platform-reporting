@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package utils
+package support.builders
 
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import models.operator.NotificationType.Rpo
+import models.operator.responses.NotificationDetails
 
-object DateTimeFormats {
+import java.time.Instant
 
-  val RFC7231Formatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("EEE, dd MMM yyyy HH:mm:ss zzz")
-    .withZone(ZoneId.of("UTC"))
+object NotificationDetailsBuilder {
 
-  val ISO8601Formatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
-    .withZone(ZoneId.of("UTC"))
-
-  val EmailDateTimeFormatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("h:mma z 'on' d MMMM yyyy")
-    .withZone(ZoneId.of("GMT"))
-
+  val aNotificationDetails: NotificationDetails = NotificationDetails(
+    notificationType = Rpo,
+    isActiveSeller = None,
+    isDueDiligence = None,
+    firstPeriod = 2024,
+    receivedDateTime = Instant.now()
+  )
 }

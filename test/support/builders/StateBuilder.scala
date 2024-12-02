@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-package utils
+package support.builders
 
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import models.submission.Submission.State.{Approved, Rejected}
 
-object DateTimeFormats {
+import java.time.Year
 
-  val RFC7231Formatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("EEE, dd MMM yyyy HH:mm:ss zzz")
-    .withZone(ZoneId.of("UTC"))
+object StateBuilder {
 
-  val ISO8601Formatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
-    .withZone(ZoneId.of("UTC"))
+  val aStateApproved: Approved = Approved(
+    fileName = "test.xml",
+    reportingPeriod = Year.of(2024)
+  )
 
-  val EmailDateTimeFormatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("h:mma z 'on' d MMMM yyyy")
-    .withZone(ZoneId.of("GMT"))
+  val aStateRejected: Rejected = Rejected(
+    fileName = "test.xml",
+    reportingPeriod = Year.of(2024)
+  )
 
 }

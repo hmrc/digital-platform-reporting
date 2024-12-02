@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package utils
+package support.builders
 
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import models.email.requests.{SendEmailRequest, SuccessfulXmlSubmissionUser}
 
-object DateTimeFormats {
+object SendEmailRequestBuilder {
 
-  val RFC7231Formatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("EEE, dd MMM yyyy HH:mm:ss zzz")
-    .withZone(ZoneId.of("UTC"))
-
-  val ISO8601Formatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
-    .withZone(ZoneId.of("UTC"))
-
-  val EmailDateTimeFormatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("h:mma z 'on' d MMMM yyyy")
-    .withZone(ZoneId.of("GMT"))
+  val aSendEmailRequest: SendEmailRequest = SuccessfulXmlSubmissionUser(
+    to = List("default.email@example.com"),
+    templateId = "default-template-id",
+    parameters = Map(
+      "param-1" -> "value-1",
+      "param-" -> "value-2"
+    )
+  )
 
 }

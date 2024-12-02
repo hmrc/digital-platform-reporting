@@ -16,12 +16,15 @@
 
 package services
 
+import cats.data.OptionT
+import connectors.{PlatformOperatorConnector, SubscriptionConnector}
 import generated.{Accepted, FileAcceptanceStatus_EnumType, Rejected}
 import models.audit.CadxSubmissionResponseEvent
 import models.audit.CadxSubmissionResponseEvent.FileStatus.{Failed, Passed}
 import models.submission.CadxValidationError.{FileError, RowError}
 import models.submission.Submission.State
 import models.submission.Submission.State.{Approved, Submitted}
+import models.submission.Submission.SubmissionType.Xml
 import models.submission.{CadxValidationError, Submission}
 import org.apache.pekko.stream.connectors.xml.{ParseEvent, StartElement}
 import org.apache.pekko.stream.connectors.xml.scaladsl.XmlParsing
@@ -31,18 +34,25 @@ import org.apache.pekko.util.ByteString
 import org.apache.pekko.{Done, NotUsed}
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
 import services.CadxResultService.{InvalidResultStatusException, InvalidSubmissionStateException, SubmissionNotFoundException}
+import services.SubmissionService.NoPlatformOperatorException
 import uk.gov.hmrc.http.HeaderCarrier
+import utils.DateTimeFormats.EmailDateTimeFormatter
+import play.api.i18n.Lang.logger
 
 import java.time.Clock
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 @Singleton
 class CadxResultService @Inject()(
                                    submissionRepository: SubmissionRepository,
                                    cadxValidationErrorRepository: CadxValidationErrorRepository,
                                    clock: Clock,
-                                   auditService: AuditService
+                                   auditService: AuditService,
+                                   emailService: EmailService,
+                                   subscriptionConnector: SubscriptionConnector,
+                                   platformOperatorConnector: PlatformOperatorConnector
                                  )(using Materializer, ExecutionContext) {
 
   def processResult(response: Source[ByteString, ?]): Future[Done] =
@@ -145,7 +155,23 @@ class CadxResultService @Inject()(
       given HeaderCarrier = HeaderCarrier()
       auditService.audit(auditEvent)
 
-      submissionRepository.save(submission.copy(state = Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = clock.instant())).map { _ =>
+      lazy val updatedInstance = clock.instant()
+      lazy val checksCompletedDateTime = EmailDateTimeFormatter.format(updatedInstance).replace("AM", "am").replace("PM", "pm")
+
+      if (submission.submissionType == Xml) {
+        val compResult = for {
+          subscription <- subscriptionConnector.get(submission.dprsId)
+          platformOperator <- OptionT(platformOperatorConnector.get(submission.dprsId, submission.operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
+          _ <- emailService.sendSuccessfulBusinessRulesChecksEmails(Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), checksCompletedDateTime, platformOperator, subscription)
+        } yield Done
+
+        compResult.onComplete {
+          case Success(_) => logger.info("emailService.sendSuccessfulBusinessRulesChecksEmails successful")
+          case Failure(exception) => logger.warn("emailService.sendSuccessfulBusinessRulesChecksEmails failed", exception)
+        }
+      }
+
+      submissionRepository.save(submission.copy(state = Approved(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = updatedInstance)).map { _ =>
         Flow.fromSinkAndSource(Sink.cancelled[CadxValidationError], Source.single[Done](Done))
       }
     }.mapMaterializedValue(_ => NotUsed)
@@ -165,7 +191,23 @@ class CadxResultService @Inject()(
       given HeaderCarrier = HeaderCarrier()
       auditService.audit(auditEvent)
 
-      submissionRepository.save(submission.copy(state = State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = clock.instant())).map { _ =>
+      lazy val updatedInstance = clock.instant()
+      lazy val checksCompletedDateTime = EmailDateTimeFormatter.format(updatedInstance).replace("AM", "am").replace("PM", "pm")
+
+      if (submission.submissionType == Xml) {
+        val compResult = for {
+          subscription <- subscriptionConnector.get(submission.dprsId)
+          platformOperator <- OptionT(platformOperatorConnector.get(submission.dprsId, submission.operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(submission.dprsId, submission.operatorId)))
+          _ <- emailService.sendFailedBusinessRulesChecksEmails(State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), checksCompletedDateTime, platformOperator, subscription)
+        } yield Done
+
+        compResult.onComplete {
+          case Success(_) => logger.info("emailService.sendFailedBusinessRulesChecksEmails successful")
+          case Failure(exception) => logger.warn("emailService.sendFailedBusinessRulesChecksEmails failed", exception)
+        }
+      }
+
+      submissionRepository.save(submission.copy(state = State.Rejected(fileName = state.fileName, reportingPeriod = state.reportingPeriod), updated = updatedInstance)).map { _ =>
         Flow[CadxValidationError]
           .grouped(1000)
           .mapAsync(1)(cadxValidationErrorRepository.saveBatch)

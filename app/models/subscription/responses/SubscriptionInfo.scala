@@ -16,7 +16,7 @@
 
 package models.subscription.responses
 
-import models.subscription.Contact
+import models.subscription.{Contact, IndividualContact, OrganisationContact}
 import play.api.libs.functional.syntax.*
 import play.api.libs.json.*
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
@@ -25,7 +25,13 @@ final case class SubscriptionInfo(id: String,
                                   gbUser: Boolean,
                                   tradingName: Option[String],
                                   primaryContact: Contact,
-                                  secondaryContact: Option[Contact])
+                                  secondaryContact: Option[Contact]) {
+
+  def primaryContactName: String = primaryContact match {
+    case ic: IndividualContact => s"${ic.individual.firstName} ${ic.individual.lastName}"
+    case oc: OrganisationContact => oc.organisation.name
+  }
+}
 
 object SubscriptionInfo {
 

@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
-package utils
+package support.builders.operator
 
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import models.operator.{AddressDetails, ContactDetails, TinDetails}
 
-object DateTimeFormats {
+object ContactDetailsBuilder {
 
-  val RFC7231Formatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("EEE, dd MMM yyyy HH:mm:ss zzz")
-    .withZone(ZoneId.of("UTC"))
-
-  val ISO8601Formatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
-    .withZone(ZoneId.of("UTC"))
-
-  val EmailDateTimeFormatter: DateTimeFormatter = DateTimeFormatter
-    .ofPattern("h:mma z 'on' d MMMM yyyy")
-    .withZone(ZoneId.of("GMT"))
-
+  val aContactDetails: ContactDetails = ContactDetails(
+    phoneNumber = None,
+    contactName = "default-contact-name",
+    emailAddress = "default.email@example.com"
+  )
 }
