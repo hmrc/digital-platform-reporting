@@ -69,6 +69,7 @@ class SubmissionService @Inject() (
             dprsId = submission.dprsId,
             operatorId = submission.operatorId,
             operatorName = submission.operatorName,
+            reportingPeriod = state.reportingPeriod,
             fileName = state.fileName,
             fileSize = state.size,
             deliveryRoute = if (state.size <= sdesSubmissionThreshold) Dprs0502 else Dct52A,

@@ -21,7 +21,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
 
-import java.time.Instant
+import java.time.{Instant, Year}
 
 class AddSubmissionEventSpec extends AnyFreeSpec with Matchers {
 
@@ -34,6 +34,7 @@ class AddSubmissionEventSpec extends AnyFreeSpec with Matchers {
       "digitalPlatformReportingId" -> "dprsId",
       "platformOperator" -> "po",
       "fileSizeInBytes" -> 1337,
+      "reportingPeriod" -> "2024",
       "conversationId" -> "submissionId",
       "fileName" -> "test.xml",
       "outcome" -> Json.obj(
@@ -47,6 +48,7 @@ class AddSubmissionEventSpec extends AnyFreeSpec with Matchers {
       dprsId = "dprsId",
       operatorId = "poId",
       operatorName = "po",
+      reportingPeriod = Year.of(2024),
       fileName = "test.xml",
       fileSize = 1337,
       deliveryRoute = DeliveryRoute.Dct52A,
