@@ -21,13 +21,14 @@ import models.audit.AddSubmissionEvent.DeliveryRoute
 import play.api.libs.functional.syntax.*
 import play.api.libs.json.{OWrites, __}
 
-import java.time.Instant
+import java.time.{Instant, Year}
 
 final case class AddSubmissionEvent(
                                      conversationId: String,
                                      dprsId: String,
                                      operatorId: String,
                                      operatorName: String,
+                                     reportingPeriod: Year,
                                      fileName: String,
                                      fileSize: Long,
                                      deliveryRoute: DeliveryRoute,
@@ -54,6 +55,7 @@ object AddSubmissionEvent {
     (__ \ "digitalPlatformReportingId").write[String] and
     (__ \ "platformOperatorId").write[String] and
     (__ \ "platformOperator").write[String] and
+    (__ \ "reportingPeriod").write[String].contramap[Year](_.toString) and
     (__ \ "fileName").write[String] and
     (__ \ "fileSizeInBytes").write[Long] and
     (__ \ "outcome" \ "deliveryRoute").write[DeliveryRoute] and
