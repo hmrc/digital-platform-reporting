@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-package models
+package support.builders
 
-import play.api.mvc.{Request, WrappedRequest}
+import models.recentsubmissions.OperatorSubmissionDetails
 
-final case class AuthenticatedRequest[A](request: Request[A],
-                                         dprsId: String,
-                                         userId: String) extends WrappedRequest[A](request)
+object OperatorSubmissionDetailsBuilder {
+
+  val anOperatorSubmissionDetails: OperatorSubmissionDetails = OperatorSubmissionDetails(
+    operatorId = "default-operator-id",
+    businessDetailsCorrect = true,
+    reportingNotificationsCorrect = None,
+  )
+}
