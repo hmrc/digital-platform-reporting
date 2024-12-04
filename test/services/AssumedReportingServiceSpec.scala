@@ -1328,7 +1328,66 @@ class AssumedReportingServiceSpec
       result must not be defined
     }
   }
-  
+
+  "must return None when there is a non-string address" in {
+
+    val submissions = DeliveredSubmissions(
+      submissions = Seq(
+        DeliveredSubmission(
+          conversationId = "conversationId",
+          fileName = "test.xml",
+          operatorId = "operatorId",
+          operatorName = "operatorName",
+          reportingPeriod = Year.of(2024),
+          submissionCaseId = "submissionCaseId",
+          submissionDateTime = now,
+          submissionStatus = Success,
+          assumingReporterName = Some("assumingReporterName")
+        ),
+        DeliveredSubmission(
+          conversationId = "conversationId",
+          fileName = "test2.xml",
+          operatorId = "operatorId",
+          operatorName = "operatorName",
+          reportingPeriod = Year.of(2024),
+          submissionCaseId = "submissionCaseId2",
+          submissionDateTime = now,
+          submissionStatus = Success,
+          assumingReporterName = Some("assumingReporterName2")
+        )
+      ),
+      resultsCount = 2
+    )
+
+    val existingSubmissionSource = scala.io.Source.fromFile(getClass.getResource("/assumed/create/test3.xml").toURI)
+    val existingSubmission = scalaxb.fromXML[DPI_OECD](XML.loadString(existingSubmissionSource.mkString))
+    existingSubmissionSource.close()
+
+    println(existingSubmission)
+
+    when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
+    when(mockSubmissionConnector.getManualAssumedReportingSubmission(any())(using any())).thenReturn(Future.successful(existingSubmission))
+
+    val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
+      subscriptionId = dprsId,
+      assumedReporting = true,
+      pageNumber = 1,
+      sortBy = SubmissionDate,
+      sortOrder = Descending,
+      reportingPeriod = Some(2024),
+      operatorId = Some("operatorId"),
+      fileName = None,
+      statuses = Seq(Pending, Rejected, Success)
+    )
+
+    val result = assumedReportingService.getSubmission(dprsId, "operatorId", Year.of(2024))(using HeaderCarrier()).futureValue
+
+    result mustBe None
+
+    verify(mockDeliveredSubmissionConnector).get(eqTo(expectedViewSubmissionsRequest))(using any())
+    verify(mockSubmissionConnector).getManualAssumedReportingSubmission(eqTo("submissionCaseId"))(using any())
+  }
+
   private def validate(content: NodeSeq): Document = {
 
     val resource = Paths.get(getClass.getResource("/schemas/DPIXML_v1.0.xsd").toURI).toFile

@@ -1,0 +1,55 @@
+<dpi:DPI_OECD version="1.0" xmlns:dpi="urn:oecd:ties:dpi:v1"
+              xmlns:gsm="http://www.hmrc.gsi.gov.uk/gsm" xmlns:iso="urn:oecd:ties:isodpitypes:v1"
+              xmlns:stf="urn:oecd:ties:dpistf:v1" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <dpi:MessageSpec>
+    <dpi:SendingEntityIN>operatorId</dpi:SendingEntityIN>
+    <dpi:TransmittingCountry>GB</dpi:TransmittingCountry>
+    <dpi:ReceivingCountry>GB</dpi:ReceivingCountry>
+    <dpi:MessageType>DPI</dpi:MessageType>
+    <dpi:MessageRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d</dpi:MessageRefId>
+    <dpi:MessageTypeIndic>DPI401</dpi:MessageTypeIndic>
+    <dpi:ReportingPeriod>2024-12-31</dpi:ReportingPeriod>
+    <dpi:Timestamp>2024-12-01T12:30:45</dpi:Timestamp>
+  </dpi:MessageSpec>
+  <dpi:DPIBody>
+    <dpi:PlatformOperator>
+      <dpi:ResCountryCode>GB</dpi:ResCountryCode>
+      <dpi:TIN unknown="true">NOTIN</dpi:TIN>
+      <dpi:Name>operatorName</dpi:Name>
+      <dpi:PlatformBusinessName>operatorName</dpi:PlatformBusinessName>
+      <dpi:Address legalAddressType="OECD304">
+        <dpi:CountryCode>GB</dpi:CountryCode>
+        <dpi:AddressFix>
+          <dpi:City>City</dpi:City>
+        </dpi:AddressFix>
+        <dpi:AddressFree>line1, GB</dpi:AddressFree>
+      </dpi:Address>
+      <dpi:AssumedReporting>true</dpi:AssumedReporting>
+      <dpi:DocSpec>
+        <stf:DocTypeIndic>OECD1</stf:DocTypeIndic>
+        <stf:DocRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d_eb6bb8e968794f4ebebf7d2f6a6d95c9</stf:DocRefId>
+      </dpi:DocSpec>
+    </dpi:PlatformOperator>
+    <dpi:OtherPlatformOperators>
+      <dpi:AssumingPlatformOperator>
+        <dpi:ResCountryCode>US</dpi:ResCountryCode>
+        <dpi:TIN unknown="true">NOTIN</dpi:TIN>
+        <dpi:Name>assumingOperator</dpi:Name>
+        <dpi:Address legalAddressType="OECD304">
+          <dpi:CountryCode>US</dpi:CountryCode>
+          <dpi:AddressFix>
+            <dpi:City>City</dpi:City>
+          </dpi:AddressFix>
+          <dpi:AddressFree>assumed line 1
+            assumed line 2
+            assumed line 3</dpi:AddressFree>
+        </dpi:Address>
+        <dpi:DocSpec>
+          <stf:DocTypeIndic>OECD1</stf:DocTypeIndic>
+          <stf:DocRefId>GB2024GB-operatorId-86233cb749224e54a5ff75f5e62eec0d_a84001baef8a45f6a47fd5eca823fc33</stf:DocRefId>
+        </dpi:DocSpec>
+      </dpi:AssumingPlatformOperator>
+    </dpi:OtherPlatformOperators>
+  </dpi:DPIBody>
+</dpi:DPI_OECD>
