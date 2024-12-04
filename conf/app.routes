@@ -33,5 +33,12 @@ GET         /pending-enrolment              controllers.PendingEnrolmentControll
 POST        /pending-enrolment              controllers.PendingEnrolmentController.save()
 DELETE      /pending-enrolment              controllers.PendingEnrolmentController.remove()
 
+GET         /confirmed/business-details/:operatorId             controllers.ConfirmedDetailsController.businessDetails(operatorId: String)
+POST        /confirmed/business-details                         controllers.ConfirmedDetailsController.saveBusinessDetails()
+GET         /confirmed/reporting-notifications/:operatorId      controllers.ConfirmedDetailsController.reportingNotifications(operatorId:String)
+POST        /confirmed/reporting-notifications                  controllers.ConfirmedDetailsController.saveReportingNotifications()
+GET         /confirmed/contact-details                          controllers.ConfirmedDetailsController.contactDetails()
+POST        /confirmed/contact-details                          controllers.ConfirmedDetailsController.saveContactDetails()
+
 GET         /admin/blocked-submissions      controllers.AdminController.getBlockedSubmissions()
 GET         /admin/cadx-result/work-items   controllers.AdminController.getCadxResultWorkItems(statuses: Set[ProcessingStatus] ?= Set.empty, limit: Int ?= 10, offset: Int ?= 0)

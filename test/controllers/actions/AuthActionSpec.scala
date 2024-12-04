@@ -19,13 +19,14 @@ package controllers.actions
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.mvc.BodyParsers
+import play.api.mvc.*
 import play.api.mvc.Results.Ok
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
+import support.auth.Retrievals.Ops
+import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.Retrieval
-import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -39,7 +40,7 @@ class AuthActionSpec extends AnyFreeSpec with Matchers {
     val app = GuiceApplicationBuilder().build()
     val bodyParsers = app.injector.instanceOf[BodyParsers.Default]
     val dprsId = "dprs id"
-    
+
     "must process the request when the user has the correct enrolment with a DPRS Id" in {
       
       val validEnrolments = Enrolments(Set(
@@ -49,16 +50,16 @@ class AuthActionSpec extends AnyFreeSpec with Matchers {
           state = "activated"
         )
       ))
-      
-      val action = new AuthAction(new FakeAuthConnector(validEnrolments), bodyParsers)
+
+      val action = new AuthAction(new FakeAuthConnector(Some("internalId") ~ validEnrolments), bodyParsers)
       val request = FakeRequest()
-      
+
       val result = action(a => Ok(a.dprsId))(request)
-      
+
       status(result) mustEqual OK
       contentAsString(result) mustEqual dprsId
     }
-    
+
     "must return Forbidden when the user does not have the correct enrolment" in {
 
       val invalidEnrolments = Enrolments(Set(
@@ -69,7 +70,24 @@ class AuthActionSpec extends AnyFreeSpec with Matchers {
         )
       ))
 
-      val action = new AuthAction(new FakeAuthConnector(invalidEnrolments), bodyParsers)
+      val action = new AuthAction(new FakeAuthConnector(Some("internalId") ~ invalidEnrolments), bodyParsers)
+      val request = FakeRequest()
+
+      val result = action(a => Ok(a.dprsId))(request)
+
+      status(result) mustEqual FORBIDDEN
+    }
+
+    "must return Forbidden when internalId not present" in {
+      val validEnrolments = Enrolments(Set(
+        Enrolment(
+          key = "HMRC-DPRS",
+          identifiers = Seq(EnrolmentIdentifier("DPRSID", dprsId)),
+          state = "activated"
+        )
+      ))
+
+      val action = new AuthAction(new FakeAuthConnector(None ~ validEnrolments), bodyParsers)
       val request = FakeRequest()
 
       val result = action(a => Ok(a.dprsId))(request)

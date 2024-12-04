@@ -14,10 +14,18 @@
  * limitations under the License.
  */
 
-package models
+package support.builders
 
-import play.api.mvc.{Request, WrappedRequest}
+import models.confirmed.ConfirmedReportingNotification
 
-final case class AuthenticatedRequest[A](request: Request[A],
-                                         dprsId: String,
-                                         userId: String) extends WrappedRequest[A](request)
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
+object ConfirmedReportingNotificationBuilder {
+
+  val aConfirmedReportingNotification: ConfirmedReportingNotification = ConfirmedReportingNotification(
+    userId = "default-user-id",
+    operatorId = "default-operator-id",
+    created = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+  )
+}
