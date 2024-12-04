@@ -26,7 +26,7 @@ import models.submission.DeliveredSubmissionSortBy.SubmissionDate
 import models.submission.SortOrder.Descending
 import models.submission.{AssumedReportingSubmission, SubmissionStatus, ViewSubmissionsRequest}
 import scalaxb.DataRecord
-import services.AssumedReportingService.{NoPreviousSubmissionException, SubmissionAlreadyDeletedException, SubmissionIsNotAssumedReportException}
+import services.AssumedReportingService.{NoPreviousSubmissionException, PreviousSubmissionPending, SubmissionAlreadyDeletedException, SubmissionIsNotAssumedReportException}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import java.time.format.DateTimeFormatter
@@ -113,12 +113,15 @@ class AssumedReportingService @Inject()(
       reportingPeriod = Some(reportingPeriod.getValue),
       operatorId = Some(operatorId),
       fileName = None,
-      statuses = Seq(SubmissionStatus.Pending, SubmissionStatus.Rejected, SubmissionStatus.Success) // TODO should we be ignoring certain statuses?
-    )).map { deliveredSubmissions =>
-      for {
-        submissions <- deliveredSubmissions
-        submission  <- submissions.submissions.headOption
-      } yield submission.submissionCaseId
+      statuses = Seq(SubmissionStatus.Pending, SubmissionStatus.Success)
+    )).flatMap { deliveredSubmissions =>
+      {
+        for {
+          submissions <- OptionT.fromOption[Future](deliveredSubmissions)
+          submission  <- OptionT.fromOption[Future](submissions.submissions.headOption)
+          _           <- if (submission.submissionStatus == SubmissionStatus.Pending) OptionT.liftF(Future.failed(PreviousSubmissionPending(dprsId, operatorId, reportingPeriod))) else OptionT.pure[Future](())
+        } yield submission.submissionCaseId
+      }.value
     }
 
   private def createSubmissionPayload(operator: PlatformOperator, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year, previousSubmission: Option[DPI_OECD]): AssumedReportingPayload = {
@@ -370,7 +373,11 @@ object AssumedReportingService {
   }
 
   final case class SubmissionIsNotAssumedReportException(dprsId: String, operatorId: String, reportingPeriod: Year) extends Throwable {
-    override def getMessage: String = s""
+    override def getMessage: String = s"Previous submission is not a manual assumed report"
+  }
+
+  final case class PreviousSubmissionPending(dprsId: String, operatorId: String, reportingYear: Year) extends Throwable {
+    override def getMessage: String = s"Previous submission is still pending in CADX"
   }
 }
 
