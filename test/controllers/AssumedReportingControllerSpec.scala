@@ -17,9 +17,9 @@
 package controllers
 
 import models.assumed.AssumingPlatformOperator
+import models.submission.*
 import models.submission.Submission.State.Submitted
 import models.submission.Submission.SubmissionType
-import models.submission.{AssumedReportingSubmission, AssumedReportingSubmissionRequest, Submission, SubmissionStatus, SubmissionSummary}
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{verify, when}
@@ -34,6 +34,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import services.{AssumedReportingService, SubmissionService, ViewSubmissionsService}
+import support.auth.Retrievals.Ops
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 
 import java.time.{Instant, Year}
@@ -66,7 +67,7 @@ class AssumedReportingControllerSpec
 
   private val dprsId = "dprs id"
 
-  private val validEnrolments = Enrolments(Set(
+  private val validEnrolments = Some("userId") ~ Enrolments(Set(
     Enrolment(
       key = "HMRC-DPRS",
       identifiers = Seq(EnrolmentIdentifier("DPRSID", dprsId)),

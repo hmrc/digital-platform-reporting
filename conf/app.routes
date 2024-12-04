@@ -33,4 +33,7 @@ GET         /pending-enrolment              controllers.PendingEnrolmentControll
 POST        /pending-enrolment              controllers.PendingEnrolmentController.save()
 DELETE      /pending-enrolment              controllers.PendingEnrolmentController.remove()
 
+GET         /recent-submissions/:operatorId         controllers.RecentSubmissionsController.get(operatorId: String)
+POST        /recent-submissions                     controllers.RecentSubmissionsController.save()
+
 GET         /admin/blocked-submissions      controllers.AdminController.getBlockedSubmissions()
