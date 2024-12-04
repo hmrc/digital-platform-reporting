@@ -90,8 +90,10 @@ class AssumedReportingService @Inject()(
     
   private def getAddress(address: Address_Type): Option[String] =
     address.address_typeoption match {
-      case x: DataRecord[String] => Some(x.value)
-      case _                     => None
+      case x: DataRecord[Any] if x.value.isInstanceOf[String] =>
+        Some(x.as[String])
+      case _ =>
+        None
     }
   
   private def getPreviousSubmission(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[DPI_OECD]] = {
