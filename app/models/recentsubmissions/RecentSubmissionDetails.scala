@@ -14,10 +14,18 @@
  * limitations under the License.
  */
 
-package models
+package models.recentsubmissions
 
-import play.api.mvc.{Request, WrappedRequest}
+import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
-final case class AuthenticatedRequest[A](request: Request[A],
-                                         dprsId: String,
-                                         userId: String) extends WrappedRequest[A](request)
+import java.time.Instant
+
+final case class RecentSubmissionDetails(userId: String,
+                                         operatorId: String,
+                                         createdAt: Instant)
+
+object RecentSubmissionDetails extends MongoJavatimeFormats.Implicits {
+
+  given mongoFormat: OFormat[RecentSubmissionDetails] = Json.format
+}

@@ -25,8 +25,9 @@ import javax.inject.Inject
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class FakeAuthAction @Inject() extends AuthAction(mock[AuthConnector], mock[BodyParsers.Default]) {
+class FakeAuthAction @Inject()(userId: String = "default-user-id")
+  extends AuthAction(mock[AuthConnector], mock[BodyParsers.Default]) {
 
   override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] =
-    block(AuthenticatedRequest(request, "dprs id"))
+    block(AuthenticatedRequest(request, "dprs id", userId))
 }

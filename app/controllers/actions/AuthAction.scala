@@ -17,15 +17,17 @@
 package controllers.actions
 
 import models.AuthenticatedRequest
+import play.api.mvc.*
 import play.api.mvc.Results.Forbidden
-import play.api.mvc.{ActionBuilder, ActionFunction, AnyContent, BodyParsers, Request, Result}
 import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
+import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
+
 
 class AuthAction @Inject()(val authConnector: AuthConnector,
                            val parser: BodyParsers.Default)
@@ -34,22 +36,22 @@ class AuthAction @Inject()(val authConnector: AuthConnector,
     with ActionFunction[Request, AuthenticatedRequest]
     with AuthorisedFunctions {
 
+  private val enrolmentKey = "HMRC-DPRS"
+  private val identifierKey = "DPRSID"
+
   override def invokeBlock[A](request: Request[A], block: AuthenticatedRequest[A] => Future[Result]): Future[Result] = {
 
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequest(request)
-    
-    val enrolmentKey = "HMRC-DPRS"
-    val identifierKey = "DPRSID"
-    
-    authorised(Enrolment(enrolmentKey)).retrieve(Retrievals.authorisedEnrolments) {
-      enrolments => {
-        for {
-          enrolment <- enrolments.getEnrolment(enrolmentKey)
-          dprsId <- enrolment.getIdentifier(identifierKey)
-        } yield block(AuthenticatedRequest(request, dprsId.value))
-      }.getOrElse {
-        Future.successful(Forbidden)
-      }
+
+    authorised(Enrolment(enrolmentKey)).retrieve(Retrievals.internalId and Retrievals.authorisedEnrolments) {
+      case Some(internalId) ~ enrolments => getDprsId(enrolments)
+        .map(dprsId => block(AuthenticatedRequest(request, dprsId, internalId)))
+        .getOrElse(Future.successful(Forbidden))
+      case _ => Future.successful(Forbidden)
     }
   }
+
+  private def getDprsId(enrolments: Enrolments): Option[String] = enrolments
+    .getEnrolment(enrolmentKey)
+    .flatMap(_.identifiers.find(_.key == identifierKey).map(_.value))
 }
