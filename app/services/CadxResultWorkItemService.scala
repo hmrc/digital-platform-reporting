@@ -23,6 +23,7 @@ import models.sdes.list.SdesFile
 import org.apache.pekko.Done
 import play.api.Configuration
 import repository.CadxResultWorkItemRepository
+import services.CadxResultService.SubmissionNotFoundException
 import services.CadxResultWorkItemService.ResultFileNotFound
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
@@ -62,10 +63,15 @@ class CadxResultWorkItemService @Inject()(
     val now = clock.instant()
     workItemRepository.pullOutstanding(now.minus(retryTimeout), now).flatMap {
       _.map { workItem =>
-        for {
-          _ <- process(workItem)
-          _ <- workItemRepository.complete(workItem.id, ProcessingStatus.Succeeded)
-        } yield true
+        {
+          for {
+            _ <- process(workItem)
+            _ <- workItemRepository.complete(workItem.id, ProcessingStatus.Succeeded)
+          } yield true
+        }.recoverWith { case _: SubmissionNotFoundException =>
+          workItemRepository.markAs(workItem.id, ProcessingStatus.PermanentlyFailed)
+            .map(_ => true)
+        }
       }.getOrElse(Future.successful(false))
     }
   }
@@ -77,7 +83,7 @@ class CadxResultWorkItemService @Inject()(
       source  <- downloadConnector.download(fileUrl)
       _       <- cadxResultService.processResult(source)
     } yield Done
-  }.recoverWith { case e =>
+  }.recoverWith { case e if !e.isInstanceOf[SubmissionNotFoundException] =>
     workItemRepository.markAs(workItem.id, ProcessingStatus.Failed).flatMap { _ =>
       Future.failed(e)
     }
