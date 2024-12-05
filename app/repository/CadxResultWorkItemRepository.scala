@@ -17,23 +17,33 @@
 package repository
 
 import models.sdes.CadxResultWorkItem
+import org.mongodb.scala.model.{IndexModel, IndexOptions, Indexes}
 import play.api.Configuration
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.workitem.{WorkItemFields, WorkItemRepository}
 
 import java.time.{Duration, Instant}
+import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
 @Singleton
 class CadxResultWorkItemRepository @Inject()(
-                                                  configuration: Configuration,
-                                                  mongoComponent: MongoComponent
-                                                )(using ExecutionContext) extends WorkItemRepository[CadxResultWorkItem](
+                                              configuration: Configuration,
+                                              mongoComponent: MongoComponent,
+                                            )(using ExecutionContext) extends WorkItemRepository[CadxResultWorkItem](
   collectionName = "cadxResultWorkItems",
   mongoComponent = mongoComponent,
   itemFormat = CadxResultWorkItem.mongoFormat,
-  workItemFields = WorkItemFields.default
+  workItemFields = WorkItemFields.default,
+  extraIndexes = Seq(
+    IndexModel(
+      Indexes.ascending("receivedAt"),
+      IndexOptions()
+        .name("updated_ttl_idx")
+        .expireAfter(configuration.get[Duration]("mongodb.cadx-result.ttl").toMinutes, TimeUnit.MINUTES)
+    )
+  )
 ) {
 
   override def now(): Instant =

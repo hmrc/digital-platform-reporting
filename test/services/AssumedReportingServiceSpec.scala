@@ -1476,8 +1476,6 @@ class AssumedReportingServiceSpec
     val existingSubmission = scalaxb.fromXML[DPI_OECD](XML.loadString(existingSubmissionSource.mkString))
     existingSubmissionSource.close()
 
-    println(existingSubmission)
-
     when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
     when(mockSubmissionConnector.getManualAssumedReportingSubmission(any())(using any())).thenReturn(Future.successful(existingSubmission))
 

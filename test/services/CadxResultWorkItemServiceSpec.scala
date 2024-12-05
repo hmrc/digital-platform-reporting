@@ -269,6 +269,41 @@ class CadxResultWorkItemServiceSpec
         verify(mockCadxResultService).processResult(any())
         verify(mockCadxResultWorkItemRepository).markAs(workItem.id, ProcessingStatus.Failed)
       }
+
+      "must mark the work item as permanently failed and return true when the CadxResultService fails with a SubmissionNotFoundException" in {
+
+        val files = Seq(
+          SdesFile(
+            fileName = "test.xml",
+            fileSize = 1337,
+            downloadUrl = url"http://example.com/test.xml",
+            metadata = Seq.empty
+          ),
+          SdesFile(
+            fileName = "test2.xml",
+            fileSize = 1337,
+            downloadUrl = url"http://example.com/test2.xml",
+            metadata = Seq.empty
+          )
+        )
+
+        val requestedFileContents = "foobar"
+
+        when(mockSdesConnector.listFiles(any())(using any())).thenReturn(Future.successful(files))
+        when(mockDownloadConnector.download(any())).thenReturn(Future.successful(Source.single(ByteString.fromString(requestedFileContents))))
+        when(mockCadxResultService.processResult(any())).thenReturn(Future.failed(CadxResultService.SubmissionNotFoundException("submissionId")))
+
+        when(mockCadxResultWorkItemRepository.pullOutstanding(any(), any())).thenReturn(Future.successful(Some(workItem)))
+        when(mockCadxResultWorkItemRepository.markAs(any(), any(), any())).thenReturn(Future.successful(true))
+
+        cadxResultWorkItemService.processNextResult().futureValue mustBe true
+
+        verify(mockCadxResultWorkItemRepository).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
+        verify(mockSdesConnector).listFiles(eqTo("cadx-result"))(using any())
+        verify(mockDownloadConnector).download(eqTo(url"http://example.com/test.xml"))
+        verify(mockCadxResultService).processResult(any())
+        verify(mockCadxResultWorkItemRepository).markAs(eqTo(workItem.id), eqTo(ProcessingStatus.PermanentlyFailed), any())
+      }
     }
 
     "when there is no submission in the work item queue" - {
