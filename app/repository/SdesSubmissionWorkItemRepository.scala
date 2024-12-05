@@ -17,11 +17,13 @@
 package repository
 
 import models.sdes.SdesSubmissionWorkItem
+import org.mongodb.scala.model.{IndexModel, IndexOptions, Indexes}
 import play.api.Configuration
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.workitem.{WorkItemFields, WorkItemRepository}
 
-import java.time.{Instant, Duration}
+import java.time.{Duration, Instant}
+import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
@@ -33,7 +35,15 @@ class SdesSubmissionWorkItemRepository @Inject()(
   collectionName = "sdesSubmissions",
   mongoComponent = mongoComponent,
   itemFormat = SdesSubmissionWorkItem.mongoFormat,
-  workItemFields = WorkItemFields.default
+  workItemFields = WorkItemFields.default,
+  extraIndexes = Seq(
+    IndexModel(
+      Indexes.ascending("receivedAt"),
+      IndexOptions()
+        .name("updated_ttl_idx")
+        .expireAfter(configuration.get[Duration]("mongodb.sdes-submissions.ttl").toMinutes, TimeUnit.MINUTES)
+    )
+  )
 ) {
 
   override def now(): Instant =
