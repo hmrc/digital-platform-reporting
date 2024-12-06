@@ -26,7 +26,7 @@ import models.submission.DeliveredSubmissionSortBy.SubmissionDate
 import models.submission.SortOrder.Descending
 import models.submission.{AssumedReportingSubmission, SubmissionStatus, ViewSubmissionsRequest}
 import scalaxb.DataRecord
-import services.AssumedReportingService.{NoPreviousSubmissionException, PreviousSubmissionPending, SubmissionAlreadyDeletedException, SubmissionIsNotAssumedReportException}
+import services.AssumedReportingService.{NoPreviousSubmissionException, PreviousCaseInfo, PreviousSubmissionInfo, PreviousSubmissionPending, SubmissionAlreadyDeletedException, SubmissionIsNotAssumedReportException}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import java.time.format.DateTimeFormatter
@@ -44,22 +44,30 @@ class AssumedReportingService @Inject()(
                                        )(using ExecutionContext) {
 
   def createSubmission(dprsId: String, operator: PlatformOperator, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year)(using HeaderCarrier): Future[AssumedReportingPayload] =
-    getPreviousSubmission(dprsId, operator.operatorId, reportingPeriod).map { previousSubmission =>
-      createSubmissionPayload(operator, assumingOperator, reportingPeriod, previousSubmission)
+    getPreviousSubmission(dprsId, operator.operatorId, reportingPeriod).flatMap { previousSubmissionInfo =>
+      if (previousSubmissionInfo.exists(_.status == SubmissionStatus.Pending)) {
+        Future.failed(PreviousSubmissionPending(dprsId, operator.operatorId, reportingPeriod))
+      } else {
+        Future.successful(createSubmissionPayload(operator, assumingOperator, reportingPeriod, previousSubmissionInfo.map(_.submission)))
+      }
     }
 
   def createDeleteSubmission(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[AssumedReportingPayload] =
-    getPreviousSubmission(dprsId, operatorId, reportingPeriod).flatMap { previousSubmission =>
-      createDeleteSubmissionPayload(dprsId, operatorId, reportingPeriod, previousSubmission)
+    getPreviousSubmission(dprsId, operatorId, reportingPeriod).flatMap { previousSubmissionInfo =>
+      if (previousSubmissionInfo.exists(_.status == SubmissionStatus.Pending)) {
+        Future.failed(PreviousSubmissionPending(dprsId, operatorId, reportingPeriod))
+      } else {
+        createDeleteSubmissionPayload(dprsId, operatorId, reportingPeriod, previousSubmissionInfo.map(_.submission))
+      }
     }
     
   def getSubmission(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[AssumedReportingSubmission]] =
-    getPreviousSubmission(dprsId, operatorId, reportingPeriod).map { maybeSubmission =>
+    getPreviousSubmission(dprsId, operatorId, reportingPeriod).map { maybeSubmissionInfo =>
       for {
-        submission     <- maybeSubmission
-        body           <- submission.DPIBody.headOption
-        operatorName   <- body.PlatformOperator.Name.headOption.map(_.value)
-        otherOperators <- body.OtherPlatformOperators
+        submissionInfo     <- maybeSubmissionInfo
+        body               <- submissionInfo.submission.DPIBody.headOption
+        operatorName       <- body.PlatformOperator.Name.headOption.map(_.value)
+        otherOperators     <- body.OtherPlatformOperators
         
         if otherOperators.otherplatformoperators_typeoption.value.isInstanceOf[OtherPlatformOperators_TypeSequence1]
 
@@ -78,7 +86,7 @@ class AssumedReportingService @Inject()(
           address           = address
         ),
         reportingPeriod = reportingPeriod,
-        isDeleted       = isDeletion(submission)
+        isDeleted       = isDeletion(submissionInfo.submission)
       )
     }
 
@@ -96,14 +104,14 @@ class AssumedReportingService @Inject()(
         None
     }
   
-  private def getPreviousSubmission(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[DPI_OECD]] = {
+  private def getPreviousSubmission(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[PreviousSubmissionInfo]] = {
     for {
-      caseId     <- OptionT(getPreviousCaseId(dprsId, operatorId, reportingPeriod))
-      submission <- OptionT.liftF(submissionConnector.getManualAssumedReportingSubmission(caseId))
-    } yield submission
+      caseInfo   <- OptionT(getPreviousCaseId(dprsId, operatorId, reportingPeriod))
+      submission <- OptionT.liftF(submissionConnector.getManualAssumedReportingSubmission(caseInfo.caseId))
+    } yield PreviousSubmissionInfo(submission, caseInfo.status)
   }.value
 
-  private def getPreviousCaseId(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[String]] =
+  private def getPreviousCaseId(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[PreviousCaseInfo]] =
     deliveredSubmissionConnector.get(ViewSubmissionsRequest(
       subscriptionId = dprsId,
       assumedReporting = true,
@@ -118,7 +126,7 @@ class AssumedReportingService @Inject()(
         for {
           submissions <- deliveredSubmissions
           submission  <- submissions.submissions.headOption
-        } yield submission.submissionCaseId
+        } yield PreviousCaseInfo(submission.submissionCaseId, submission.submissionStatus)
     }
 
   private def createSubmissionPayload(operator: PlatformOperator, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year, previousSubmission: Option[DPI_OECD]): AssumedReportingPayload = {
@@ -376,6 +384,10 @@ object AssumedReportingService {
   final case class PreviousSubmissionPending(dprsId: String, operatorId: String, reportingYear: Year) extends Throwable {
     override def getMessage: String = s"Previous submission is still pending in CADX"
   }
+
+  final case class PreviousCaseInfo(caseId: String, status: SubmissionStatus)
+
+  final case class PreviousSubmissionInfo(submission: DPI_OECD, status: SubmissionStatus)
 }
 
 final case class AssumedReportingPayload(messageRef: String, body: NodeSeq)
