@@ -114,14 +114,11 @@ class AssumedReportingService @Inject()(
       operatorId = Some(operatorId),
       fileName = None,
       statuses = Seq(SubmissionStatus.Pending, SubmissionStatus.Success)
-    )).flatMap { deliveredSubmissions =>
-      {
+    )).map { deliveredSubmissions =>
         for {
-          submissions <- OptionT.fromOption[Future](deliveredSubmissions)
-          submission  <- OptionT.fromOption[Future](submissions.submissions.headOption)
-          _           <- if (submission.submissionStatus == SubmissionStatus.Pending) OptionT.liftF(Future.failed(PreviousSubmissionPending(dprsId, operatorId, reportingPeriod))) else OptionT.pure[Future](())
+          submissions <- deliveredSubmissions
+          submission  <- submissions.submissions.headOption
         } yield submission.submissionCaseId
-      }.value
     }
 
   private def createSubmissionPayload(operator: PlatformOperator, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year, previousSubmission: Option[DPI_OECD]): AssumedReportingPayload = {
