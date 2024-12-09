@@ -16,18 +16,25 @@
 
 package controllers
 
-import play.api.libs.json.Json
+import models.sdes.CadxResultWorkItem
+import play.api.libs.json.{Format, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import repository.SubmissionRepository
+import repository.{CadxResultWorkItemRepository, SubmissionRepository}
 import uk.gov.hmrc.internalauth.client.*
+import uk.gov.hmrc.mongo.workitem.{ProcessingStatus, WorkItem}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-class AdminController @Inject()(submissionRepository: SubmissionRepository,
-                                cc: ControllerComponents,
-                                auth: BackendAuthComponents)(using ExecutionContext) extends BackendController(cc){
+class AdminController @Inject()(
+                                 submissionRepository: SubmissionRepository,
+                                 cadxResultWorkItemRepository: CadxResultWorkItemRepository,
+                                 cc: ControllerComponents,
+                                 auth: BackendAuthComponents
+                               )(using ExecutionContext) extends BackendController(cc) {
+
+  private given Format[WorkItem[CadxResultWorkItem]] = WorkItem.workItemRestFormat[CadxResultWorkItem]
 
   private def permission(path: String) = Predicate.Permission(
     Resource(
@@ -50,4 +57,11 @@ class AdminController @Inject()(submissionRepository: SubmissionRepository,
       submissionRepository.getBlockedSubmissionIds().map(items => Ok(Json.toJson(items)))
     }
   }
+
+  def getCadxResultWorkItems(statuses: Set[ProcessingStatus], limit: Int, offset: Int): Action[AnyContent] =
+    authorise(routes.AdminController.getCadxResultWorkItems(statuses, limit, offset).path()).async {
+      cadxResultWorkItemRepository.listWorkItems(statuses, limit, offset).map { result =>
+        Ok(Json.obj("workItems" -> result))
+      }
+    }
 }
