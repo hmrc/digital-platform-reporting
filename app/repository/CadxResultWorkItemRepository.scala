@@ -17,15 +17,17 @@
 package repository
 
 import models.sdes.CadxResultWorkItem
-import org.mongodb.scala.model.{IndexModel, IndexOptions, Indexes}
+import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions, Indexes, Sorts}
+import org.mongodb.scala.ObservableFuture
 import play.api.Configuration
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.workitem.{WorkItemFields, WorkItemRepository}
+import uk.gov.hmrc.mongo.play.json.Codecs
+import uk.gov.hmrc.mongo.workitem.{ProcessingStatus, WorkItem, WorkItemFields, WorkItemRepository}
 
 import java.time.{Duration, Instant}
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class CadxResultWorkItemRepository @Inject()(
@@ -43,7 +45,8 @@ class CadxResultWorkItemRepository @Inject()(
         .name("updated_ttl_idx")
         .expireAfter(configuration.get[Duration]("mongodb.cadx-result.ttl").toMinutes, TimeUnit.MINUTES)
     )
-  )
+  ),
+  extraCodecs = Codecs.playFormatSumCodecs(ProcessingStatus.format)
 ) {
 
   override def now(): Instant =
@@ -51,4 +54,20 @@ class CadxResultWorkItemRepository @Inject()(
 
   override val inProgressRetryAfter: Duration =
     configuration.get[Duration]("sdes.cadx-result.retry-after")
+
+  def listWorkItems(statuses: Set[ProcessingStatus], limit: Int, offset: Int): Future[Seq[WorkItem[CadxResultWorkItem]]] = {
+
+    val filter = if (statuses.isEmpty) {
+      Filters.empty()
+    } else {
+      Filters.in("status", statuses.toSeq.map(_.name)*)
+    }
+
+    collection
+      .find(filter)
+      .sort(Sorts.descending("receivedAt"))
+      .skip(offset)
+      .limit(limit)
+      .toFuture()
+  }
 }

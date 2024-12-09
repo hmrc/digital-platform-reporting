@@ -16,11 +16,13 @@
 
 package controllers
 
+import models.sdes.CadxResultWorkItem
 import models.submission
 import models.submission.IdAndLastUpdated
+import org.bson.types.ObjectId
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
-import org.mockito.Mockito.{reset, when}
+import org.mockito.Mockito.{reset, verify, when}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -29,13 +31,14 @@ import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.Json
+import play.api.libs.json.{Format, Json}
 import play.api.test.Helpers.*
 import play.api.test.{FakeRequest, Helpers}
-import repository.SubmissionRepository
+import repository.{CadxResultWorkItemRepository, SubmissionRepository}
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.internalauth.client.test.{BackendAuthComponentsStub, StubBehaviour}
 import uk.gov.hmrc.internalauth.client.{BackendAuthComponents, Retrieval}
+import uk.gov.hmrc.mongo.workitem.{ProcessingStatus, WorkItem}
 
 import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
@@ -49,17 +52,21 @@ class AdminControllerSpec
     with BeforeAndAfterEach {
 
   private val mockSubmissionRepo = mock[SubmissionRepository]
+  private val mockCadxResultWorkItemRepo = mock[CadxResultWorkItemRepository]
+
   private val mockStubBehaviour = mock[StubBehaviour]
   private val backendAuthComponentsStub: BackendAuthComponents =
     BackendAuthComponentsStub(mockStubBehaviour)(Helpers.stubControllerComponents(), ExecutionContext.global)
 
+  private val now: Instant = Instant.now()
 
   override def beforeEach() = {
     reset(mockSubmissionRepo)
     reset(mockStubBehaviour)
+    reset(mockCadxResultWorkItemRepo)
   }
 
-  "get submissions" - {
+  "getBlockedSubmissions" - {
     "rejects an invalid token from the requester" in {
       when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval)))
         .thenReturn(Future.failed(UpstreamErrorResponse("Unauthorized", UNAUTHORIZED)))
@@ -121,6 +128,83 @@ class AdminControllerSpec
             | {"id":"ID2", "lastUpdated":"2024-10-10T10:10:10.100Z"}
             |]
             |""".stripMargin)
+      }
+    }
+  }
+
+  "getCadxResultWorkItems" - {
+
+    "rejects an invalid token from the requester" in {
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval)))
+        .thenReturn(Future.failed(UpstreamErrorResponse("Unauthorized", UNAUTHORIZED)))
+
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[CadxResultWorkItemRepository].toInstance(mockCadxResultWorkItemRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.getCadxResultWorkItems())
+          .withHeaders("Authorization" -> "Token some-token")
+        val result = route(app, request).value
+
+        status(result) mustBe UNAUTHORIZED
+      }
+    }
+
+    "checks the user is authorized" in {
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval)))
+        .thenReturn(Future.failed(UpstreamErrorResponse("Forbidden", FORBIDDEN)))
+
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[CadxResultWorkItemRepository].toInstance(mockCadxResultWorkItemRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.getCadxResultWorkItems())
+          .withHeaders("Authorization" -> "Token some-token")
+        val result = route(app, request).value
+
+        status(result) mustBe FORBIDDEN
+      }
+    }
+
+    "retrieves the list of CADX result work items" in {
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[CadxResultWorkItemRepository].toInstance(mockCadxResultWorkItemRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval))).thenReturn(Future.unit)
+
+      val workItems = Seq(
+        WorkItem(
+          id = new ObjectId(),
+          receivedAt = now,
+          updatedAt = now,
+          availableAt = now,
+          status = ProcessingStatus.ToDo,
+          failureCount = 0,
+          item = CadxResultWorkItem("test.xml")
+        )
+      )
+
+      when(mockCadxResultWorkItemRepo.listWorkItems(any(), any(), any())).thenReturn(Future.successful(workItems))
+
+      given Format[WorkItem[CadxResultWorkItem]] = WorkItem.workItemRestFormat[CadxResultWorkItem]
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.getCadxResultWorkItems(Set(ProcessingStatus.ToDo), 1, 2))
+          .withHeaders("Authorization" -> "Token some-token")
+        val result = route(app, request).value
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.obj(
+          "workItems" -> workItems
+        )
+
+        verify(mockCadxResultWorkItemRepo).listWorkItems(Set(ProcessingStatus.ToDo), 1, 2)
       }
     }
   }

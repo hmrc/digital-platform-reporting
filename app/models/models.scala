@@ -17,7 +17,9 @@
 package models
 
 import play.api.libs.json.*
-import play.api.mvc.PathBindable
+import play.api.mvc.{PathBindable, QueryStringBindable}
+import play.api.routing.sird.QueryStringParameterExtractor
+import uk.gov.hmrc.mongo.workitem.ProcessingStatus
 
 import java.net.URL
 import java.time.Year
@@ -80,3 +82,19 @@ implicit def yearPathBindable(using intBinder: PathBindable[Int]): PathBindable[
 
 def singletonOFormat[A](a: A): OFormat[A] =
   OFormat(Reads.pure(a), OWrites[A](_ => Json.obj()))
+
+given processingStatusQueryStringBindable: QueryStringBindable[ProcessingStatus] = QueryStringBindable.Parsing[ProcessingStatus](
+  s => ProcessingStatus.values.find(_.name == s).get,
+  _.name,
+  (_, _) => "invalid ProcessingStatus"
+)
+
+given setQueryStringBindable[A](using qsb: QueryStringBindable[Seq[A]]): QueryStringBindable[Set[A]] =
+  new QueryStringBindable[Set[A]] {
+
+    override def bind(key: String, params: Map[String, Seq[String]]): Option[Either[String, Set[A]]] =
+      qsb.bind(key, params).map(_.map(_.toSet))
+
+    override def unbind(key: String, value: Set[A]): String =
+      qsb.unbind(key, value.toSeq)
+  }
