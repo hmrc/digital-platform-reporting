@@ -70,29 +70,33 @@ class ValidationService @Inject() (
   parserFactory.setNamespaceAware(true)
   parserFactory.setSchema(schema)
 
-  def validateXml(dprsId: String, downloadUrl: URL, platformOperatorId: String): Future[Either[UploadFailureReason, Year]] = {
-    val parser = parserFactory.newSAXParser()
-    // TODO use blocking execution context
-    downloadConnector.download(downloadUrl).flatMap { source =>
-      val inputStream = source.runWith(StreamConverters.asInputStream())
-      val handler = new ValidatingSaxHandler(platformOperatorId, errorLimit)
-      try {
-        parser.parse(inputStream, handler)
+  def validateXml(fileName: String, dprsId: String, downloadUrl: URL, platformOperatorId: String): Future[Either[UploadFailureReason, Year]] = {
+    if (fileName.toLowerCase.endsWith(".xml")) {
+      val parser = parserFactory.newSAXParser()
+      // TODO use blocking execution context
+      downloadConnector.download(downloadUrl).flatMap { source =>
+        val inputStream = source.runWith(StreamConverters.asInputStream())
+        val handler = new ValidatingSaxHandler(platformOperatorId, errorLimit)
+        try {
+          parser.parse(inputStream, handler)
 
-        val result = for {
-          _               <- handler.checkErrors
-          operatorId      <- handler.getPlatformOperatorId
-          reportingPeriod <- handler.getReportingPeriod
-          _               <- checkForManualAssumedReport(dprsId, operatorId, reportingPeriod)
-        } yield reportingPeriod
+          val result = for {
+            _ <- handler.checkErrors
+            operatorId <- handler.getPlatformOperatorId
+            reportingPeriod <- handler.getReportingPeriod
+            _ <- checkForManualAssumedReport(dprsId, operatorId, reportingPeriod)
+          } yield reportingPeriod
 
-        result.value
-      } catch {
-        case _: FatalSaxParsingException =>
-          Future.successful(Left(NotXml))
-        case _: SAXParseException =>
-          Future.successful(Left(SchemaValidationError(handler.schemaErrors.result)))
+          result.value
+        } catch {
+          case _: FatalSaxParsingException =>
+            Future.successful(Left(NotXml))
+          case _: SAXParseException =>
+            Future.successful(Left(SchemaValidationError(handler.schemaErrors.result)))
+        }
       }
+    } else {
+      Future.successful(Left(InvalidFileNameExtension))
     }
   }
 
