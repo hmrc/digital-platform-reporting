@@ -90,8 +90,8 @@ class SubmissionControllerSpec
 
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
   private val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
-  private val uploadFailureReasonGen: Gen[UploadFailureReason] = Gen.oneOf(NotXml, SchemaValidationError, PlatformOperatorIdMissing, ReportingPeriodInvalid)
-  private val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason, Some("some-file-name")))
+  private val uploadFailureReasonGen: Gen[UploadFailureReason] = Gen.oneOf(NotXml, SchemaValidationError(Seq.empty), PlatformOperatorIdMissing, ReportingPeriodInvalid)
+  private val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason, None))
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
   private val submittedGen: Gen[Submitted] = Gen.const(Submitted("test.xml", Year.of(2024)))
   private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
@@ -419,7 +419,7 @@ class SubmissionControllerSpec
             )
 
             val expectedSubmission = existingSubmission.copy(
-              state = UploadFailed(SchemaValidationError, Some(fileName)),
+              state = UploadFailed(SchemaValidationError(Seq.empty), Some(fileName)),
               updated = now
             )
 
@@ -429,11 +429,11 @@ class SubmissionControllerSpec
               operatorId = operatorId,
               operatorName = operatorName,
               fileName = Some(fileName),
-              outcome = FileUploadOutcome.Rejected(UploadFailureReason.SchemaValidationError)
+              outcome = FileUploadOutcome.Rejected(UploadFailureReason.SchemaValidationError(Seq.empty))
             )
 
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockValidationService.validateXml(any(), any(), any(), any())).thenReturn(Future.successful(Left(SchemaValidationError)))
+            when(mockValidationService.validateXml(any(), any(), any(), any())).thenReturn(Future.successful(Left(SchemaValidationError(Seq.empty))))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
@@ -614,7 +614,7 @@ class SubmissionControllerSpec
           val request = FakeRequest(routes.SubmissionController.uploadFailed(uuid))
             .withBody(Json.toJson(UploadFailedRequest(
               dprsId = dprsId,
-              reason = SchemaValidationError
+              reason = SchemaValidationError(Seq.empty)
             )))
 
           val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
@@ -650,7 +650,7 @@ class SubmissionControllerSpec
         val request = FakeRequest(routes.SubmissionController.uploadFailed(uuid))
           .withBody(Json.toJson(UploadFailedRequest(
             dprsId = dprsId,
-            reason = SchemaValidationError
+            reason = UploadFailureReason.UnknownFailure
           )))
 
         when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(None))

@@ -68,7 +68,7 @@ object Submission {
   object UploadFailureReason {
     
     case object NotXml extends UploadFailureReason
-    case object SchemaValidationError extends UploadFailureReason
+    final case class SchemaValidationError(errors: Seq[SchemaValidationError.Error]) extends UploadFailureReason
     case object ManualAssumedReportExists extends UploadFailureReason
     case object PlatformOperatorIdMissing extends UploadFailureReason
     final case class PlatformOperatorIdMismatch(expectedId: String, actualId: String) extends UploadFailureReason
@@ -80,8 +80,20 @@ object Submission {
     case object UnknownFailure extends UploadFailureReason
     case object InvalidFileNameExtension extends UploadFailureReason
 
+    object SchemaValidationError {
+
+      final case class Error(line: Int, col: Int, message: String)
+
+      given OFormat[Error] = Json.format
+
+      given OFormat[SchemaValidationError] = {
+        val reads = (__ \ "errors").readWithDefault(Seq.empty[Error]).map(SchemaValidationError(_))
+        val writes = Json.writes[SchemaValidationError]
+        OFormat(reads, writes)
+      }
+    }
+
     private given OFormat[NotXml.type] = singletonOFormat(NotXml)
-    private given OFormat[SchemaValidationError.type] = singletonOFormat(SchemaValidationError)
     private given OFormat[ManualAssumedReportExists.type] = singletonOFormat(ManualAssumedReportExists)
     private given OFormat[PlatformOperatorIdMissing.type] = singletonOFormat(PlatformOperatorIdMissing)
     private given OFormat[PlatformOperatorIdMismatch] = Json.format

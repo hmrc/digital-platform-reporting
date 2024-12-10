@@ -102,7 +102,7 @@ class FileUploadedEventSpec extends AnyFreeSpec with Matchers {
           operatorId = "poId",
           operatorName = "po",
           fileName = Some("test.xml"),
-          outcome = FileUploadOutcome.Rejected(SchemaValidationError)
+          outcome = FileUploadOutcome.Rejected(SchemaValidationError(Seq.empty))
         )
 
         Json.toJson(event) mustEqual expectedJson
