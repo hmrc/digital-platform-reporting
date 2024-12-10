@@ -38,6 +38,7 @@ import javax.xml.XMLConstants
 import javax.xml.parsers.SAXParserFactory
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.SchemaFactory
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import scala.util.control.NoStackTrace
@@ -52,6 +53,7 @@ class ValidationService @Inject() (
                                   )(using ExecutionContext, Materializer) {
 
   private val schemaPath = configuration.get[String]("validation.schema-path")
+  private val errorLimit = configuration.get[Int]("validation.error-limit")
   private val resource = environment.resource(schemaPath).map(url => Paths.get(url.toURI).toFile)
     .getOrElse(throw new RuntimeException(s"No XSD found at $schemaPath"))
 
@@ -73,22 +75,23 @@ class ValidationService @Inject() (
     // TODO use blocking execution context
     downloadConnector.download(downloadUrl).flatMap { source =>
       val inputStream = source.runWith(StreamConverters.asInputStream())
+      val handler = new ValidatingSaxHandler(platformOperatorId, errorLimit)
       try {
-        val handler = new ValidatingSaxHandler(platformOperatorId)
         parser.parse(inputStream, handler)
 
         val result = for {
+          _               <- handler.checkErrors
           operatorId      <- handler.getPlatformOperatorId
           reportingPeriod <- handler.getReportingPeriod
           _               <- checkForManualAssumedReport(dprsId, operatorId, reportingPeriod)
         } yield reportingPeriod
-        
+
         result.value
       } catch {
         case _: FatalSaxParsingException =>
           Future.successful(Left(NotXml))
         case _: SAXParseException =>
-          Future.successful(Left(SchemaValidationError))
+          Future.successful(Left(SchemaValidationError(handler.schemaErrors.result)))
       }
     }
   }
@@ -109,15 +112,24 @@ class ValidationService @Inject() (
   }
 }
 
-final class ValidatingSaxHandler(platformOperatorId: String) extends DefaultHandler {
+final class ValidatingSaxHandler(platformOperatorId: String, errorLimit: Int) extends DefaultHandler {
 
-  override def warning(e: SAXParseException): Unit = throw e
-  override def error(e: SAXParseException): Unit = throw e
+  override def warning(e: SAXParseException): Unit = addError(e)
+  override def error(e: SAXParseException): Unit = addError(e)
   override def fatalError(e: SAXParseException): Unit = throw FatalSaxParsingException(e)
+
+  private def addError(e: SAXParseException): Unit =
+    if (schemaErrors.length >= errorLimit) {
+      throw e
+    } else {
+      schemaErrors.addOne(SchemaValidationError.Error(e.getLineNumber, e.getColumnNumber, e.getMessage))
+    }
 
   private var path: List[String] = Nil
   private val platformOperatorBuilder = new java.lang.StringBuilder()
   private val reportingPeriodBuilder = new java.lang.StringBuilder()
+
+  val schemaErrors: ListBuffer[SchemaValidationError.Error] = ListBuffer.empty
 
   override def startElement(uri: String, localName: String, qName: String, attributes: Attributes): Unit =
     path = localName :: path
@@ -147,6 +159,15 @@ final class ValidatingSaxHandler(platformOperatorId: String) extends DefaultHand
     EitherT.fromEither(Try(Year.from(DateTimeFormatter.ISO_DATE.parse(reportingPeriodBuilder.toString)))
       .toEither
       .left.map(_ => ReportingPeriodInvalid))
+
+  def checkErrors(using ExecutionContext): EitherT[Future, UploadFailureReason, Unit] =
+    EitherT.fromEither {
+      if (schemaErrors.isEmpty) {
+        Right(())
+      } else {
+        Left(SchemaValidationError(schemaErrors.result))
+      }
+    }
 }
 
 object ValidatingSaxHandler {
