@@ -68,28 +68,32 @@ class ValidationService @Inject() (
   parserFactory.setNamespaceAware(true)
   parserFactory.setSchema(schema)
 
-  def validateXml(dprsId: String, downloadUrl: URL, platformOperatorId: String): Future[Either[UploadFailureReason, Year]] = {
-    val parser = parserFactory.newSAXParser()
-    // TODO use blocking execution context
-    downloadConnector.download(downloadUrl).flatMap { source =>
-      val inputStream = source.runWith(StreamConverters.asInputStream())
-      try {
-        val handler = new ValidatingSaxHandler(platformOperatorId)
-        parser.parse(inputStream, handler)
+  def validateXml(fileName: String, dprsId: String, downloadUrl: URL, platformOperatorId: String): Future[Either[UploadFailureReason, Year]] = {
+    if (fileName.toLowerCase.endsWith(".xml")) {
+      val parser = parserFactory.newSAXParser()
+      // TODO use blocking execution context
+      downloadConnector.download(downloadUrl).flatMap { source =>
+        val inputStream = source.runWith(StreamConverters.asInputStream())
+        try {
+          val handler = new ValidatingSaxHandler(platformOperatorId)
+          parser.parse(inputStream, handler)
 
-        val result = for {
-          operatorId      <- handler.getPlatformOperatorId
-          reportingPeriod <- handler.getReportingPeriod
-          _               <- checkForManualAssumedReport(dprsId, operatorId, reportingPeriod)
-        } yield reportingPeriod
-        
-        result.value
-      } catch {
-        case _: FatalSaxParsingException =>
-          Future.successful(Left(NotXml))
-        case _: SAXParseException =>
-          Future.successful(Left(SchemaValidationError))
+          val result = for {
+            operatorId <- handler.getPlatformOperatorId
+            reportingPeriod <- handler.getReportingPeriod
+            _ <- checkForManualAssumedReport(dprsId, operatorId, reportingPeriod)
+          } yield reportingPeriod
+
+          result.value
+        } catch {
+          case _: FatalSaxParsingException =>
+            Future.successful(Left(NotXml))
+          case _: SAXParseException =>
+            Future.successful(Left(SchemaValidationError))
+        }
       }
+    } else {
+      Future.successful(Left(InvalidFileNameExtension))
     }
   }
 
@@ -111,9 +115,18 @@ class ValidationService @Inject() (
 
 final class ValidatingSaxHandler(platformOperatorId: String) extends DefaultHandler {
 
-  override def warning(e: SAXParseException): Unit = throw e
-  override def error(e: SAXParseException): Unit = throw e
-  override def fatalError(e: SAXParseException): Unit = throw FatalSaxParsingException(e)
+  override def warning(e: SAXParseException): Unit = {
+    println(s"************** ValidatingSaxHandler.warning: ${e.getLineNumber} ${e.getMessage}")
+    throw e
+  }
+  override def error(e: SAXParseException): Unit = {
+    println(s"************** ValidatingSaxHandler.error: ${e.getLineNumber} ${e.getMessage}")
+    throw e
+  }
+  override def fatalError(e: SAXParseException): Unit = {
+    println(s"************** ValidatingSaxHandler.fatalError: ${e.getLineNumber} ${e.getMessage}")
+    throw FatalSaxParsingException(e)
+  }
 
   private var path: List[String] = Nil
   private val platformOperatorBuilder = new java.lang.StringBuilder()

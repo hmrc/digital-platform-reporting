@@ -19,12 +19,11 @@ package services
 import connectors.DownloadConnector
 import models.assumed.AssumingPlatformOperator
 import models.submission.AssumedReportingSubmission
-import models.submission.Submission.UploadFailureReason
 import models.submission.Submission.UploadFailureReason.*
 import org.apache.pekko.stream.scaladsl.StreamConverters
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
-import org.mockito.Mockito.{verify, when}
+import org.mockito.Mockito.{never, verify, when}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -73,11 +72,28 @@ class ValidationServiceSpec
 
   "validateXml" - {
 
+    val validFileName = "test.xml"
+    val invalidFileName = "test.xls"
     val downloadUrl = url"http://example.com/test.xml"
     val poid = "1"
     val dprsId = "dprsId"
 
     "when the given file is valid" - {
+
+      "must return an error when the uploaded file extension is not .xml" in {
+
+        val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSampleAssumed.xml"))
+
+        when(mockDownloadConnector.download(any()))
+          .thenReturn(Future.successful(source))
+        when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
+          .thenReturn(Future.successful(None))
+
+        val result = validationService.validateXml(invalidFileName, dprsId, downloadUrl, poid).futureValue
+        result.left.value mustEqual InvalidFileNameExtension
+
+        verify(mockDownloadConnector, never()).download(downloadUrl)
+      }
 
       "must return the reporting period when no manual assumed reports have been submitted for this POID and year" in {
 
@@ -88,7 +104,7 @@ class ValidationServiceSpec
         when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
           .thenReturn(Future.successful(None))
 
-        val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
+        val result = validationService.validateXml(validFileName, dprsId, downloadUrl, poid).futureValue
         result.value mustBe Year.of(1957)
 
         verify(mockDownloadConnector).download(downloadUrl)
@@ -117,7 +133,7 @@ class ValidationServiceSpec
         when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
           .thenReturn(Future.successful(Some(manualAssumedReport)))
 
-        val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
+        val result = validationService.validateXml(validFileName, dprsId, downloadUrl, poid).futureValue
         result.value mustBe Year.of(1957)
 
         verify(mockDownloadConnector).download(downloadUrl)
@@ -146,7 +162,7 @@ class ValidationServiceSpec
         when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
           .thenReturn(Future.successful(Some(manualAssumedReport)))
 
-        val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
+        val result = validationService.validateXml(validFileName, dprsId, downloadUrl, poid).futureValue
         result.left.value mustEqual ManualAssumedReportExists
 
         verify(mockDownloadConnector).download(downloadUrl)
@@ -162,7 +178,7 @@ class ValidationServiceSpec
       when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
         .thenReturn(Future.successful(None))
 
-      val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
+      val result = validationService.validateXml(validFileName, dprsId, downloadUrl, poid).futureValue
       result.left.value mustEqual SchemaValidationError
 
       verify(mockDownloadConnector).download(downloadUrl)
@@ -177,7 +193,7 @@ class ValidationServiceSpec
       when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
         .thenReturn(Future.successful(None))
 
-      val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
+      val result = validationService.validateXml(validFileName, dprsId, downloadUrl, poid).futureValue
       result.left.value mustEqual NotXml
 
       verify(mockDownloadConnector).download(downloadUrl)
@@ -192,7 +208,7 @@ class ValidationServiceSpec
       when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
         .thenReturn(Future.successful(None))
 
-      val result = validationService.validateXml(dprsId, downloadUrl, "a-different-poid").futureValue
+      val result = validationService.validateXml(validFileName, dprsId, downloadUrl, "a-different-poid").futureValue
       result.left.value mustEqual PlatformOperatorIdMismatch("a-different-poid", poid)
 
       verify(mockDownloadConnector).download(downloadUrl)
@@ -207,7 +223,7 @@ class ValidationServiceSpec
       when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
         .thenReturn(Future.successful(None))
 
-      val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue
+      val result = validationService.validateXml(validFileName, dprsId, downloadUrl, poid).futureValue
       result.left.value mustEqual PlatformOperatorIdMissing
 
       verify(mockDownloadConnector).download(downloadUrl)

@@ -78,7 +78,8 @@ object Submission {
     case object EntityTooSmall extends UploadFailureReason
     case object InvalidArgument extends UploadFailureReason
     case object UnknownFailure extends UploadFailureReason
-    
+    case object InvalidFileNameExtension extends UploadFailureReason
+
     private given OFormat[NotXml.type] = singletonOFormat(NotXml)
     private given OFormat[SchemaValidationError.type] = singletonOFormat(SchemaValidationError)
     private given OFormat[ManualAssumedReportExists.type] = singletonOFormat(ManualAssumedReportExists)
@@ -90,7 +91,8 @@ object Submission {
     private given OFormat[EntityTooLarge.type] = singletonOFormat(EntityTooLarge)
     private given OFormat[InvalidArgument.type] = singletonOFormat(InvalidArgument)
     private given OFormat[UnknownFailure.type] = singletonOFormat(UnknownFailure)
-    
+    private given OFormat[InvalidFileNameExtension.type] = singletonOFormat(InvalidFileNameExtension)
+
     private given JsonConfiguration = JsonConfiguration(
       discriminator = "type",
       typeNaming = _.split("\\.").last

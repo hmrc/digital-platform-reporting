@@ -433,7 +433,7 @@ class SubmissionControllerSpec
             )
 
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockValidationService.validateXml(any(), any(), any())).thenReturn(Future.successful(Left(SchemaValidationError)))
+            when(mockValidationService.validateXml(any(), any(), any(), any())).thenReturn(Future.successful(Left(SchemaValidationError)))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
@@ -443,7 +443,7 @@ class SubmissionControllerSpec
 
             verify(mockSubmissionRepository).get(dprsId, uuid)
             verify(mockSubmissionRepository).save(expectedSubmission)
-            verify(mockValidationService).validateXml(dprsId, downloadUrl, operatorId)
+            verify(mockValidationService).validateXml(fileName, dprsId, downloadUrl, operatorId)
             verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
           }
         }
@@ -483,7 +483,7 @@ class SubmissionControllerSpec
             )
 
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockValidationService.validateXml(any(), any(), any())).thenReturn(Future.successful(Right(Year.of(2024))))
+            when(mockValidationService.validateXml(any(), any(), any(), any())).thenReturn(Future.successful(Right(Year.of(2024))))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
@@ -493,7 +493,7 @@ class SubmissionControllerSpec
 
             verify(mockSubmissionRepository).get(dprsId, uuid)
             verify(mockSubmissionRepository).save(expectedSubmission)
-            verify(mockValidationService).validateXml(dprsId, downloadUrl, operatorId)
+            verify(mockValidationService).validateXml(fileName, dprsId, downloadUrl, operatorId)
             verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
           }
         }
