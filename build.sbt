@@ -18,8 +18,11 @@ lazy val microservice = Project("digital-platform-reporting", file("."))
   .settings(CodeCoverageSettings.settings *)
   .settings(PlayKeys.playDefaultPort := 20004)
   .settings(RoutesKeys.routesImport ++= Seq(
-    "models._",
-    "java.time.Year"
+    "models.*",
+    "models.processingStatusQueryStringBindable",
+    "models.setQueryStringBindable",
+    "java.time.Year",
+    "uk.gov.hmrc.mongo.workitem.ProcessingStatus"
   ))
 
 lazy val it = project
