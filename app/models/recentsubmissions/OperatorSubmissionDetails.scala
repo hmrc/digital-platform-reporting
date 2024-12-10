@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-package models
+package models.recentsubmissions
 
-import play.api.mvc.{Request, WrappedRequest}
+import play.api.libs.json.*
 
-final case class AuthenticatedRequest[A](request: Request[A],
-                                         dprsId: String,
-                                         userId: String) extends WrappedRequest[A](request)
+case class OperatorSubmissionDetails(operatorId: String,
+                                     businessDetailsCorrect: Boolean,
+                                     reportingNotificationsCorrect: Option[Boolean])
+
+object OperatorSubmissionDetails {
+  implicit val format: OFormat[OperatorSubmissionDetails] = Json.format[OperatorSubmissionDetails]
+}
