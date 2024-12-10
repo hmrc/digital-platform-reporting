@@ -4,7 +4,7 @@
               xsi:schemaLocation="http://www.hmrc.gsi.gov.uk/dpi/cadx DPIXML_v1.0.xsd"
               version="1">
   <dpi:MessageSpec>
-    <dpi:SendingEntityIN>1</dpi:SendingEntityIN>
+    <dpi:SendingEntityIN>platformOperatorId</dpi:SendingEntityIN>
     <dpi:TransmittingCountry>CC</dpi:TransmittingCountry>
     <dpi:ReceivingCountry>LY</dpi:ReceivingCountry>
     <dpi:MessageType>DPI</dpi:MessageType>
