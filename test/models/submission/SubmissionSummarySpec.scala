@@ -98,7 +98,7 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
 
       val readyGen: Gen[Ready.type] = Gen.const(Ready)
       val uploadingGen: Gen[Uploading.type] = Gen.const(Uploading)
-      val uploadFailureReasonGen: Gen[UploadFailureReason] = Gen.oneOf(NotXml, SchemaValidationError(Seq.empty), PlatformOperatorIdMissing, ReportingPeriodInvalid)
+      val uploadFailureReasonGen: Gen[UploadFailureReason] = Gen.oneOf(NotXml, SchemaValidationError(Seq.empty, false), PlatformOperatorIdMissing, ReportingPeriodInvalid)
       val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason, None))
       val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
       val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))

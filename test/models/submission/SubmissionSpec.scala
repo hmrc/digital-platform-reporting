@@ -114,7 +114,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       operatorId = "operatorId",
       operatorName = "operatorName",
       assumingOperatorName = None,
-      state = UploadFailed(SchemaValidationError(Seq.empty), Some("some-file-name")),
+      state = UploadFailed(SchemaValidationError(Seq.empty, false), Some("some-file-name")),
       created = created,
       updated = updated
     )
@@ -129,7 +129,8 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
         "type" -> "UploadFailed",
         "reason" -> Json.obj(
           "type" -> "SchemaValidationError",
-          "errors" -> Json.arr()
+          "errors" -> Json.arr(),
+          "moreErrors" -> false
         ),
         "fileName" -> "some-file-name"
       ),
@@ -473,7 +474,7 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
         )
 
         "must read from json" in {
-          Json.fromJson[UploadFailureReason](json).get mustEqual SchemaValidationError(Seq.empty)
+          Json.fromJson[UploadFailureReason](json).get mustEqual SchemaValidationError(Seq.empty, false)
         }
       }
 
@@ -483,10 +484,11 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
           "type" -> "SchemaValidationError",
           "errors" -> Json.arr(
             Json.obj("line" -> 1, "col" -> 2, "message" -> "message")
-          )
+          ),
+          "moreErrors" -> true
         )
 
-        val model = SchemaValidationError(Seq(SchemaValidationError.Error(1, 2, "message")))
+        val model = SchemaValidationError(Seq(SchemaValidationError.Error(1, 2, "message")), true)
 
         "must read from json" in {
           Json.fromJson[UploadFailureReason](json).get mustEqual model
@@ -501,11 +503,11 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
 
         val json = Json.obj(
           "type" -> "SchemaValidationError",
-          "errors" -> Json.arr()
-
+          "errors" -> Json.arr(),
+          "moreErrors" -> false
         )
 
-        Json.toJsObject[UploadFailureReason](SchemaValidationError(Seq.empty)) mustEqual json
+        Json.toJsObject[UploadFailureReason](SchemaValidationError(Seq.empty, false)) mustEqual json
       }
     }
 
