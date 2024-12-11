@@ -187,14 +187,53 @@ class SubmissionControllerSpec
         }
       }
 
-      "when there is a submission for the given id but it is not Validated" - {
+      "when there is an UploadFailed submission for the given id" - {
+
+        "must update the existing submission and return OK" in {
+
+          val request = FakeRequest(routes.SubmissionController.start(Some(uuid)))
+            .withJsonBody(Json.toJson(StartSubmissionRequest("operatorId", "operatorName")))
+
+          val existingSubmission = Submission(
+            _id = uuid,
+            submissionType = SubmissionType.Xml,
+            dprsId = dprsId,
+            operatorId = operatorId,
+            operatorName = operatorName,
+            assumingOperatorName = None,
+            state = UploadFailed(NotXml, None),
+            created = now.minus(1, ChronoUnit.DAYS),
+            updated = now.minus(1, ChronoUnit.DAYS)
+          )
+
+          val expectedSubmission = existingSubmission
+            .copy(
+              state = Ready,
+              updated = now
+            )
+
+          when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
+          when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
+          when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+
+          val result = route(app, request).value
+
+          status(result) mustEqual OK
+          contentAsJson(result) mustEqual Json.toJson(expectedSubmission)
+
+          verify(mockSubmissionRepository).get(dprsId, uuid)
+          verify(mockSubmissionRepository).save(expectedSubmission)
+        }
+      }
+
+      "when there is a submission for the given id but it is not Validated or UploadFailed" - {
 
         "must not update the existing submission and return CONFLICT" in {
 
           val request = FakeRequest(routes.SubmissionController.start(Some(uuid)))
             .withJsonBody(Json.toJson(StartSubmissionRequest("operatorId", "operatorName")))
 
-          val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen, submittedGen, approvedGen, rejectedGen).sample.value
+          val state = Gen.oneOf(readyGen, uploadingGen, submittedGen, approvedGen, rejectedGen).sample.value
           val existingSubmission = Submission(
             _id = uuid,
             submissionType = SubmissionType.Xml,
