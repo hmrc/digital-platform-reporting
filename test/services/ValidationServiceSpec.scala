@@ -167,11 +167,11 @@ class ValidationServiceSpec
 
         val result = validationService.validateXml(dprsId, downloadUrl, poid).futureValue.left.value
         result mustBe a[SchemaValidationError]
-        result.asInstanceOf[SchemaValidationError].errors.foreach(println)
         result.asInstanceOf[SchemaValidationError].errors mustEqual Seq(
           SchemaValidationError.Error(12, 46, "cvc-enumeration-valid: Value 'broken' is not facet-valid with respect to enumeration '[DPI, DAC7]'. It must be a value from the enumeration."),
           SchemaValidationError.Error(12, 46, "cvc-type.3.1.3: The value 'broken' of element 'dpi:MessageType' is not valid.")
         )
+        result.asInstanceOf[SchemaValidationError].moreErrors mustBe true
 
         verify(mockDownloadConnector).download(downloadUrl)
       }
@@ -190,6 +190,7 @@ class ValidationServiceSpec
         result.asInstanceOf[SchemaValidationError].errors mustEqual Seq(
           SchemaValidationError.Error(12, 18, "cvc-complex-type.2.4.a: Invalid content was found starting with element '{\"urn:oecd:ties:dpi:v1\":Warning}'. One of '{\"urn:oecd:ties:dpi:v1\":MessageType}' is expected.")
         )
+        result.asInstanceOf[SchemaValidationError].moreErrors mustBe false
 
         verify(mockDownloadConnector).download(downloadUrl)
       }
