@@ -91,7 +91,7 @@ class ValidationService @Inject() (
         case _: FatalSaxParsingException =>
           Future.successful(Left(NotXml))
         case _: SAXParseException =>
-          Future.successful(Left(SchemaValidationError(handler.schemaErrors.result)))
+          Future.successful(Left(SchemaValidationError(handler.schemaErrors.result, moreErrors = true)))
       }
     }
   }
@@ -165,7 +165,7 @@ final class ValidatingSaxHandler(platformOperatorId: String, errorLimit: Int) ex
       if (schemaErrors.isEmpty) {
         Right(())
       } else {
-        Left(SchemaValidationError(schemaErrors.result))
+        Left(SchemaValidationError(schemaErrors.result, moreErrors = false))
       }
     }
 }
