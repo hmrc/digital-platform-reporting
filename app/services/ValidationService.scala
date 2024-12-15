@@ -90,7 +90,7 @@ class ValidationService @Inject() (
           result.value
         } catch {
           case _: FatalSaxParsingException =>
-            Future.successful(Left(NotXml))
+            Future.successful(Left(SchemaValidationError(handler.schemaErrors.result, moreErrors = false)))
           case _: SAXParseException =>
             Future.successful(Left(SchemaValidationError(handler.schemaErrors.result, moreErrors = true)))
         }
@@ -120,7 +120,10 @@ final class ValidatingSaxHandler(platformOperatorId: String, errorLimit: Int) ex
 
   override def warning(e: SAXParseException): Unit = addError(e)
   override def error(e: SAXParseException): Unit = addError(e)
-  override def fatalError(e: SAXParseException): Unit = throw FatalSaxParsingException(e)
+  override def fatalError(e: SAXParseException): Unit = {
+    addError(e)
+    throw FatalSaxParsingException(e)
+  }
 
   private def addError(e: SAXParseException): Unit =
     if (schemaErrors.length >= errorLimit) {

@@ -212,7 +212,7 @@ class ValidationServiceSpec
       }
     }
 
-    "must return an error when the given file is not XML" in {
+    "must return an error when there is a unrecoverable issue that cause parsing to terminate" in {
 
       val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/NotXml.xml"))
 
@@ -221,8 +221,12 @@ class ValidationServiceSpec
       when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
         .thenReturn(Future.successful(None))
 
-      val result = validationService.validateXml(validFileName, dprsId, downloadUrl, poid).futureValue
-      result.left.value mustEqual NotXml
+      val result = validationService.validateXml(validFileName, dprsId, downloadUrl, poid).futureValue.left.value
+      result mustBe a[SchemaValidationError]
+      result.asInstanceOf[SchemaValidationError].errors mustEqual Seq(
+        SchemaValidationError.Error(1, 1, "Content is not allowed in prolog.")
+      )
+      result.asInstanceOf[SchemaValidationError].moreErrors mustBe false
 
       verify(mockDownloadConnector).download(downloadUrl)
     }
