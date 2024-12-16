@@ -25,8 +25,9 @@ import org.mongodb.scala.model.*
 import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import play.api.Configuration
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc
+
 import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
@@ -44,7 +45,8 @@ class SubmissionRepository @Inject() (
   mongoComponent = mongoComponent,
   domainFormat = Submission.mongoFormat,
   indexes = SubmissionRepository.indexes(configuration),
-  replaceIndexes = true
+  replaceIndexes = true,
+  extraCodecs = Codecs.playFormatSumCodecs(Submission.State.mongoFormat)
 ) {
 
   def save(submission: Submission): Future[Done] = Mdc.preservingMdc {
@@ -104,6 +106,13 @@ class SubmissionRepository @Inject() (
     collection.find(
       filter = submittedXmlSubmissionsFilter(dprsId)
     ).toFuture()
+  }
+  
+  def setState(submissionId: String, state: Submission.State): Future[Done] = Mdc.preservingMdc {
+    collection.updateOne(
+      filter = Filters.eq("_id", submissionId),
+      update = Updates.set("state", state)
+    ).toFuture.map(_ => Done)
   }
 
   private def submittedXmlSubmissionsFilter(dprsId: String) =

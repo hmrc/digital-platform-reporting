@@ -20,7 +20,7 @@ import models.submission.Submission
 import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, Validated}
 import models.submission.Submission.SubmissionType
 import models.submission.Submission.SubmissionType.ManualAssumedReport
-import org.mongodb.scala.model.Indexes
+import org.mongodb.scala.model.{Filters, Indexes}
 import org.scalactic.source.Position
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.freespec.AnyFreeSpec
@@ -249,6 +249,23 @@ class SubmissionRepositorySpec
     }
 
     mustPreserveMdc(repository.getSubmittedXmlSubmissions("dprsId"))
+  }
+
+  "setState" - {
+
+    "must update the state of the given submission" in {
+
+      val submission1 = submission.copy(_id = "id1", state = Submitted("filename", Year.of(2024)))
+      val submission2 = submission.copy(_id = "id2", state = Submitted("filename", Year.of(2024)))
+      insert(submission1).futureValue
+      insert(submission2).futureValue
+      val newState = Rejected("filename", Year.of(2024))
+
+      repository.setState(submission1._id, newState).futureValue
+
+      find(Filters.eq("_id", submission1._id)).futureValue.head mustEqual submission1.copy(state = newState)
+      find(Filters.eq("_id", submission2._id)).futureValue.head mustEqual submission2
+    }
   }
 
   private def mustPreserveMdc[A](f: => Future[A])(implicit pos: Position): Unit =

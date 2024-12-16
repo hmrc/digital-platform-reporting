@@ -17,6 +17,7 @@
 package controllers
 
 import models.sdes.CadxResultWorkItem
+import models.submission.Submission
 import play.api.libs.json.{Format, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.{CadxResultWorkItemRepository, SubmissionRepository}
@@ -63,5 +64,11 @@ class AdminController @Inject()(
       cadxResultWorkItemRepository.listWorkItems(statuses, limit, offset).map { result =>
         Ok(Json.obj("workItems" -> result))
       }
+    }
+
+  def setSubmissionState(submissionId: String): Action[Submission.State] =
+    authorise(routes.AdminController.setSubmissionState(submissionId).path()).compose(Action(parse.json[Submission.State])).async {
+      implicit request =>
+        submissionRepository.setState(submissionId, request.body).map(_ => Ok)
     }
 }
