@@ -18,6 +18,7 @@ package controllers
 
 import models.sdes.CadxResultWorkItem
 import models.submission
+import models.submission.Submission.SubmissionType.Xml
 import models.submission.{IdAndLastUpdated, Submission}
 import org.apache.pekko.Done
 import org.bson.types.ObjectId
@@ -271,6 +272,95 @@ class AdminControllerSpec
         status(result) mustBe OK
 
         verify(mockSubmissionRepo).setState("id", newState)
+      }
+    }
+  }
+
+  "getSubmission" - {
+
+    "rejects an invalid token from the requester" in {
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval)))
+        .thenReturn(Future.failed(UpstreamErrorResponse("Unauthorized", UNAUTHORIZED)))
+
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.getSubmission("id"))
+          .withHeaders("Authorization" -> "Token some-token")
+        val result = route(app, request).value
+
+        status(result) mustBe UNAUTHORIZED
+      }
+    }
+
+    "checks the user is authorized" in {
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval)))
+        .thenReturn(Future.failed(UpstreamErrorResponse("Forbidden", FORBIDDEN)))
+
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.getSubmission("id"))
+          .withHeaders("Authorization" -> "Token some-token")
+        val result = route(app, request).value
+
+        status(result) mustBe FORBIDDEN
+      }
+    }
+
+    "returns the submission when it exists" in {
+
+      val submission = Submission(
+        _id = "id",
+        submissionType = Xml,
+        dprsId = "dprsId",
+        operatorId = "operatorId",
+        operatorName = "operatorName",
+        assumingOperatorName = None,
+        state = Submission.State.Submitted("filename", Year.of(2024)),
+        created = now,
+        updated = now
+      )
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval))).thenReturn(Future.unit)
+
+      when(mockSubmissionRepo.getById(any())).thenReturn(Future.successful(Some(submission)))
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.getSubmission("id"))
+          .withHeaders("Authorization" -> "Token some-token")
+        val result = route(app, request).value
+
+        status(result) mustBe OK
+        contentAsJson(result) mustEqual Json.toJson(submission)
+      }
+    }
+
+    "returns not found when the submission does not exist" in {
+
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval))).thenReturn(Future.unit)
+
+      when(mockSubmissionRepo.getById(any())).thenReturn(Future.successful(None))
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.getSubmission("id"))
+          .withHeaders("Authorization" -> "Token some-token")
+        val result = route(app, request).value
+
+        status(result) mustBe NOT_FOUND
       }
     }
   }

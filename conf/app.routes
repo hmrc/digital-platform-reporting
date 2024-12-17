@@ -36,3 +36,4 @@ DELETE      /pending-enrolment              controllers.PendingEnrolmentControll
 GET         /admin/blocked-submissions                  controllers.AdminController.getBlockedSubmissions()
 GET         /admin/cadx-result/work-items               controllers.AdminController.getCadxResultWorkItems(statuses: Set[ProcessingStatus] ?= Set.empty, limit: Int ?= 10, offset: Int ?= 0)
 POST        /admin/aubmissions/:submissionId/state      controllers.AdminController.setSubmissionState(submissionId: String)
+GET         /admin/aubmissions/:submissionId            controllers.AdminController.getSubmission(submissionId: String)

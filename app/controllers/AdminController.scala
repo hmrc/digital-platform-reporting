@@ -71,4 +71,12 @@ class AdminController @Inject()(
       implicit request =>
         submissionRepository.setState(submissionId, request.body).map(_ => Ok)
     }
+
+  def getSubmission(submissionId: String): Action[AnyContent] =
+    authorise(routes.AdminController.getSubmission(submissionId).path()).async {
+      submissionRepository.getById(submissionId).map {
+        _.map(result => Ok(Json.toJson(result)))
+          .getOrElse(NotFound)
+      }
+    }
 }
