@@ -40,7 +40,7 @@ import java.io.ByteArrayInputStream
 import java.time.{Clock, Year}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.xml.{Elem, NodeSeq}
+import scala.xml.{Elem, NodeSeq, Utility}
 
 @Singleton
 class SubmissionService @Inject() (
@@ -54,7 +54,8 @@ class SubmissionService @Inject() (
                                     platformOperatorConnector: PlatformOperatorConnector,
                                     assumedReportingService: AssumedReportingService,
                                     submissionRepository: SubmissionRepository,
-                                    auditService: AuditService
+                                    auditService: AuditService,
+                                    escapingService: XmlEscapingService
                                   )(using Materializer, ExecutionContext) {
 
   private val sdesSubmissionThreshold: Long = configuration.get[Long]("sdes.size-threshold")
@@ -150,7 +151,7 @@ class SubmissionService @Inject() (
     } yield Done
 
   private def createSubmissionSource(body: Elem): Source[ByteString, ?] =
-    Source.single(ByteString.fromString(scala.xml.Utility.trim(body).toString))
+    Source.single(ByteString.fromString(escapingService.escape(Utility.trim(body)).toString))
 
   private def addEnvelope(
                            body: ByteString,

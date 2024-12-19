@@ -31,7 +31,7 @@ class XmlEscapingServiceSpec
 
   "escape" - {
 
-    "must escape '\'' and '@'" in {
+    "must escape '\''" in {
 
       val bar = "lorem ' ipsum @ dolor"
       val xml = <foo>' lorem ipsum ' @ dolor '<bar>{bar}</bar></foo>
@@ -40,16 +40,12 @@ class XmlEscapingServiceSpec
         EntityRef("apos"),
         Text(" lorem ipsum "),
         EntityRef("apos"),
-        Text(" "),
-        EntityRef("commat"),
-        Text(" dolor "),
+        Text(" @ dolor "),
         EntityRef("apos"),
         <bar>{Seq(
             Text("lorem "),
             EntityRef("apos"),
-            Text(" ipsum "),
-            EntityRef("commat"),
-            Text(" dolor"))}</bar>
+            Text(" ipsum @ dolor"))}</bar>
         )}</foo>
 
       service.escape(xml).head mustEqual expectedXml

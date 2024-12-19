@@ -220,6 +220,8 @@ class SubmissionServiceSpec
 
               val inner = scala.xml.XML.loadString(innerContent)
               (document \ "requestDetail" \ "_").last mustEqual scala.xml.Utility.trim(inner)
+
+              result.utf8String must include("<dpi:PlatformBusinessName>a&apos;&apos;</dpi:PlatformBusinessName>")
             }
 
             "when minimal data is included" in {

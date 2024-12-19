@@ -30,9 +30,8 @@ class XmlEscapingService @Inject() {
     transformer.transform(nodeSeq)
 
   private val apostropheRule = new StringReplacementRewriteRule("'", EntityRef("apos"))
-  private val atRule = new StringReplacementRewriteRule("@", EntityRef("commat"))
 
-  private val transformer = RuleTransformer(apostropheRule, atRule)
+  private val transformer = RuleTransformer(apostropheRule)
 }
 
 object XmlEscapingService {
