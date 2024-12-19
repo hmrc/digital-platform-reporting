@@ -33,6 +33,7 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import repository.CadxValidationErrorRepository
+import support.auth.Retrievals.Ops
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 
 import java.time.Instant
@@ -62,7 +63,7 @@ class CadxValidationErrorControllerSpec
   private val submissionId = "submissionId"
   private val errorLimit = 1337
 
-  private val validEnrolments = Enrolments(Set(
+  private val validEnrolments = Some("userId") ~ Enrolments(Set(
     Enrolment(
       key = "HMRC-DPRS",
       identifiers = Seq(EnrolmentIdentifier("DPRSID", dprsId)),

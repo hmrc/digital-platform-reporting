@@ -42,6 +42,7 @@ import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import repository.SubmissionRepository
 import services.*
+import support.auth.Retrievals.Ops
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.http.StringContextOps
 
@@ -102,7 +103,7 @@ class SubmissionControllerSpec
   private val operatorName = "operatorName"
   private val uuid = UUID.randomUUID().toString
 
-  private val validEnrolments = Enrolments(Set(
+  private val validEnrolments = Some("userId") ~ Enrolments(Set(
     Enrolment(
       key = "HMRC-DPRS",
       identifiers = Seq(EnrolmentIdentifier("DPRSID", dprsId)),

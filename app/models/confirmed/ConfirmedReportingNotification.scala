@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
-package models
+package models.confirmed
 
-import play.api.mvc.{Request, WrappedRequest}
+import play.api.libs.json.{Json, OFormat}
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
-final case class AuthenticatedRequest[A](request: Request[A],
-                                         dprsId: String,
-                                         userId: String) extends WrappedRequest[A](request)
+import java.time.Instant
+
+case class ConfirmedReportingNotification(userId: String,
+                                          operatorId: String,
+                                          created: Instant)
+
+object ConfirmedReportingNotification extends MongoJavatimeFormats.Implicits {
+  given mongoFormat: OFormat[ConfirmedReportingNotification] = Json.format
+}

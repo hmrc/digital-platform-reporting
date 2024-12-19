@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
-package models
+package support.builders
 
-import play.api.mvc.{Request, WrappedRequest}
+import models.AuthenticatedRequest
+import play.api.mvc.AnyContentAsEmpty
+import play.api.test.FakeRequest
 
-final case class AuthenticatedRequest[A](request: Request[A],
-                                         dprsId: String,
-                                         userId: String) extends WrappedRequest[A](request)
+object AuthenticatedRequestBuilder {
+
+  val anAuthenticatedRequest: AuthenticatedRequest[AnyContentAsEmpty.type] = AuthenticatedRequest(
+    request = FakeRequest(),
+    userId = "default-user-id",
+    dprsId = "default-dprs-id"
+  )
+}
