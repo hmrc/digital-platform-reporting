@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package models
+package models.confirmed.requests
 
-import play.api.mvc.{Request, WrappedRequest}
+import play.api.libs.json.{Json, OFormat}
 
-final case class AuthenticatedRequest[A](request: Request[A],
-                                         dprsId: String,
-                                         userId: String) extends WrappedRequest[A](request)
+case class ConfirmedBusinessDetailsRequest(operatorId: String)
+
+object ConfirmedBusinessDetailsRequest {
+  given format: OFormat[ConfirmedBusinessDetailsRequest] = Json.format
+}
