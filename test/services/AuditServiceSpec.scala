@@ -16,8 +16,9 @@
 
 package services
 
+import cats.data.NonEmptySeq
 import models.audit.{AddSubmissionEvent, AuditEvent}
-import org.mockito.ArgumentMatchers.{eq as eqTo, any}
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito.verify
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -66,4 +67,5 @@ object AuditServiceSpec {
 
     given OFormat[TestEvent] = Json.format
   }
+
 }

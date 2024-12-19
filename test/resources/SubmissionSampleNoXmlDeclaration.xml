@@ -22,7 +22,7 @@
       <dpi:IN issuedBy="IO" INType="Other">a</dpi:IN>
       <dpi:VAT>a</dpi:VAT>
       <dpi:Name>a</dpi:Name>
-      <dpi:PlatformBusinessName>a</dpi:PlatformBusinessName>
+      <dpi:PlatformBusinessName>a'&apos;</dpi:PlatformBusinessName>
       <dpi:Address legalAddressType="OECD301">
         <dpi:CountryCode>DJ</dpi:CountryCode>
         <dpi:AddressFree>a</dpi:AddressFree>
