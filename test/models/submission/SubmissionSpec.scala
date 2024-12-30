@@ -205,7 +205,8 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       assumingOperatorName = None,
       state = Submitted(
         fileName = "test.xml",
-        reportingPeriod = Year.of(2024)
+        reportingPeriod = Year.of(2024),
+        size = 2345L
       ),
       created = created,
       updated = updated
@@ -220,11 +221,35 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       "state" -> Json.obj(
         "type" -> "Submitted",
         "fileName" -> "test.xml",
-        "reportingPeriod" -> 2024
+        "reportingPeriod" -> 2024,
+        "size" -> 2345L
       ),
       "created" -> created,
       "updated" -> updated
     )
+
+    "must read from json that doesn't have a size field" in {
+      val json2 = Json.obj(
+        "_id" -> "id",
+        "submissionType" -> "Xml",
+        "dprsId" -> "dprsId",
+        "operatorId" -> "operatorId",
+        "operatorName" -> "operatorName",
+        "state" -> Json.obj(
+          "type" -> "Submitted",
+          "fileName" -> "test.xml",
+          "reportingPeriod" -> 2024
+        ),
+        "created" -> created,
+        "updated" -> updated
+      )
+
+      Json.fromJson[Submission](json2).get mustEqual submission.copy(state = Submitted(
+        fileName = "test.xml",
+        reportingPeriod = Year.of(2024),
+        size = 0L
+      ))
+    }
 
     "must read from json" in {
       Json.fromJson[Submission](json).get mustEqual submission
@@ -328,7 +353,8 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       assumingOperatorName = Some("assumingOperator"),
       state = Submitted(
         fileName = "test.xml",
-        reportingPeriod = Year.of(2024)
+        reportingPeriod = Year.of(2024),
+        size = 45465L
       ),
       created = created,
       updated = updated
@@ -344,7 +370,8 @@ class SubmissionSpec extends AnyFreeSpec with Matchers {
       "state" -> Json.obj(
         "type" -> "Submitted",
         "fileName" -> "test.xml",
-        "reportingPeriod" -> 2024
+        "reportingPeriod" -> 2024,
+        "size" -> 45465L
       ),
       "created" -> created,
       "updated" -> updated

@@ -94,7 +94,7 @@ class SubmissionControllerSpec
   private val uploadFailureReasonGen: Gen[UploadFailureReason] = Gen.oneOf(NotXml, SchemaValidationError(Seq.empty, false), PlatformOperatorIdMissing, ReportingPeriodInvalid)
   private val uploadFailedGen: Gen[UploadFailed] = uploadFailureReasonGen.map(reason => UploadFailed(reason, None))
   private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
-  private val submittedGen: Gen[Submitted] = Gen.const(Submitted("test.xml", Year.of(2024)))
+  private val submittedGen: Gen[Submitted] = Gen.const(Submitted("test.xml", Year.of(2024), 8576L)) // TODO: Correct value here?
   private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
   private val rejectedGen: Gen[Rejected] = Gen.const(Rejected("test.xml", Year.of(2024)))
 
@@ -729,7 +729,7 @@ class SubmissionControllerSpec
           )
 
           val expectedSubmission = existingSubmission.copy(
-            state = Submitted("test.xml", Year.of(2024)),
+            state = Submitted("test.xml", Year.of(2024), 1337L),
             updated = now
           )
 

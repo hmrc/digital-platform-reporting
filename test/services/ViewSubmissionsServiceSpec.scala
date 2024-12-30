@@ -187,8 +187,8 @@ class ViewSubmissionsServiceSpec extends AnyFreeSpec with Matchers with MockitoS
     "must return all `Submitted` XML submissions in descending created time" in {
 
       val submissions = Seq(
-        Submission(_id = "id1", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName1", Year.of(2024)), instant, instant),
-        Submission(_id = "id2", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName2", Year.of(2024)), instant.plusSeconds(1), instant)
+        Submission(_id = "id1", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName1", Year.of(2024), 343534L), instant, instant),
+        Submission(_id = "id2", SubmissionType.Xml, "dprsId", "operatorId", "operatorName", None, State.Submitted("fileName2", Year.of(2024), 57567L), instant.plusSeconds(1), instant)
       )
 
       when(mockRepository.getSubmittedXmlSubmissions(any())).thenReturn(Future.successful(submissions))

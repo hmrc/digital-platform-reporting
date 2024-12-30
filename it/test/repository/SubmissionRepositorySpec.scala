@@ -178,12 +178,12 @@ class SubmissionRepositorySpec
       )
       val oldSubmissionInSubmittedState = submission.copy(
         _id = "getBlockedSubmissionIds-3",
-        state = Submitted("Filename", Year.of(2024)),
+        state = Submitted("Filename", Year.of(2024), 544645L),
         updated = oldInstant
       )
       val recentSubmissionInSubmittedState = submission.copy(
         _id = "getBlockedSubmissionIds-4",
-        state = Submitted("Filename", Year.of(2024)),
+        state = Submitted("Filename", Year.of(2024), 43746L),
         updated = Instant.now().truncatedTo(ChronoUnit.MILLIS)
       )
 
@@ -206,11 +206,11 @@ class SubmissionRepositorySpec
   "countSubmittedXmlSubmissions" - {
 
     "must count XML submissions for this user that are in a Submitted state" in {
-      val submission1 = submission.copy(_id = "id1", state = Submitted("filename", Year.of(2024)))
-      val submission2 = submission.copy(_id = "id2", state = Submitted("filename", Year.of(2024)), submissionType = ManualAssumedReport)
+      val submission1 = submission.copy(_id = "id1", state = Submitted("filename", Year.of(2024), 45446L))
+      val submission2 = submission.copy(_id = "id2", state = Submitted("filename", Year.of(2024), 464645L), submissionType = ManualAssumedReport)
       val submission3 = submission.copy(_id = "id3", state = Approved("filename", Year.of(2024)))
       val submission4 = submission.copy(_id = "id4", state = Rejected("filename", Year.of(2024)))
-      val submission5 = submission.copy(_id = "id5", state = Submitted("filename", Year.of(2024)), dprsId = "dprsId2")
+      val submission5 = submission.copy(_id = "id5", state = Submitted("filename", Year.of(2024), 643645L), dprsId = "dprsId2")
       insert(submission1).futureValue
       insert(submission2).futureValue
       insert(submission3).futureValue
@@ -230,11 +230,11 @@ class SubmissionRepositorySpec
   "getSubmittedXmlSubmissions" - {
 
     "must get XML submissions for this user that are in a Submitted state" in {
-      val submission1 = submission.copy(_id = "id1", state = Submitted("filename", Year.of(2024)))
-      val submission2 = submission.copy(_id = "id2", state = Submitted("filename", Year.of(2024)), submissionType = ManualAssumedReport)
+      val submission1 = submission.copy(_id = "id1", state = Submitted("filename", Year.of(2024), 547329L))
+      val submission2 = submission.copy(_id = "id2", state = Submitted("filename", Year.of(2024), 327842368L), submissionType = ManualAssumedReport)
       val submission3 = submission.copy(_id = "id3", state = Approved("filename", Year.of(2024)))
       val submission4 = submission.copy(_id = "id4", state = Rejected("filename", Year.of(2024)))
-      val submission5 = submission.copy(_id = "id5", state = Submitted("filename", Year.of(2024)), dprsId = "dprsId2")
+      val submission5 = submission.copy(_id = "id5", state = Submitted("filename", Year.of(2024), 2362L), dprsId = "dprsId2")
       insert(submission1).futureValue
       insert(submission2).futureValue
       insert(submission3).futureValue

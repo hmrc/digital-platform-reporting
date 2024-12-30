@@ -95,8 +95,12 @@ class SubmissionService @Inject() (
       operator     <- OptionT(platformOperatorConnector.get(dprsId, operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(dprsId, operatorId)))
       payload      <- assumedReportingService.createSubmission(dprsId, operator, assumingOperator, reportingPeriod)
       fileName     =  s"${payload.messageRef}.xml"
+      submissionId   = uuidService.generate()
+      submissionBody    =  addEnvelope(ByteString.fromString(payload.body.toString), submissionId, fileName, subscription, isManual = true)
+      submissionBytes = createSubmissionBytes(submissionBody)
+      submissionSource: Source[ByteString, ?] =  Source.single(submissionBytes)
       submission   =  Submission(
-        _id = uuidService.generate(),
+        _id = submissionId,
         submissionType = Submission.SubmissionType.ManualAssumedReport,
         dprsId = dprsId,
         operatorId = operatorId,
@@ -104,14 +108,13 @@ class SubmissionService @Inject() (
         assumingOperatorName = Some(assumingOperator.name),
         state = Submitted(
           fileName = fileName,
-          reportingPeriod = reportingPeriod
+          reportingPeriod = reportingPeriod,
+          size = submissionBytes.size
         ),
         created = clock.instant(),
         updated = clock.instant()
       )
       _                 <- submissionRepository.save(submission)
-      submissionBody    =  addEnvelope(ByteString.fromString(payload.body.toString), submission._id, fileName, subscription, isManual = true)
-      submissionSource  =  createSubmissionSource(submissionBody)
       _                 <- submissionConnector.submit(submission._id, submissionSource)
     } yield submission
 
@@ -121,8 +124,12 @@ class SubmissionService @Inject() (
       operator <- OptionT(platformOperatorConnector.get(dprsId, operatorId)).getOrElseF(Future.failed(NoPlatformOperatorException(dprsId, operatorId)))
       payload <- assumedReportingService.createDeleteSubmission(dprsId, operator.operatorId, reportingPeriod)
       fileName = s"${payload.messageRef}.xml"
+      submissionId  = uuidService.generate()
+      submissionBody    =  addEnvelope(ByteString.fromString(payload.body.toString), submissionId, fileName, subscription, isManual = true)
+      submissionBytes = createSubmissionBytes(submissionBody)
+      submissionSource  = Source.single(submissionBytes)
       submission = Submission(
-        _id = uuidService.generate(),
+        _id = submissionId,
         submissionType = Submission.SubmissionType.ManualAssumedReport,
         dprsId = dprsId,
         operatorId = operatorId,
@@ -130,14 +137,13 @@ class SubmissionService @Inject() (
         assumingOperatorName = None,
         state = Submitted(
           fileName = fileName,
-          reportingPeriod = reportingPeriod
+          reportingPeriod = reportingPeriod,
+          size = submissionBytes.size
         ),
         created = clock.instant(),
         updated = clock.instant()
       )
       _                 <- submissionRepository.save(submission)
-      submissionBody    =  addEnvelope(ByteString.fromString(payload.body.toString), submission._id, fileName, subscription, isManual = true)
-      submissionSource  =  createSubmissionSource(submissionBody)
       _                 <- submissionConnector.submit(submission._id, submissionSource)
     } yield submission
 
@@ -151,7 +157,11 @@ class SubmissionService @Inject() (
     } yield Done
 
   private def createSubmissionSource(body: Elem): Source[ByteString, ?] =
-    Source.single(ByteString.fromString(escapingService.escape(Utility.trim(body)).toString))
+    Source.single(createSubmissionBytes(body))
+
+  private def createSubmissionBytes(body: Elem) = {
+    ByteString.fromString(escapingService.escape(Utility.trim(body)).toString)
+  }
 
   private def addEnvelope(
                            body: ByteString,

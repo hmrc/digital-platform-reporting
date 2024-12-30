@@ -74,7 +74,7 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
         operatorId = "operatorId",
         operatorName = "operatorName",
         assumingOperatorName = Some("assumingReporter"),
-        state = Submitted("filename", Year.of(2024)),
+        state = Submitted("filename", Year.of(2024), 67657L),
         created = now,
         updated = now
       )
