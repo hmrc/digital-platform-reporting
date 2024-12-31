@@ -541,7 +541,8 @@ class SubmissionServiceSpec
         assumingOperatorName = Some(assumingOperator.name),
         state = Submitted(
           fileName = expectedFileName,
-          reportingPeriod = Year.of(2024)
+          reportingPeriod = Year.of(2024),
+          size = 3486L
         ),
         created = now,
         updated = now
@@ -658,7 +659,8 @@ class SubmissionServiceSpec
         assumingOperatorName = None,
         state = Submitted(
           fileName = expectedFileName,
-          reportingPeriod = Year.of(2024)
+          reportingPeriod = Year.of(2024),
+          size = 3404L
         ),
         created = now,
         updated = now

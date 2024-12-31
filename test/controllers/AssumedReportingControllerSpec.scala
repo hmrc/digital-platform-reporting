@@ -101,7 +101,8 @@ class AssumedReportingControllerSpec
         assumingOperatorName = Some("assuminOperatorName"),
         state = Submitted(
           fileName = "test.xml",
-          reportingPeriod = Year.of(2024)
+          reportingPeriod = Year.of(2024),
+          size = 346457L
         ),
         created = now,
         updated = now
@@ -144,7 +145,8 @@ class AssumedReportingControllerSpec
         assumingOperatorName = None,
         state = Submitted(
           fileName = "test.xml",
-          reportingPeriod = Year.of(2024)
+          reportingPeriod = Year.of(2024),
+          size = 7346L
         ),
         created = now,
         updated = now

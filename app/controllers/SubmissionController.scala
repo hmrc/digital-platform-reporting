@@ -19,7 +19,6 @@ package controllers
 import controllers.actions.AuthAction
 import models.audit.FileUploadedEvent
 import models.audit.FileUploadedEvent.FileUploadOutcome
-import models.audit.FileUploadedEvent.FileUploadOutcome.Rejected
 import models.submission.Submission.State.{Ready, Submitted, UploadFailed, Uploading, Validated}
 import models.submission.*
 import play.api.libs.json.Json
@@ -213,7 +212,7 @@ class SubmissionController @Inject() (
           case state: Validated =>
 
             val updatedSubmission = submission.copy(
-              state = Submitted(state.fileName, state.reportingPeriod),
+              state = Submitted(state.fileName, state.reportingPeriod, state.size),
               updated = clock.instant()
             )
 

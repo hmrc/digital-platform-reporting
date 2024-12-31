@@ -152,7 +152,8 @@ class CadxResultServiceSpec
             assumingOperatorName = None,
             state = State.Submitted(
               fileName = "test.xml",
-              reportingPeriod = Year.of(2024)
+              reportingPeriod = Year.of(2024),
+              size = 454645L
             ),
             created = now.minus(1, ChronoUnit.DAYS),
             updated = now.minus(1, ChronoUnit.DAYS)
@@ -339,7 +340,8 @@ class CadxResultServiceSpec
               assumingOperatorName = None,
               state = State.Submitted(
                 fileName = "test.xml",
-                reportingPeriod = Year.of(2024)
+                reportingPeriod = Year.of(2024),
+                size = 435342L
               ),
               created = now.minus(1, ChronoUnit.DAYS),
               updated = now.minus(1, ChronoUnit.DAYS)

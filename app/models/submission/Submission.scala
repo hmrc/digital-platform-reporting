@@ -127,17 +127,26 @@ object Submission {
     case object Uploading extends State
     final case class UploadFailed(reason: UploadFailureReason, fileName: Option[String]) extends State
     final case class Validated(downloadUrl: URL, reportingPeriod: Year, fileName: String, checksum: String, size: Long) extends State
-    final case class Submitted(fileName: String, reportingPeriod: Year) extends State
+    final case class Submitted(fileName: String, reportingPeriod: Year, size: Long) extends State
     final case class Approved(fileName: String, reportingPeriod: Year) extends State
     final case class Rejected(fileName: String, reportingPeriod: Year) extends State
+
+    private val submittedReads: Reads[Submitted] = (
+      (__ \ "fileName").read[String] ~
+        (__ \ "reportingPeriod").read[Year] ~
+        (__ \ "size").readWithDefault[Long](0L)
+      )(Submitted.apply)
+
+    private val submittedWrites: OWrites[Submitted] = Json.writes[Submitted]
 
     private given OFormat[Ready.type] = singletonOFormat(Ready)
     private given OFormat[UploadFailed] = Json.format
     private given OFormat[Uploading.type] = singletonOFormat(Uploading)
     private given OFormat[Validated] = Json.format
-    private given OFormat[Submitted] = Json.format
+    private given OFormat[Submitted] = OFormat[Submitted](submittedReads, submittedWrites)
     private given OFormat[Approved] = Json.format
     private given OFormat[Rejected] = Json.format
+
 
     private given JsonConfiguration = JsonConfiguration(
       discriminator = "type",
