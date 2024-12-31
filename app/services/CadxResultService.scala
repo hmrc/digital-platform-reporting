@@ -17,6 +17,7 @@
 package services
 
 import cats.data.OptionT
+import com.codahale.metrics.Meter
 import connectors.{PlatformOperatorConnector, SubscriptionConnector}
 import generated.{Accepted, FileAcceptanceStatus_EnumType, Rejected}
 import models.audit.CadxSubmissionResponseEvent
@@ -38,6 +39,7 @@ import services.SubmissionService.NoPlatformOperatorException
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.DateTimeFormats.EmailDateTimeFormatter
 import play.api.i18n.Lang.logger
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import java.time.Clock
 import javax.inject.{Inject, Singleton}
@@ -52,8 +54,12 @@ class CadxResultService @Inject()(
                                    auditService: AuditService,
                                    emailService: EmailService,
                                    subscriptionConnector: SubscriptionConnector,
-                                   platformOperatorConnector: PlatformOperatorConnector
+                                   platformOperatorConnector: PlatformOperatorConnector,
+                                   metrics: Metrics
                                  )(using Materializer, ExecutionContext) {
+
+  private val fileRate: Meter = metrics.defaultRegistry.meter("cadx.processed.files")
+  private val byteRate: Meter = metrics.defaultRegistry.meter("cadx.processed.bytes")
 
   def processResult(response: Source[ByteString, ?]): Future[Done] =
     response.runWith(resultSink)
@@ -243,6 +249,8 @@ class CadxResultService @Inject()(
       for {
         (submission, state) <- futureSubmission
         status              <- futureStatus
+        _  = fileRate.mark(1)
+        _  = byteRate.mark(state.size)
       } yield if (status == Accepted) {
         acceptedFlow(submission, state)
       } else {
