@@ -17,6 +17,7 @@
 package services
 
 import cats.data.OptionT
+import com.codahale.metrics.Meter
 import connectors.{DownloadConnector, PlatformOperatorConnector, SubmissionConnector, SubscriptionConnector}
 import models.assumed.AssumingPlatformOperator
 import models.audit.AddSubmissionEvent
@@ -33,6 +34,7 @@ import play.api.Configuration
 import repository.SubmissionRepository
 import services.SubmissionService.{InvalidSubmissionStateException, NoPlatformOperatorException}
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 import utils.DateTimeFormats
 import utils.FileUtils.stripExtension
 
@@ -40,6 +42,7 @@ import java.io.ByteArrayInputStream
 import java.time.{Clock, Year}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
 import scala.xml.{Elem, NodeSeq, Utility}
 
 @Singleton
@@ -55,10 +58,14 @@ class SubmissionService @Inject() (
                                     assumedReportingService: AssumedReportingService,
                                     submissionRepository: SubmissionRepository,
                                     auditService: AuditService,
-                                    escapingService: XmlEscapingService
+                                    escapingService: XmlEscapingService,
+                                    metrics: Metrics
                                   )(using Materializer, ExecutionContext) {
 
   private val sdesSubmissionThreshold: Long = configuration.get[Long]("sdes.size-threshold")
+
+  private val fileRate: Meter = metrics.defaultRegistry.meter("submissions.files")
+  private val byteRate: Meter = metrics.defaultRegistry.meter("submissions.bytes")
 
   def submit(submission: Submission)(using HeaderCarrier): Future[Done] =
     submission.state match {
@@ -79,10 +86,14 @@ class SubmissionService @Inject() (
 
           auditService.audit(auditEvent)
 
-          if (state.size <= sdesSubmissionThreshold) {
+          (if (state.size <= sdesSubmissionThreshold) {
             submitDirect(submission, state, subscription)
           } else {
             sdesService.enqueueSubmission(submission._id, state, subscription)
+          }) andThen {
+            case Success(_) =>
+              fileRate.mark(1)
+              byteRate.mark(state.size)
           }
         }
       case _ =>
@@ -116,6 +127,8 @@ class SubmissionService @Inject() (
       )
       _                 <- submissionRepository.save(submission)
       _                 <- submissionConnector.submit(submission._id, submissionSource)
+      _ = fileRate.mark(1)
+      _ = byteRate.mark(submissionBytes.size)
     } yield submission
 
   def submitAssumedReportingDeletion(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Submission] =
@@ -145,6 +158,8 @@ class SubmissionService @Inject() (
       )
       _                 <- submissionRepository.save(submission)
       _                 <- submissionConnector.submit(submission._id, submissionSource)
+      _ = fileRate.mark(1)
+      _ = byteRate.mark(submissionBytes.size)
     } yield submission
 
   private def submitDirect(submission: Submission, state: Validated, subscription: SubscriptionInfo)(using HeaderCarrier): Future[Done] =
