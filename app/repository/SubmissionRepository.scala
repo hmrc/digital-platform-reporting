@@ -130,7 +130,7 @@ class SubmissionRepository @Inject() (
     submittedBytesCount <- getSubmittedBytesCount
   } yield Map(
     "submissions.pending.files" -> submittedFileCount.toInt,
-    "submissions.pending.bytes" -> (submittedBytesCount / 1000).toInt
+    "submissions.pending.kilobytes" -> (submittedBytesCount / 1000).toInt
   )
 
   private def submittedXmlSubmissionsFilter(dprsId: String) =

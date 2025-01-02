@@ -312,8 +312,8 @@ class SubmissionRepositorySpec
       insert(submission4).futureValue
       insert(submission5).futureValue
       repository.metrics.futureValue mustEqual Map(
-        "submissions.pending.files" -> 3,
-        "submissions.pending.bytes" -> 1
+        "submissions.pending.files"     -> 3,
+        "submissions.pending.kilobytes" -> 1
       )
     }
   }
