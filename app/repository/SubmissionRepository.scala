@@ -117,6 +117,13 @@ class SubmissionRepository @Inject() (
     )).headOption().map(_.map(_.value).getOrElse(0L))
   }
 
+  def getSubmittedBytesCount: Future[Long] = Mdc.preservingMdc {
+    collection.aggregate[AggregationResult[Long]](Seq(
+      Aggregates.`match`(Filters.eq("state.type", "Submitted")),
+      Aggregates.group(1, Accumulators.sum("value", "$state.size"))
+    )).headOption().map(_.map(_.value).getOrElse(0L))
+  }
+
   private def submittedXmlSubmissionsFilter(dprsId: String) =
     Filters.and(
       Filters.eq("dprsId", dprsId),
