@@ -251,6 +251,29 @@ class SubmissionRepositorySpec
     mustPreserveMdc(repository.getSubmittedXmlSubmissions("dprsId"))
   }
 
+  "getSubmittedFileCount" - {
+
+    "must return 0 when there are no submitted files" in {
+      repository.getSubmittedFileCount.futureValue mustEqual 0
+    }
+
+    "must return the count of submitted files" in {
+      val submission1 = submission.copy(_id = "id1", state = Submitted("filename", Year.of(2024), 547329L))
+      val submission2 = submission.copy(_id = "id2", state = Submitted("filename", Year.of(2024), 327842368L), submissionType = ManualAssumedReport)
+      val submission3 = submission.copy(_id = "id3", state = Approved("filename", Year.of(2024)))
+      val submission4 = submission.copy(_id = "id4", state = Rejected("filename", Year.of(2024)))
+      val submission5 = submission.copy(_id = "id5", state = Submitted("filename", Year.of(2024), 2362L), dprsId = "dprsId2")
+      insert(submission1).futureValue
+      insert(submission2).futureValue
+      insert(submission3).futureValue
+      insert(submission4).futureValue
+      insert(submission5).futureValue
+      repository.getSubmittedFileCount.futureValue mustEqual 3
+    }
+
+    mustPreserveMdc(repository.getSubmittedFileCount)
+  }
+
   private def mustPreserveMdc[A](f: => Future[A])(implicit pos: Position): Unit =
     "must preserve MDC" in {
 

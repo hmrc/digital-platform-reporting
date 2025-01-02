@@ -24,9 +24,12 @@ import org.apache.pekko.Done
 import org.mongodb.scala.model.*
 import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import play.api.Configuration
+import play.api.libs.json.{Format, Json, OFormat}
+import repository.SubmissionRepository.AggregationResult
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc
+
 import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
@@ -44,7 +47,8 @@ class SubmissionRepository @Inject() (
   mongoComponent = mongoComponent,
   domainFormat = Submission.mongoFormat,
   indexes = SubmissionRepository.indexes(configuration),
-  replaceIndexes = true
+  replaceIndexes = true,
+  extraCodecs = Seq(Codecs.playFormatCodec(AggregationResult.aggregationResultFormat[Long]))
 ) {
 
   def save(submission: Submission): Future[Done] = Mdc.preservingMdc {
@@ -106,6 +110,13 @@ class SubmissionRepository @Inject() (
     ).toFuture()
   }
 
+  def getSubmittedFileCount: Future[Long] = Mdc.preservingMdc {
+    collection.aggregate[AggregationResult[Long]](Seq(
+      Aggregates.`match`(Filters.eq("state.type", "Submitted")),
+      Aggregates.count("value")
+    )).headOption().map(_.map(_.value).getOrElse(0L))
+  }
+
   private def submittedXmlSubmissionsFilter(dprsId: String) =
     Filters.and(
       Filters.eq("dprsId", dprsId),
@@ -135,4 +146,11 @@ object SubmissionRepository {
           .name("state_type_idx")
       )
     )
+
+  final case class AggregationResult[A](value: A)
+
+  object AggregationResult {
+    given aggregationResultFormat[A](using Format[A]): OFormat[AggregationResult[A]] =
+      Json.format[AggregationResult[A]]
+  }
 }
