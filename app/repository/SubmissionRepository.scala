@@ -27,6 +27,7 @@ import play.api.Configuration
 import play.api.libs.json.{Format, Json, OFormat}
 import repository.SubmissionRepository.AggregationResult
 import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.metrix.MetricSource
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc
 
@@ -49,7 +50,7 @@ class SubmissionRepository @Inject() (
   indexes = SubmissionRepository.indexes(configuration),
   replaceIndexes = true,
   extraCodecs = Seq(Codecs.playFormatCodec(AggregationResult.aggregationResultFormat[Long]))
-) {
+) with MetricSource {
 
   def save(submission: Submission): Future[Done] = Mdc.preservingMdc {
     collection.replaceOne(
@@ -123,6 +124,14 @@ class SubmissionRepository @Inject() (
       Aggregates.group(1, Accumulators.sum("value", "$state.size"))
     )).headOption().map(_.map(_.value).getOrElse(0L))
   }
+
+  override def metrics(implicit ec: ExecutionContext): Future[Map[String, Int]] = for {
+    submittedFileCount  <- getSubmittedFileCount
+    submittedBytesCount <- getSubmittedBytesCount
+  } yield Map(
+    "submissions.pending.files" -> submittedFileCount.toInt,
+    "submissions.pending.bytes" -> (submittedBytesCount / 1000).toInt
+  )
 
   private def submittedXmlSubmissionsFilter(dprsId: String) =
     Filters.and(

@@ -297,6 +297,27 @@ class SubmissionRepositorySpec
     mustPreserveMdc(repository.getSubmittedBytesCount)
   }
 
+  "metrics" - {
+
+    "must return the relevant metrics" in {
+      import scala.concurrent.ExecutionContext.Implicits.global
+      val submission1 = submission.copy(_id = "id1", state = Submitted("filename", Year.of(2024), 500))
+      val submission2 = submission.copy(_id = "id2", state = Submitted("filename", Year.of(2024), 600), submissionType = ManualAssumedReport)
+      val submission3 = submission.copy(_id = "id3", state = Validated(url"http://www.example.com", Year.of(2024), "filename", "checksum", 300))
+      val submission4 = submission.copy(_id = "id4", state = Rejected("filename", Year.of(2024)))
+      val submission5 = submission.copy(_id = "id5", state = Submitted("filename", Year.of(2024), 100), dprsId = "dprsId2")
+      insert(submission1).futureValue
+      insert(submission2).futureValue
+      insert(submission3).futureValue
+      insert(submission4).futureValue
+      insert(submission5).futureValue
+      repository.metrics.futureValue mustEqual Map(
+        "submissions.pending.files" -> 3,
+        "submissions.pending.bytes" -> 1
+      )
+    }
+  }
+
   private def mustPreserveMdc[A](f: => Future[A])(implicit pos: Position): Unit =
     "must preserve MDC" in {
 
