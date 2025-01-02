@@ -20,7 +20,8 @@ import connectors.SdesCircuitBreakerProvider
 import connectors.SdesConnector.SdesCircuitBreaker
 import play.api.inject.Binding
 import play.api.{Configuration, Environment}
-import workers.{CadxResultWorker, SdesSubmissionWorker}
+import uk.gov.hmrc.mongo.metrix.MetricOrchestrator
+import workers.{CadxResultWorker, MetricOrchestratorWorker, SdesSubmissionWorker}
 
 import java.time.Clock
 
@@ -32,6 +33,8 @@ class Module extends play.api.inject.Module {
       bind[Clock].toInstance(Clock.systemUTC()),
       bind[SdesCircuitBreaker].toProvider[SdesCircuitBreakerProvider],
       bind[SdesSubmissionWorker].toSelf.eagerly(),
-      bind[CadxResultWorker].toSelf.eagerly()
+      bind[CadxResultWorker].toSelf.eagerly(),
+      bind[MetricOrchestrator].toProvider[MetricOrchestratorProvider],
+      bind[MetricOrchestratorWorker].toSelf.eagerly()
     )
 }

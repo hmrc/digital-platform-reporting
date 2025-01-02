@@ -24,9 +24,13 @@ import org.apache.pekko.Done
 import org.mongodb.scala.model.*
 import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import play.api.Configuration
+import play.api.libs.json.{Format, Json, OFormat}
+import repository.SubmissionRepository.AggregationResult
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
+import uk.gov.hmrc.mongo.metrix.MetricSource
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 import uk.gov.hmrc.play.http.logging.Mdc
+
 import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
@@ -44,8 +48,9 @@ class SubmissionRepository @Inject() (
   mongoComponent = mongoComponent,
   domainFormat = Submission.mongoFormat,
   indexes = SubmissionRepository.indexes(configuration),
-  replaceIndexes = true
-) {
+  replaceIndexes = true,
+  extraCodecs = Seq(Codecs.playFormatCodec(AggregationResult.aggregationResultFormat[Long]))
+) with MetricSource {
 
   def save(submission: Submission): Future[Done] = Mdc.preservingMdc {
     collection.replaceOne(
@@ -106,6 +111,28 @@ class SubmissionRepository @Inject() (
     ).toFuture()
   }
 
+  def getSubmittedFileCount: Future[Long] = Mdc.preservingMdc {
+    collection.aggregate[AggregationResult[Long]](Seq(
+      Aggregates.`match`(Filters.eq("state.type", "Submitted")),
+      Aggregates.count("value")
+    )).headOption().map(_.map(_.value).getOrElse(0L))
+  }
+
+  def getSubmittedBytesCount: Future[Long] = Mdc.preservingMdc {
+    collection.aggregate[AggregationResult[Long]](Seq(
+      Aggregates.`match`(Filters.eq("state.type", "Submitted")),
+      Aggregates.group(1, Accumulators.sum("value", "$state.size"))
+    )).headOption().map(_.map(_.value).getOrElse(0L))
+  }
+
+  override def metrics(implicit ec: ExecutionContext): Future[Map[String, Int]] = for {
+    submittedFileCount  <- getSubmittedFileCount
+    submittedBytesCount <- getSubmittedBytesCount
+  } yield Map(
+    "submissions.pending.files" -> submittedFileCount.toInt,
+    "submissions.pending.kilobytes" -> (submittedBytesCount / 1000).toInt
+  )
+
   private def submittedXmlSubmissionsFilter(dprsId: String) =
     Filters.and(
       Filters.eq("dprsId", dprsId),
@@ -135,4 +162,11 @@ object SubmissionRepository {
           .name("state_type_idx")
       )
     )
+
+  final case class AggregationResult[A](value: A)
+
+  object AggregationResult {
+    given aggregationResultFormat[A](using Format[A]): OFormat[AggregationResult[A]] =
+      Json.format[AggregationResult[A]]
+  }
 }
