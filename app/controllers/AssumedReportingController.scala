@@ -17,7 +17,7 @@
 package controllers
 
 import controllers.actions.AuthAction
-import models.submission.{AssumedReportingSubmission, AssumedReportingSubmissionRequest}
+import models.submission.{AssumedReportingSubmission, AssumedReportingSubmissionRequest, SubmissionSummary}
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.{AssumedReportingService, SubmissionService, ViewSubmissionsService}
@@ -28,13 +28,12 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class AssumedReportingController @Inject() (
-                                             cc: ControllerComponents,
-                                             submissionService: SubmissionService,
-                                             assumedReportingService: AssumedReportingService,
-                                             viewSubmissionsService: ViewSubmissionsService,
-                                             auth: AuthAction
-                                           )(using ExecutionContext) extends BackendController(cc) {
+class AssumedReportingController @Inject()(cc: ControllerComponents,
+                                           submissionService: SubmissionService,
+                                           assumedReportingService: AssumedReportingService,
+                                           viewSubmissionsService: ViewSubmissionsService,
+                                           auth: AuthAction)
+                                          (using ExecutionContext) extends BackendController(cc) {
 
   def submit(): Action[AssumedReportingSubmissionRequest] =
     auth.async(parse.json[AssumedReportingSubmissionRequest]) { implicit request =>
@@ -54,14 +53,14 @@ class AssumedReportingController @Inject() (
         reportingPeriod = reportingPeriod
       ).map(submission => Ok(Json.toJson(submission)))
     }
-    
+
   def get(operatorId: String, reportingPeriod: Year): Action[AnyContent] = auth.async { implicit request =>
     assumedReportingService.getSubmission(request.dprsId, operatorId, reportingPeriod)
       .map(_.map(submission => Ok(Json.toJson(submission)))
         .getOrElse(NotFound)
       )
   }
-  
+
   def list(): Action[AnyContent] = auth.async { implicit request =>
     viewSubmissionsService.getAssumedReports(request.dprsId)
       .map { submissions =>
@@ -71,5 +70,12 @@ class AssumedReportingController @Inject() (
           Ok(Json.toJson(submissions))
         }
       }
+  }
+
+  def listFor(operatorId: String): Action[AnyContent] = auth.async { implicit request =>
+    viewSubmissionsService.getAssumedReports(request.dprsId, Some(operatorId)).map {
+      case Nil => NotFound
+      case operatorSubmissions => Ok(Json.toJson(operatorSubmissions))
+    }
   }
 }
