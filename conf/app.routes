@@ -10,6 +10,7 @@ POST        /submission/assumed/submit							controllers.AssumedReportingControl
 GET         /submission/assumed/:operatorId/:reportingPeriod    controllers.AssumedReportingController.get(operatorId: String, reportingPeriod: Year)
 DELETE      /submission/assumed/:operatorId/:reportingPeriod    controllers.AssumedReportingController.delete(operatorId: String, reportingPeriod: Year)
 GET         /submission/assumed                                 controllers.AssumedReportingController.list()
+GET         /submission/assumed/:operatorId                     controllers.AssumedReportingController.listFor(operatorId: String)
 
 PUT         /submission/start                       controllers.SubmissionController.start(id: Option[String] ?= None)
 GET         /submission/:id                         controllers.SubmissionController.get(id: String)

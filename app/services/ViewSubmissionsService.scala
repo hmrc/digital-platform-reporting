@@ -35,9 +35,9 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
 
   def getDeliveredSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] =
     for {
-      deliveredSubmissions      <- connector.get(request)
-      localSubmissions          <- repository.getBySubscriptionId(request.subscriptionId)
-      localSubmissionIds        = localSubmissions.map(_._id)
+      deliveredSubmissions <- connector.get(request)
+      localSubmissions <- repository.getBySubscriptionId(request.subscriptionId)
+      localSubmissionIds = localSubmissions.map(_._id)
       repositorySubmissionCount <- repository.countSubmittedXmlSubmissions(request.subscriptionId)
     } yield {
 
@@ -46,13 +46,13 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
       val deliveredSubmissionsCount = deliveredSubmissions.map(_.resultsCount).getOrElse(0)
 
       SubmissionsSummary(
-        deliveredSubmissionSummaries,
-        deliveredSubmissionsCount,
-        deliveredSubmissions.nonEmpty,
-        repositorySubmissionCount
+        deliveredSubmissions = deliveredSubmissionSummaries,
+        deliveredSubmissionRecordCount = deliveredSubmissionsCount,
+        deliveredSubmissionsExist = deliveredSubmissions.nonEmpty,
+        undeliveredSubmissionCount = repositorySubmissionCount
       )
     }
-    
+
   def getUndeliveredSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] =
     repository.getSubmittedXmlSubmissions(dprsId).map { submissions =>
       submissions
@@ -60,9 +60,10 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
         .reverse
         .flatMap(x => SubmissionSummary(x))
     }
-    
-  def getAssumedReports(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] =
-    getAllAssumedReportingSubmissions(dprsId).flatMap { deliveredSubmissions =>
+
+  def getAssumedReports(dprsId: String, operatorId: Option[String] = None)
+                       (implicit hc: HeaderCarrier): Future[Seq[SubmissionSummary]] =
+    getAllAssumedReportingSubmissions(dprsId, operatorId).flatMap { deliveredSubmissions =>
       repository.getBySubscriptionId(dprsId).flatMap { localSubmissions =>
 
         val localSubmissionIds = localSubmissions.map(_._id)
@@ -81,23 +82,26 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
           .map(_.flatten)
       }
     }
-    
-  private def getAllAssumedReportingSubmissions(dprsId: String)(implicit hc: HeaderCarrier): Future[Seq[DeliveredSubmission]] =
-    connector.get(buildAssumedReportingRequest(dprsId, 1)).flatMap(_.map { page1 =>
+
+  private def getAllAssumedReportingSubmissions(dprsId: String, operatorId: Option[String] = None)
+                                               (implicit hc: HeaderCarrier): Future[Seq[DeliveredSubmission]] =
+    connector.get(buildAssumedReportingRequest(1, dprsId, operatorId)).flatMap(_.map { page1 =>
       if (page1.resultsCount <= 10) {
         Future.successful(page1.submissions)
       } else {
         val numberOfPages = (page1.resultsCount + 9) / 10
 
         (2 to numberOfPages).toList.traverse { page =>
-          connector.get(buildAssumedReportingRequest(dprsId, page)).flatMap(_.map { result =>
+          connector.get(buildAssumedReportingRequest(page, dprsId, operatorId)).flatMap(_.map { result =>
             Future.successful(result.submissions)
           }.getOrElse(Future.successful(Nil)))
         }.map(_.flatten ++ page1.submissions)
       }
     }.getOrElse(Future.successful(Nil)))
 
-  private def buildAssumedReportingRequest(dprsId: String, page: Int): ViewSubmissionsRequest =
+  private def buildAssumedReportingRequest(page: Int,
+                                           dprsId: String,
+                                           operatorId: Option[String] = None) =
     ViewSubmissionsRequest(
       subscriptionId = dprsId,
       assumedReporting = true,
@@ -105,7 +109,7 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
       sortBy = SubmissionDate,
       sortOrder = Descending,
       reportingPeriod = None,
-      operatorId = None,
+      operatorId = operatorId,
       fileName = None,
       statuses = Seq(Pending, Success, Rejected)
     )
