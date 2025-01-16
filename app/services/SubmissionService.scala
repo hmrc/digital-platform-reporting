@@ -175,7 +175,7 @@ class SubmissionService @Inject() (
     Source.single(createSubmissionBytes(body))
 
   private def createSubmissionBytes(body: Elem) = {
-    ByteString.fromString(escapingService.escape(Utility.trim(body)).toString)
+    ByteString.fromString(escapingService.escape(body).toString)
   }
 
   private def addEnvelope(
@@ -206,9 +206,7 @@ class SubmissionService @Inject() (
     </requestCommon>
 
   private def requestDetail(body: ByteString): Elem =
-    <requestDetail>
-      {scala.xml.XML.load(new ByteArrayInputStream(body.toArray))}
-    </requestDetail>
+    <requestDetail>{scala.xml.XML.load(new ByteArrayInputStream(body.toArray))}</requestDetail>
 
   private def requestAdditionalDetail(fileName: String, subscription: SubscriptionInfo, isManual: Boolean): Elem =
     <requestAdditionalDetail>
@@ -234,18 +232,12 @@ class SubmissionService @Inject() (
       {contact match {
         case contact: IndividualContact =>
           <individualDetails>
-            <firstName>
-              {contact.individual.firstName}
-            </firstName>
-            <lastName>
-              {contact.individual.lastName}
-            </lastName>
+            <firstName>{contact.individual.firstName}</firstName>
+            <lastName>{contact.individual.lastName}</lastName>
           </individualDetails>
         case contact: OrganisationContact =>
           <organisationDetails>
-            <organisationName>
-              {contact.organisation.name}
-            </organisationName>
+            <organisationName>{contact.organisation.name}</organisationName>
           </organisationDetails>
       }}
     </root>.child
