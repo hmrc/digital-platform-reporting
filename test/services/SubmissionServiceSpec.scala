@@ -219,7 +219,7 @@ class SubmissionServiceSpec
               (document \ "requestAdditionalDetail" \ "secondaryContact" \ "organisationDetails" \ "organisationName").text mustEqual organisationContact.organisation.name
 
               val inner = scala.xml.XML.loadString(innerContent)
-              (document \ "requestDetail" \ "_").last mustEqual scala.xml.Utility.trim(inner)
+              (document \ "requestDetail" \ "_").last mustEqual inner
 
               result.utf8String must include("<dpi:PlatformBusinessName>a&apos;&apos;</dpi:PlatformBusinessName>")
             }
@@ -305,7 +305,7 @@ class SubmissionServiceSpec
               (document \ "requestAdditionalDetail" \ "secondaryContact") mustBe empty
 
               val inner = scala.xml.XML.loadString(innerContent)
-              (document \ "requestDetail" \ "_").last mustEqual scala.xml.Utility.trim(inner)
+              (document \ "requestDetail" \ "_").last mustEqual inner
             }
           }
 
@@ -381,7 +381,7 @@ class SubmissionServiceSpec
             (document \ "requestAdditionalDetail" \ "secondaryContact" \ "organisationDetails" \ "organisationName").text mustEqual organisationContact.organisation.name
 
             val inner = scala.xml.XML.loadString(innerContent)
-            (document \ "requestDetail" \ "_").last mustEqual scala.xml.Utility.trim(inner)
+            (document \ "requestDetail" \ "_").last mustEqual inner
           }
         }
       }
@@ -525,7 +525,7 @@ class SubmissionServiceSpec
       )
 
       val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/create/test.xml").toURI)
-      val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
+      val expectedPayload = XML.loadString(expectedPayloadSource.mkString)
       expectedPayloadSource.close()
 
       val messageRef = "GB2024GB-operatorId-86233cb7-4922-4e54-a5ff-75f5e62eec0d"
@@ -542,7 +542,7 @@ class SubmissionServiceSpec
         state = Submitted(
           fileName = expectedFileName,
           reportingPeriod = Year.of(2024),
-          size = 3486L
+          size = 4105L
         ),
         created = now,
         updated = now
@@ -643,7 +643,7 @@ class SubmissionServiceSpec
       )
 
       val expectedPayloadSource = scala.io.Source.fromFile(getClass.getResource("/assumed/delete/test.xml").toURI)
-      val expectedPayload = Utility.trim(XML.loadString(expectedPayloadSource.mkString))
+      val expectedPayload = XML.loadString(expectedPayloadSource.mkString)
       expectedPayloadSource.close()
 
       val messageRef = "GB2024GB-operatorId-86233cb7-4922-4e54-a5ff-75f5e62eec0d"
@@ -660,7 +660,7 @@ class SubmissionServiceSpec
         state = Submitted(
           fileName = expectedFileName,
           reportingPeriod = Year.of(2024),
-          size = 3404L
+          size = 3973L
         ),
         created = now,
         updated = now
@@ -745,7 +745,9 @@ class SubmissionServiceSpec
     val xmlLoader = scala.xml.XML.withXMLReader(reader)
 
     try {
+      // If we load it with a schema it strips whitespace so we load it twice
       xmlLoader.loadStringDocument(content.utf8String)
+      scala.xml.XML.loadStringDocument(content.utf8String)
     } catch {
       case e: SAXParseException =>
         fail(s"Failed schema validation with: ${e.getMessage}")
