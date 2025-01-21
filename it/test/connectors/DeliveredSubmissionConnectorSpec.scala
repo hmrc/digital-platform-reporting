@@ -107,9 +107,9 @@ class DeliveredSubmissionConnectorSpec extends AnyFreeSpec
           DeliveredSubmission(
             conversationId = conversationId.toString,
             fileName = "file.xml",
-            operatorId = "operatorId",
-            operatorName = "operatorName",
-            reportingPeriod = Year.of(2024),
+            operatorId = Some("operatorId"),
+            operatorName = Some("operatorName"),
+            reportingPeriod = Some(Year.of(2024)),
             submissionCaseId = "DPI-SUB-1",
             submissionDateTime = instant,
             submissionStatus = SubmissionStatus.Rejected,

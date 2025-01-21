@@ -33,33 +33,65 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
   
   "apply(DeliveredSubmission)" - {
     
-    "must return a SubmissionSummary with the correct values" in {
-      
-      val deliveredSubmission = DeliveredSubmission(
-        conversationId = "conversationId",
-        fileName = "filename",
-        operatorId = "operatorId",
-        operatorName = "operatorName",
-        reportingPeriod = Year.of(2024),
-        submissionCaseId = "submissionCaseId",
-        submissionDateTime = now,
-        submissionStatus = SubmissionStatus.Pending,
-        assumingReporterName = Some("assumingReporter")
-      )
-      
-      SubmissionSummary(deliveredSubmission, true, false) mustEqual SubmissionSummary(
-        submissionId = "conversationId",
-        fileName = "filename",
-        operatorId = "operatorId",
-        operatorName = "operatorName",
-        reportingPeriod = Year.of(2024),
-        submissionDateTime = now,
-        submissionStatus = SubmissionStatus.Pending,
-        assumingReporterName = Some("assumingReporter"),
-        submissionCaseId = Some("submissionCaseId"),
-        isDeleted = true,
-        localDataExists = false
-      )
+    "must return a SubmissionSummary with the correct values" - {
+
+      "when optional values are present" in {
+
+        val deliveredSubmission = DeliveredSubmission(
+          conversationId = "conversationId",
+          fileName = "filename",
+          operatorId = Some("operatorId"),
+          operatorName = Some("operatorName"),
+          reportingPeriod = Some(Year.of(2024)),
+          submissionCaseId = "submissionCaseId",
+          submissionDateTime = now,
+          submissionStatus = SubmissionStatus.Pending,
+          assumingReporterName = Some("assumingReporter")
+        )
+
+        SubmissionSummary(deliveredSubmission, true, false) mustEqual SubmissionSummary(
+          submissionId = "conversationId",
+          fileName = "filename",
+          operatorId = Some("operatorId"),
+          operatorName = Some("operatorName"),
+          reportingPeriod = Some(Year.of(2024)),
+          submissionDateTime = now,
+          submissionStatus = SubmissionStatus.Pending,
+          assumingReporterName = Some("assumingReporter"),
+          submissionCaseId = Some("submissionCaseId"),
+          isDeleted = true,
+          localDataExists = false
+        )
+      }
+
+      "when optional values are missing" in {
+
+        val deliveredSubmission = DeliveredSubmission(
+          conversationId = "conversationId",
+          fileName = "filename",
+          operatorId = None,
+          operatorName = None,
+          reportingPeriod = None,
+          submissionCaseId = "submissionCaseId",
+          submissionDateTime = now,
+          submissionStatus = SubmissionStatus.Pending,
+          assumingReporterName = None
+        )
+
+        SubmissionSummary(deliveredSubmission, true, false) mustEqual SubmissionSummary(
+          submissionId = "conversationId",
+          fileName = "filename",
+          operatorId = None,
+          operatorName = None,
+          reportingPeriod = None,
+          submissionDateTime = now,
+          submissionStatus = SubmissionStatus.Pending,
+          assumingReporterName = None,
+          submissionCaseId = Some("submissionCaseId"),
+          isDeleted = true,
+          localDataExists = false
+        )
+      }
     }
   }
   
@@ -82,9 +114,9 @@ class SubmissionSummarySpec extends AnyFreeSpec with Matchers with OptionValues 
       SubmissionSummary(submission).value  mustEqual SubmissionSummary(
         submissionId = "id",
         fileName = "filename",
-        operatorId = "operatorId",
-        operatorName = "operatorName",
-        reportingPeriod = Year.of(2024),
+        operatorId = Some("operatorId"),
+        operatorName = Some("operatorName"),
+        reportingPeriod = Some(Year.of(2024)),
         submissionDateTime = now,
         submissionStatus = SubmissionStatus.Pending,
         assumingReporterName = Some("assumingReporter"),

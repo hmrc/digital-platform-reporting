@@ -46,9 +46,9 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
       val expectedSubmission = DeliveredSubmission(
         conversationId = conversationId,
         fileName = "file.xml",
-        operatorId = "operatorId",
-        operatorName = "operatorName",
-        reportingPeriod = Year.of(2024),
+        operatorId = Some("operatorId"),
+        operatorName = Some("operatorName"),
+        reportingPeriod = Some(Year.of(2024)),
         submissionCaseId = "DPI-SUB-1",
         submissionDateTime = Instant.parse("2024-12-31T01:02:03Z"),
         submissionStatus = SubmissionStatus.Pending,
@@ -63,9 +63,6 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
       val json = Json.obj(
         "conversationId" -> conversationId,
         "fileName" -> "file.xml",
-        "pOId" -> "operatorId",
-        "pOName" -> "operatorName",
-        "reportingYear" -> 2024,
         "submissionCaseId" -> "DPI-SUB-1",
         "submissionDateTime" -> "2024-12-31T01:02:03Z",
         "submissionStatus" -> "PENDING"
@@ -74,9 +71,9 @@ class DeliveredSubmissionSpec extends AnyFreeSpec with Matchers {
       val expectedSubmission = DeliveredSubmission(
         conversationId = conversationId,
         fileName = "file.xml",
-        operatorId = "operatorId",
-        operatorName = "operatorName",
-        reportingPeriod = Year.of(2024),
+        operatorId = None,
+        operatorName = None,
+        reportingPeriod = None,
         submissionCaseId = "DPI-SUB-1",
         submissionDateTime = Instant.parse("2024-12-31T01:02:03Z"),
         submissionStatus = SubmissionStatus.Pending,

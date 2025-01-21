@@ -247,9 +247,9 @@ class AssumedReportingControllerSpec
       val submission1 = SubmissionSummary(
         submissionId = "id1",
         fileName = "filename1",
-        operatorId = "operatorId",
-        operatorName = "operatorName",
-        reportingPeriod = Year.of(2024),
+        operatorId = Some("operatorId"),
+        operatorName = Some("operatorName"),
+        reportingPeriod = Some(Year.of(2024)),
         submissionDateTime = now,
         submissionStatus = SubmissionStatus.Success,
         assumingReporterName = Some("assumingOperator"),
@@ -260,9 +260,9 @@ class AssumedReportingControllerSpec
       val submission2 = SubmissionSummary(
         submissionId = "id2",
         fileName = "filename2",
-        operatorId = "operatorId2",
-        operatorName = "operatorName2",
-        reportingPeriod = Year.of(2024),
+        operatorId = Some("operatorId2"),
+        operatorName = Some("operatorName2"),
+        reportingPeriod = Some(Year.of(2024)),
         submissionDateTime = now,
         submissionStatus = SubmissionStatus.Success,
         assumingReporterName = Some("assumingOperator2"),
@@ -312,7 +312,7 @@ class AssumedReportingControllerSpec
       val submission2 = aSubmissionSummary.copy(submissionId = "sub-2")
 
       when(mockAuthConnector.authorise(any(), any())(any(), any())).thenReturn(Future.successful(validEnrolments))
-      when(mockViewSubmissionsService.getAssumedReports(any(), eqTo(Some(submission1.operatorId)))(using any())).thenReturn(Future.successful(Seq(submission1, submission2)))
+      when(mockViewSubmissionsService.getAssumedReports(any(), eqTo(Some(submission1.operatorId.value)))(using any())).thenReturn(Future.successful(Seq(submission1, submission2)))
 
       val app = GuiceApplicationBuilder().overrides(
         bind[AuthConnector].toInstance(mockAuthConnector),
@@ -320,7 +320,7 @@ class AssumedReportingControllerSpec
       ).build()
 
       running(app) {
-        val request = FakeRequest(routes.AssumedReportingController.listFor(submission1.operatorId))
+        val request = FakeRequest(routes.AssumedReportingController.listFor(submission1.operatorId.value))
         val result = route(app, request).value
 
         status(result) mustEqual OK

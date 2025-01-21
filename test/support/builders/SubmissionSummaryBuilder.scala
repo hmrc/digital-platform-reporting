@@ -26,9 +26,9 @@ object SubmissionSummaryBuilder {
   val aSubmissionSummary: SubmissionSummary = SubmissionSummary(
     submissionId = "default-submission-id",
     fileName = "default-file-name",
-    operatorId = "default-operator-id",
-    operatorName = "default-operator-name",
-    reportingPeriod = Year.now,
+    operatorId = Some("default-operator-id"),
+    operatorName = Some("default-operator-name"),
+    reportingPeriod = Some(Year.now),
     submissionDateTime = Instant.now,
     submissionStatus = Success,
     assumingReporterName = None,
