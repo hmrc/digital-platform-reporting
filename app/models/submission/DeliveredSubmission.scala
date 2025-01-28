@@ -24,9 +24,9 @@ import java.time.{Instant, Year}
 
 final case class DeliveredSubmission(conversationId: String,
                                      fileName: String,
-                                     operatorId: String,
-                                     operatorName: String,
-                                     reportingPeriod: Year,
+                                     operatorId: Option[String],
+                                     operatorName: Option[String],
+                                     reportingPeriod: Option[Year],
                                      submissionCaseId: String,
                                      submissionDateTime: Instant,
                                      submissionStatus: SubmissionStatus,
@@ -39,9 +39,9 @@ object DeliveredSubmission {
   implicit lazy val reads: Reads[DeliveredSubmission] = (
     (__ \ "conversationId").read[String] and
     (__ \ "fileName").read[String] and
-    (__ \ "pOId").read[String] and
-    (__ \ "pOName").read[String] and
-    (__ \ "reportingYear").read[Year] and
+    (__ \ "pOId").readNullable[String] and
+    (__ \ "pOName").readNullable[String] and
+    (__ \ "reportingYear").readNullable[Year] and
     (__ \ "submissionCaseId").read[String] and
     (__ \ "submissionDateTime").read[Instant] and
     (__ \ "submissionStatus").read[SubmissionStatus] and

@@ -75,11 +75,14 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
           .sortBy(_.submissionDateTime).reverse
 
         consolidatedSubmissions.traverse { submission =>
-            assumedReportingService
-              .getSubmission(dprsId, submission.operatorId, submission.reportingPeriod)
-              .map(_.map(assumedReport => SubmissionSummary(submission, assumedReport.isDeleted, localSubmissionIds.contains(submission.conversationId))))
-          }
-          .map(_.flatten)
+          (for {
+            operatorId      <- submission.operatorId
+            reportingPeriod <- submission.reportingPeriod
+          } yield assumedReportingService
+            .getSubmission(dprsId, operatorId, reportingPeriod)
+            .map(_.map(assumedReport => SubmissionSummary(submission, assumedReport.isDeleted, localSubmissionIds.contains(submission.conversationId))))
+          ).sequence.map(_.flatten)
+        }.map(_.flatten)
       }
     }
 
