@@ -94,8 +94,8 @@ class ValidationService @Inject()(downloadConnector: DownloadConnector,
             Future.successful(Left(SchemaValidationError(handler.schemaErrors.result, moreErrors = hasMoreErrors)))
           case _: SAXParseException =>
             Future.successful(Left(SchemaValidationError(handler.schemaErrors.result, moreErrors = true)))
-          case e: UnsupportedEncodingException => Future.successful(Left(SchemaValidationError(Seq(
-            SchemaValidationError.Error(1, 1, s"Unsupported encoding: ${e.getMessage}")), moreErrors = false
+          case e: UnsupportedEncodingException => Future.successful(Left(SchemaValidationError(
+            Seq(SchemaValidationError.Error(1, 1, "XML encoding must be UTF-8")), moreErrors = false
           )))
         }
       }
