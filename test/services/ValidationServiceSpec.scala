@@ -128,7 +128,7 @@ class ValidationServiceSpec
           reportingPeriod = Year.of(2024),
           isDeleted = true
         )
-        
+
         when(mockDownloadConnector.download(any()))
           .thenReturn(Future.successful(source))
         when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
@@ -225,6 +225,22 @@ class ValidationServiceSpec
       result mustBe a[SchemaValidationError]
       result.asInstanceOf[SchemaValidationError].errors mustEqual Seq(
         SchemaValidationError.Error(1, 1, "Content is not allowed in prolog.")
+      )
+      result.asInstanceOf[SchemaValidationError].moreErrors mustBe false
+
+      verify(mockDownloadConnector).download(downloadUrl)
+    }
+
+    "must return an error when encoding is wrong" in {
+      val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/WrongEncoding.xml"))
+
+      when(mockDownloadConnector.download(any())).thenReturn(Future.successful(source))
+      when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any())).thenReturn(Future.successful(None))
+
+      val result = validationService.validateXml(validFileName, dprsId, downloadUrl, poid).futureValue.left.value
+      result mustBe a[SchemaValidationError]
+      result.asInstanceOf[SchemaValidationError].errors mustEqual Seq(
+        SchemaValidationError.Error(1, 1, "Unsupported encoding: UTF_8")
       )
       result.asInstanceOf[SchemaValidationError].moreErrors mustBe false
 

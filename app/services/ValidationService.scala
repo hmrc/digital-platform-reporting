@@ -29,6 +29,7 @@ import play.api.{Configuration, Environment}
 import services.ValidatingSaxHandler.{FatalSaxParsingException, platformOperatorPath, reportingPeriodPath}
 import uk.gov.hmrc.http.HeaderCarrier
 
+import java.io.UnsupportedEncodingException
 import java.net.URL
 import java.nio.file.Paths
 import java.time.Year
@@ -45,12 +46,11 @@ import scala.util.control.NoStackTrace
 import scala.xml.SAXParseException
 
 @Singleton
-class ValidationService @Inject() (
-                                   downloadConnector: DownloadConnector,
-                                   configuration: Configuration,
-                                   environment: Environment,
-                                   assumedReportingService: AssumedReportingService
-                                  )(using ExecutionContext, Materializer) {
+class ValidationService @Inject()(downloadConnector: DownloadConnector,
+                                  configuration: Configuration,
+                                  environment: Environment,
+                                  assumedReportingService: AssumedReportingService)
+                                 (using ExecutionContext, Materializer) {
 
   private val schemaPath = configuration.get[String]("validation.schema-path")
   private val errorLimit = configuration.get[Int]("validation.error-limit")
@@ -94,6 +94,9 @@ class ValidationService @Inject() (
             Future.successful(Left(SchemaValidationError(handler.schemaErrors.result, moreErrors = hasMoreErrors)))
           case _: SAXParseException =>
             Future.successful(Left(SchemaValidationError(handler.schemaErrors.result, moreErrors = true)))
+          case e: UnsupportedEncodingException => Future.successful(Left(SchemaValidationError(Seq(
+            SchemaValidationError.Error(1, 1, s"Unsupported encoding: ${e.getMessage}")), moreErrors = false
+          )))
         }
       }
     } else {
@@ -104,7 +107,7 @@ class ValidationService @Inject() (
   private def checkForManualAssumedReport(dprsId: String, operatorId: String, reportingPeriod: Year): EitherT[Future, UploadFailureReason, Done] = {
 
     given hc: HeaderCarrier = HeaderCarrier()
-    
+
     EitherT(assumedReportingService.getSubmission(dprsId, operatorId, reportingPeriod).map(
       _.map { assumedReport =>
         if (assumedReport.isDeleted) {
