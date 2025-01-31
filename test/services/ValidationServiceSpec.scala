@@ -240,7 +240,7 @@ class ValidationServiceSpec
       val result = validationService.validateXml(validFileName, dprsId, downloadUrl, poid).futureValue.left.value
       result mustBe a[SchemaValidationError]
       result.asInstanceOf[SchemaValidationError].errors mustEqual Seq(
-        SchemaValidationError.Error(1, 1, "Unsupported encoding: UTF_8")
+        SchemaValidationError.Error(1, 1, "XML encoding must be UTF-8")
       )
       result.asInstanceOf[SchemaValidationError].moreErrors mustBe false
 
