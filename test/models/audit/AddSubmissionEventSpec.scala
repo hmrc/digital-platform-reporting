@@ -39,7 +39,8 @@ class AddSubmissionEventSpec extends AnyFreeSpec with Matchers {
       "fileName" -> "test.xml",
       "outcome" -> Json.obj(
         "deliveryRoute" -> DeliveryRoute.Dct52A,
-        "processedAt" -> now
+        "processedAt" -> now,
+        "isSent" -> true
       )
     )
 
@@ -52,7 +53,8 @@ class AddSubmissionEventSpec extends AnyFreeSpec with Matchers {
       fileName = "test.xml",
       fileSize = 1337,
       deliveryRoute = DeliveryRoute.Dct52A,
-      processedAt = now
+      processedAt = now,
+      isSent = true
     )
 
     Json.toJson(event) mustEqual expectedJson

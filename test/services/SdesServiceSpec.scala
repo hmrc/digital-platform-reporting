@@ -17,6 +17,8 @@
 package services
 
 import connectors.SdesConnector
+import models.audit.AddSubmissionEvent
+import models.audit.AddSubmissionEvent.DeliveryRoute.Dprs0502
 import models.sdes.*
 import models.submission.Submission.State.Validated
 import models.subscription.responses.SubscriptionInfo
@@ -58,12 +60,14 @@ class SdesServiceSpec
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
   private val mockSdesSubmissionWorkItemRepository: SdesSubmissionWorkItemRepository = mock[SdesSubmissionWorkItemRepository]
   private val mockSdesConnector: SdesConnector = mock[SdesConnector]
+  private val mockAuditService: AuditService = mock[AuditService]
 
   override def beforeEach(): Unit = {
     super.beforeEach()
     Mockito.reset(
       mockSdesSubmissionWorkItemRepository,
-      mockSdesConnector
+      mockSdesConnector,
+      mockAuditService
     )
   }
 
@@ -77,7 +81,8 @@ class SdesServiceSpec
       .overrides(
         bind[SdesSubmissionWorkItemRepository].toInstance(mockSdesSubmissionWorkItemRepository),
         bind[SdesConnector].toInstance(mockSdesConnector),
-        bind[Clock].toInstance(clock)
+        bind[Clock].toInstance(clock),
+        bind[AuditService].toInstance(mockAuditService)
       )
       .build()
 
@@ -100,6 +105,21 @@ class SdesServiceSpec
       size = size
     )
 
+    val dprsId = "dprsId"
+
+    val auditEvent = AddSubmissionEvent(
+      conversationId = submissionId,
+      dprsId = dprsId,
+      operatorId = "operatorId",
+      operatorName = "operatorName",
+      reportingPeriod = Year.of(2024),
+      fileName = fileName,
+      fileSize = 1337L,
+      deliveryRoute = Dprs0502,
+      processedAt = now,
+      isSent = false
+    )
+
     "must save a work item with the relevant data when given all data" in {
 
       val individualContact = IndividualContact(Individual("first", "last"), "individual email", Some("0777777"))
@@ -118,12 +138,13 @@ class SdesServiceSpec
         fileName = fileName,
         checksum = checksum,
         size = size,
-        subscriptionInfo = subscription
+        subscriptionInfo = subscription,
+        auditEvent = auditEvent
       )
 
       when(mockSdesSubmissionWorkItemRepository.pushNew(any(), any(), any())).thenReturn(Future.successful(null))
 
-      sdesService.enqueueSubmission(submissionId, state, subscription).futureValue
+      sdesService.enqueueSubmission(submissionId, state, subscription, auditEvent).futureValue
 
       verify(mockSdesSubmissionWorkItemRepository).pushNew(expectedWorkItem, now)
     }
@@ -145,12 +166,13 @@ class SdesServiceSpec
         fileName = fileName,
         checksum = checksum,
         size = size,
-        subscriptionInfo = subscription
+        subscriptionInfo = subscription,
+        auditEvent = auditEvent
       )
 
       when(mockSdesSubmissionWorkItemRepository.pushNew(any(), any(), any())).thenReturn(Future.successful(null))
 
-      sdesService.enqueueSubmission(submissionId, state, subscription).futureValue
+      sdesService.enqueueSubmission(submissionId, state, subscription, auditEvent).futureValue
 
       verify(mockSdesSubmissionWorkItemRepository).pushNew(expectedWorkItem, now)
     }
@@ -168,7 +190,7 @@ class SdesServiceSpec
 
       when(mockSdesSubmissionWorkItemRepository.pushNew(any(), any(), any())).thenReturn(Future.failed(new RuntimeException()))
 
-      sdesService.enqueueSubmission(submissionId, state, subscription).failed.futureValue
+      sdesService.enqueueSubmission(submissionId, state, subscription, auditEvent).failed.futureValue
     }
   }
 
@@ -183,6 +205,21 @@ class SdesServiceSpec
       val fileName = "test.xml"
       val checksum = "checksum"
       val size = 1337L
+
+      val dprsId = "dprsId"
+
+      val auditEvent = AddSubmissionEvent(
+        conversationId = submissionId,
+        dprsId = dprsId,
+        operatorId = "operatorId",
+        operatorName = "operatorName",
+        reportingPeriod = Year.of(2024),
+        fileName = fileName,
+        fileSize = 1337L,
+        deliveryRoute = Dprs0502,
+        processedAt = now,
+        isSent = true
+      )
 
       "when all optional data is supplied" - {
 
@@ -209,7 +246,8 @@ class SdesServiceSpec
             checksum = checksum,
             fileName = fileName,
             size = size,
-            subscriptionInfo = subscription
+            subscriptionInfo = subscription,
+            auditEvent = auditEvent
           )
         )
 
@@ -255,6 +293,7 @@ class SdesServiceSpec
           verify(mockSdesSubmissionWorkItemRepository).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
           verify(mockSdesConnector).notify(eqTo(expectedNotificationRequest))(using any())
           verify(mockSdesSubmissionWorkItemRepository).complete(workItem.id, ProcessingStatus.Succeeded)
+          verify(mockAuditService).audit(eqTo(auditEvent))(using any(), any())
         }
       }
 
@@ -282,7 +321,8 @@ class SdesServiceSpec
             checksum = checksum,
             fileName = fileName,
             size = size,
-            subscriptionInfo = subscription
+            subscriptionInfo = subscription,
+            auditEvent = auditEvent
           )
         )
 
@@ -322,6 +362,7 @@ class SdesServiceSpec
           verify(mockSdesSubmissionWorkItemRepository).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
           verify(mockSdesConnector).notify(eqTo(expectedNotificationRequest))(using any())
           verify(mockSdesSubmissionWorkItemRepository).complete(workItem.id, ProcessingStatus.Succeeded)
+          verify(mockAuditService).audit(eqTo(auditEvent))(using any(), any())
         }
       }
 
@@ -351,7 +392,8 @@ class SdesServiceSpec
               checksum = checksum,
               fileName = fileName,
               size = size,
-              subscriptionInfo = subscription
+              subscriptionInfo = subscription,
+              auditEvent = auditEvent
             )
           )
 
@@ -364,6 +406,7 @@ class SdesServiceSpec
           verify(mockSdesSubmissionWorkItemRepository).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
           verify(mockSdesConnector).notify(any())(using any())
           verify(mockSdesSubmissionWorkItemRepository).markAs(workItem.id, ProcessingStatus.Failed)
+          verify(mockAuditService).audit(eqTo(auditEvent.copy(isSent = false)))(using any(), any())
         }
       }
     }
@@ -380,6 +423,7 @@ class SdesServiceSpec
         verify(mockSdesConnector, never()).notify(any())(using any())
         verify(mockSdesSubmissionWorkItemRepository, never()).markAs(any(), any(), any())
         verify(mockSdesSubmissionWorkItemRepository, never()).complete(any(), any())
+        verify(mockAuditService, never()).audit(any())(using any(), any())
       }
     }
   }
@@ -404,6 +448,21 @@ class SdesServiceSpec
       secondaryContact = Some(organisationContact)
     )
 
+    val dprsId = "dprsId"
+
+    val auditEvent = AddSubmissionEvent(
+      conversationId = submissionId,
+      dprsId = dprsId,
+      operatorId = "operatorId",
+      operatorName = "operatorName",
+      reportingPeriod = Year.of(2024),
+      fileName = fileName,
+      fileSize = 1337L,
+      deliveryRoute = Dprs0502,
+      processedAt = now,
+      isSent = false
+    )
+
     val workItem = WorkItem(
       id = ObjectId(),
       receivedAt = now.minus(1, ChronoUnit.HOURS),
@@ -417,7 +476,8 @@ class SdesServiceSpec
         checksum = checksum,
         fileName = fileName,
         size = size,
-        subscriptionInfo = subscription
+        subscriptionInfo = subscription,
+        auditEvent = auditEvent
       )
     )
 
@@ -468,6 +528,7 @@ class SdesServiceSpec
       verify(mockSdesSubmissionWorkItemRepository, times(4)).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
       verify(mockSdesConnector, times(3)).notify(eqTo(expectedNotificationRequest))(using any())
       verify(mockSdesSubmissionWorkItemRepository, times(3)).complete(workItem.id, ProcessingStatus.Succeeded)
+      verify(mockAuditService, times(3)).audit(eqTo(auditEvent))(using any(), any())
     }
 
     "must fail when one of the submissions fails" in {
@@ -485,6 +546,8 @@ class SdesServiceSpec
       verify(mockSdesConnector, times(2)).notify(eqTo(expectedNotificationRequest))(using any())
       verify(mockSdesSubmissionWorkItemRepository, times(1)).complete(workItem.id, ProcessingStatus.Succeeded)
       verify(mockSdesSubmissionWorkItemRepository, times(1)).markAs(workItem.id, ProcessingStatus.Failed)
+      verify(mockAuditService, times(1)).audit(eqTo(auditEvent))(using any(), any())
+      verify(mockAuditService, times(1)).audit(eqTo(auditEvent.copy(isSent = false)))(using any(), any())
     }
   }
 }

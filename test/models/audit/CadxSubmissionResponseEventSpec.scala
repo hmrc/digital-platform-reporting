@@ -17,6 +17,7 @@
 package models.audit
 
 import models.audit.CadxSubmissionResponseEvent.FileStatus
+import models.submission.Submission.SubmissionType.Xml
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
@@ -31,7 +32,8 @@ class CadxSubmissionResponseEventSpec extends AnyFreeSpec with Matchers {
       "platformOperator" -> "po",
       "conversationId" -> "submissionId",
       "fileName" -> "test.xml",
-      "fileStatus" -> "passed"
+      "fileStatus" -> "passed",
+      "responseType" -> "Xml"
     )
 
     val event = CadxSubmissionResponseEvent(
@@ -40,7 +42,8 @@ class CadxSubmissionResponseEventSpec extends AnyFreeSpec with Matchers {
       operatorId = "poId",
       operatorName = "po",
       fileName = "test.xml",
-      fileStatus = FileStatus.Passed
+      fileStatus = FileStatus.Passed,
+      responseType = Xml
     )
 
     Json.toJson(event) mustEqual expectedJson
@@ -54,7 +57,8 @@ class CadxSubmissionResponseEventSpec extends AnyFreeSpec with Matchers {
       "platformOperator" -> "po",
       "conversationId" -> "submissionId",
       "fileName" -> "test.xml",
-      "fileStatus" -> "failed"
+      "fileStatus" -> "failed",
+      "responseType" -> "Xml"
     )
 
     val event = CadxSubmissionResponseEvent(
@@ -63,7 +67,8 @@ class CadxSubmissionResponseEventSpec extends AnyFreeSpec with Matchers {
       operatorId = "poId",
       operatorName = "po",
       fileName = "test.xml",
-      fileStatus = FileStatus.Failed
+      fileStatus = FileStatus.Failed,
+      responseType = Xml
     )
 
     Json.toJson(event) mustEqual expectedJson

@@ -19,9 +19,11 @@ package models.audit
 import enumeratum.{EnumEntry, PlayEnum}
 import models.audit.AddSubmissionEvent.DeliveryRoute
 import play.api.libs.functional.syntax.*
-import play.api.libs.json.{OWrites, __}
+import play.api.libs.json.{Json, OFormat, OWrites, __}
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 import java.time.{Instant, Year}
+import models.yearFormat
 
 final case class AddSubmissionEvent(
                                      conversationId: String,
@@ -32,13 +34,19 @@ final case class AddSubmissionEvent(
                                      fileName: String,
                                      fileSize: Long,
                                      deliveryRoute: DeliveryRoute,
-                                     processedAt: Instant
+                                     processedAt: Instant,
+                                     isSent: Boolean
                                    ) extends AuditEvent {
 
   override val auditType: String = "AddSubmission"
 }
 
 object AddSubmissionEvent {
+
+  lazy val mongoFormat: OFormat[AddSubmissionEvent] = {
+    import MongoJavatimeFormats.Implicits.*
+    Json.format
+  }
 
   sealed abstract class DeliveryRoute(override val entryName: String) extends EnumEntry
 
@@ -59,6 +67,7 @@ object AddSubmissionEvent {
     (__ \ "fileName").write[String] and
     (__ \ "fileSizeInBytes").write[Long] and
     (__ \ "outcome" \ "deliveryRoute").write[DeliveryRoute] and
-    (__ \ "outcome" \ "processedAt").write[Instant]
+    (__ \ "outcome" \ "processedAt").write[Instant] and
+    (__ \ "outcome" \ "isSent").write[Boolean]
   )(o => Tuple.fromProductTyped(o))
 }

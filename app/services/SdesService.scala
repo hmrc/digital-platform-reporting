@@ -21,6 +21,7 @@ import models.sdes.*
 import models.submission.Submission.State.Validated
 import models.subscription.{Contact, IndividualContact, OrganisationContact}
 import models.subscription.responses.SubscriptionInfo
+import models.audit.AddSubmissionEvent
 import org.apache.pekko.Done
 import play.api.Configuration
 import repository.SdesSubmissionWorkItemRepository
@@ -38,14 +39,15 @@ class SdesService @Inject()(
                              clock: Clock,
                              workItemRepository: SdesSubmissionWorkItemRepository,
                              sdesConnector: SdesConnector,
-                             configuration: Configuration
+                             configuration: Configuration,
+                             auditService: AuditService
                            )(using ExecutionContext) {
 
   private val retryTimeout: Duration = configuration.get[Duration]("sdes.submission.retry-after")
   private val informationType: String = configuration.get[String]("sdes.submission.information-type")
   private val recipientOrSender: String = configuration.get[String]("sdes.recipient-or-sender")
 
-  def enqueueSubmission(submissionId: String, state: Validated, subscription: SubscriptionInfo): Future[Done] = {
+  def enqueueSubmission(submissionId: String, state: Validated, subscription: SubscriptionInfo, auditEvent: AddSubmissionEvent): Future[Done] = {
 
     val workItem = SdesSubmissionWorkItem(
       submissionId = submissionId,
@@ -53,7 +55,8 @@ class SdesService @Inject()(
       fileName = state.fileName,
       checksum = state.checksum,
       size = state.size,
-      subscriptionInfo = subscription
+      subscriptionInfo = subscription,
+      auditEvent = auditEvent
     )
 
     workItemRepository.pushNew(workItem, clock.instant()).map(_ => Done)
@@ -77,14 +80,20 @@ class SdesService @Inject()(
           audit = FileAudit(workItem.item.submissionId)
         )
 
+        given HeaderCarrier = HeaderCarrier()
+
         for {
           _ <- sdesConnector.notify(notificationRequest)(using HeaderCarrier()).recoverWith { case e =>
             workItemRepository.markAs(workItem.id, ProcessingStatus.Failed).flatMap { _ =>
+              auditService.audit(workItem.item.auditEvent.copy(isSent = false))
               Future.failed(e)
             }
           }
           _ <- workItemRepository.complete(workItem.id, ProcessingStatus.Succeeded)
-        } yield true
+        } yield {
+          auditService.audit(workItem.item.auditEvent)
+          true
+        }
       }.getOrElse(Future.successful(false))
     }
   }
