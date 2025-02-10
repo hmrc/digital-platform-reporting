@@ -16,6 +16,7 @@
 
 package models.sdes
 
+import models.audit.AddSubmissionEvent
 import models.urlFormat
 import models.subscription.responses.SubscriptionInfo
 import play.api.libs.json.{Json, OFormat}
@@ -29,13 +30,15 @@ final case class SdesSubmissionWorkItem(
                                          fileName: String,
                                          checksum: String,
                                          size: Long,
-                                         subscriptionInfo: SubscriptionInfo
+                                         subscriptionInfo: SubscriptionInfo,
+                                         auditEvent: AddSubmissionEvent
                                        )
 
 object SdesSubmissionWorkItem extends MongoJavatimeFormats.Implicits {
 
   given mongoFormat: OFormat[SdesSubmissionWorkItem] = {
     given OFormat[SubscriptionInfo] = SubscriptionInfo.mongoFormat
+    given OFormat[AddSubmissionEvent] = AddSubmissionEvent.mongoFormat
     Json.format
   }
 }

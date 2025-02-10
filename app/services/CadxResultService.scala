@@ -155,7 +155,8 @@ class CadxResultService @Inject()(
         operatorId = submission.operatorId,
         operatorName = submission.operatorName,
         fileName = state.fileName,
-        fileStatus = Passed
+        fileStatus = Passed,
+        responseType = submission.submissionType
       )
 
       given HeaderCarrier = HeaderCarrier()
@@ -191,7 +192,8 @@ class CadxResultService @Inject()(
         operatorId = submission.operatorId,
         operatorName = submission.operatorName,
         fileName = state.fileName,
-        fileStatus = Failed
+        fileStatus = Failed,
+        responseType = submission.submissionType
       )
 
       given HeaderCarrier = HeaderCarrier()

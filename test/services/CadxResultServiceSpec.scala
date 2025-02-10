@@ -22,6 +22,7 @@ import models.audit.CadxSubmissionResponseEvent
 import models.audit.CadxSubmissionResponseEvent.FileStatus.{Failed, Passed}
 import models.operator.{AddressDetails, ContactDetails}
 import models.operator.responses.PlatformOperator
+import models.submission.Submission.SubmissionType.{ManualAssumedReport, Xml}
 import models.submission.Submission.{State, SubmissionType}
 import models.submission.{CadxValidationError, Submission}
 import models.subscription.{Individual, IndividualContact, Organisation, OrganisationContact}
@@ -195,7 +196,8 @@ class CadxResultServiceSpec
               operatorId = "operatorId",
               operatorName = "operatorName",
               fileName = "test.xml",
-              fileStatus = Passed
+              fileStatus = Passed,
+              responseType = Xml
             )
 
             val source = Source.single {
@@ -215,7 +217,7 @@ class CadxResultServiceSpec
               verify(mockSubmissionRepository).getById(submission._id)
               verify(mockSubmissionRepository).save(expectedSubmission.copy(submissionType = SubmissionType.ManualAssumedReport))
               verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
-              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+              verify(mockAuditService).audit(eqTo(expectedAudit.copy(responseType = ManualAssumedReport)))(using any(), any())
               verify(mockSubscriptionConnector, never()).get(any())(using any())
               verify(mockPlatformOperatorConnector, never()).get(any(), any())(using any())
               verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())
@@ -408,7 +410,8 @@ class CadxResultServiceSpec
               operatorId = "operatorId",
               operatorName = "operatorName",
               fileName = "test.xml",
-              fileStatus = Failed
+              fileStatus = Failed,
+              responseType = Xml
             )
 
             val source = Source.single {
@@ -431,7 +434,7 @@ class CadxResultServiceSpec
               verify(mockSubmissionRepository).getById(submission._id)
               verify(mockSubmissionRepository).save(expectedSubmission.copy(submissionType = SubmissionType.ManualAssumedReport))
               verify(mockCadxValidationErrorRepository, times(2)).saveBatch(captor.capture())
-              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+              verify(mockAuditService).audit(eqTo(expectedAudit.copy(responseType = ManualAssumedReport)))(using any(), any())
               verify(mockSubscriptionConnector, never()).get(any())(using any())
               verify(mockPlatformOperatorConnector, never()).get(any(), any())(using any())
               verify(mockEmailService, never()).sendFailedBusinessRulesChecksEmails(any(), any(), any(), any())(any())

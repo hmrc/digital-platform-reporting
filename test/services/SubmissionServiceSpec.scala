@@ -16,7 +16,7 @@
 
 package services
 
-import connectors.{DownloadConnector, PlatformOperatorConnector, SubmissionConnector, SubscriptionConnector}
+import connectors.{DownloadConnector, PlatformOperatorConnector, SdesConnector, SubmissionConnector, SubscriptionConnector}
 import models.assumed.AssumingPlatformOperator
 import models.audit.AddSubmissionEvent
 import models.audit.AddSubmissionEvent.DeliveryRoute.{Dct52A, Dprs0502}
@@ -33,7 +33,7 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
-import org.mockito.Mockito.{never, verify, when}
+import org.mockito.Mockito.{never, times, verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
@@ -79,6 +79,7 @@ class SubmissionServiceSpec
   private val mockSubmissionRepository: SubmissionRepository = mock[SubmissionRepository]
   private val mockUuidService: UuidService = mock[UuidService]
   private val mockAuditService: AuditService = mock[AuditService]
+  private val mockSdesConnector: SdesConnector = mock[SdesConnector]
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
@@ -176,11 +177,11 @@ class SubmissionServiceSpec
                 fileName = fileName,
                 fileSize = 3_000_000L,
                 deliveryRoute = Dprs0502,
-                processedAt = now
+                processedAt = now,
+                isSent = true
               )
 
               when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
-              when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.failed(new RuntimeException()))
               when(mockDownloadConnector.download(any())).thenReturn(Future.successful(fileSource))
               when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.successful(Done))
 
@@ -191,7 +192,7 @@ class SubmissionServiceSpec
 
               verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
               verify(mockSubmissionConnector).submit(eqTo(submissionId), requestBodyCaptor.capture())(using any())
-              verify(mockSdesService, never()).enqueueSubmission(any(), any(), any())
+              verify(mockSdesService, never()).enqueueSubmission(any(), any(), any(), any())
               verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
 
               val result = requestBodyCaptor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
@@ -265,11 +266,11 @@ class SubmissionServiceSpec
                 fileName = fileName,
                 fileSize = 1337L,
                 deliveryRoute = Dprs0502,
-                processedAt = now
+                processedAt = now,
+                isSent = true
               )
 
               when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
-              when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.failed(new RuntimeException()))
               when(mockDownloadConnector.download(any())).thenReturn(Future.successful(fileSource))
               when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.successful(Done))
 
@@ -280,7 +281,7 @@ class SubmissionServiceSpec
 
               verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
               verify(mockSubmissionConnector).submit(eqTo(submissionId), requestBodyCaptor.capture())(using any())
-              verify(mockSdesService, never()).enqueueSubmission(any(), any(), any())
+              verify(mockSdesService, never()).enqueueSubmission(any(), any(), any(), any())
               verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
 
               val result = requestBodyCaptor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
@@ -307,6 +308,67 @@ class SubmissionServiceSpec
               val inner = scala.xml.XML.loadString(innerContent)
               (document \ "requestDetail" \ "_").last mustEqual inner
             }
+
+            "when minimal data is included and dprs0502 submission fails" in {
+
+              val submission = Submission(
+                _id = submissionId,
+                submissionType = SubmissionType.Xml,
+                dprsId = dprsId,
+                operatorId = "operatorId",
+                operatorName = "operatorName",
+                assumingOperatorName = None,
+                state = Validated(
+                  downloadUrl = url"http://example.com",
+                  reportingPeriod = Year.of(2024),
+                  fileName = fileName,
+                  checksum = "checksum",
+                  size = 1337
+                ),
+                created = now,
+                updated = now
+              )
+
+              val organisationContact = OrganisationContact(Organisation("org name"), "org email", None)
+              val subscription = SubscriptionInfo(
+                id = subscriptionId,
+                gbUser = false,
+                tradingName = None,
+                primaryContact = organisationContact,
+                secondaryContact = None
+              )
+
+              val innerContent = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SubmissionSampleNoXmlDeclaration.xml")).mkString
+              val fileSource = Source.single(ByteString.fromString(innerContent))
+
+              val expectedAudit = AddSubmissionEvent(
+                conversationId = submissionId,
+                dprsId = dprsId,
+                operatorId = "operatorId",
+                operatorName = "operatorName",
+                reportingPeriod = Year.of(2024),
+                fileName = fileName,
+                fileSize = 1337L,
+                deliveryRoute = Dprs0502,
+                processedAt = now,
+                isSent = false
+              )
+
+              when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+              when(mockDownloadConnector.download(any())).thenReturn(Future.successful(fileSource))
+              when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.failed(new RuntimeException()))
+
+              submissionService.submit(submission)(using hc).failed.futureValue
+
+              val requestBodyCaptor: ArgumentCaptor[Source[ByteString, ?]] =
+                ArgumentCaptor.forClass(classOf[Source[ByteString, ?]])
+
+              verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+              verify(mockSubmissionConnector).submit(eqTo(submissionId), requestBodyCaptor.capture())(using any())
+              verify(mockSdesService, never()).enqueueSubmission(any(), any(), any(), any())
+              verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+            }
+
           }
 
           "when the XML has an XML declaration" in {
@@ -342,8 +404,20 @@ class SubmissionServiceSpec
             val innerContent = scala.io.Source.fromInputStream(getClass.getResourceAsStream("/SubmissionSampleAssumed.xml")).mkString
             val fileSource = Source.single(ByteString.fromString(innerContent))
 
+            val expectedAudit = AddSubmissionEvent(
+              conversationId = submissionId,
+              dprsId = dprsId,
+              operatorId = "operatorId",
+              operatorName = "operatorName",
+              reportingPeriod = Year.of(2024),
+              fileName = fileName,
+              fileSize = 1337L,
+              deliveryRoute = Dprs0502,
+              processedAt = now,
+              isSent = true
+            )
+
             when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
-            when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.failed(new RuntimeException()))
             when(mockDownloadConnector.download(any())).thenReturn(Future.successful(fileSource))
             when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.successful(Done))
 
@@ -354,7 +428,8 @@ class SubmissionServiceSpec
 
             verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
             verify(mockSubmissionConnector).submit(eqTo(submissionId), requestBodyCaptor.capture())(using any())
-            verify(mockSdesService, never()).enqueueSubmission(any(), any(), any())
+            verify(mockSdesService, never()).enqueueSubmission(any(), any(), any(), any())
+            verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
 
             val result = requestBodyCaptor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue
             val document = validate(result)
@@ -427,22 +502,79 @@ class SubmissionServiceSpec
             fileName = fileName,
             fileSize = 3_000_001L,
             deliveryRoute = Dct52A,
-            processedAt = now
+            processedAt = now,
+            isSent = true
           )
 
           when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
-          when(mockSdesService.enqueueSubmission(any(), any(), any())).thenReturn(Future.successful(Done))
+          when(mockSdesService.enqueueSubmission(any(), any(), any(), any())).thenReturn(Future.successful(Done))
           when(mockDownloadConnector.download(any())).thenReturn(Future.failed(new RuntimeException()))
           when(mockSubmissionConnector.submit(any(), any())(using any())).thenReturn(Future.failed(new RuntimeException()))
 
           submissionService.submit(submission)(using hc).futureValue
 
           verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
-          verify(mockSdesService).enqueueSubmission(submissionId, submission.state.asInstanceOf[Validated], subscription)
+          verify(mockSdesService).enqueueSubmission(submissionId, submission.state.asInstanceOf[Validated], subscription, expectedAudit)
           verify(mockDownloadConnector, never()).download(any())
           verify(mockSubmissionConnector, never()).submit(any(), any())(using any())
           verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
         }
+
+        "when enqueue the submission fails" in {
+
+          val submission = Submission(
+            _id = submissionId,
+            submissionType = SubmissionType.Xml,
+            dprsId = dprsId,
+            operatorId = "operatorId",
+            operatorName = "operatorName",
+            assumingOperatorName = None,
+            state = Validated(
+              downloadUrl = url"http://example.com",
+              reportingPeriod = Year.of(2024),
+              fileName = fileName,
+              checksum = "checksum",
+              size = 3_000_001L
+            ),
+            created = now,
+            updated = now
+          )
+
+          val individualContact = IndividualContact(Individual("first", "last"), "individual email", Some("0777777"))
+          val organisationContact = OrganisationContact(Organisation("org name"), "org email", Some("0787777"))
+          val subscription = SubscriptionInfo(
+            id = subscriptionId,
+            gbUser = true,
+            tradingName = Some("tradingName"),
+            primaryContact = individualContact,
+            secondaryContact = Some(organisationContact)
+          )
+
+          val expectedAudit = AddSubmissionEvent(
+            conversationId = submissionId,
+            dprsId = dprsId,
+            operatorId = "operatorId",
+            operatorName = "operatorName",
+            reportingPeriod = Year.of(2024),
+            fileName = fileName,
+            fileSize = 3_000_001L,
+            deliveryRoute = Dct52A,
+            processedAt = now,
+            isSent = true
+          )
+
+          when(mockSubscriptionConnector.get(any())(using any())).thenReturn(Future.successful(subscription))
+          when(mockSdesService.enqueueSubmission(any(), any(), any(), any())).thenReturn(Future.failed(new RuntimeException()))
+
+          submissionService.submit(submission)(using hc).failed.futureValue
+
+          verify(mockSubscriptionConnector).get(eqTo(dprsId))(using any())
+          verify(mockSdesService).enqueueSubmission(submissionId, submission.state.asInstanceOf[Validated], subscription, expectedAudit)
+          verify(mockDownloadConnector, never()).download(any())
+          verify(mockSubmissionConnector, never()).submit(any(), any())(using any())
+          verify(mockAuditService).audit(eqTo(expectedAudit.copy(isSent = false)))(using any(), any())
+        }
+
       }
     }
 

@@ -81,19 +81,21 @@ class SubmissionService @Inject() (
             fileName = state.fileName,
             fileSize = state.size,
             deliveryRoute = if (state.size <= sdesSubmissionThreshold) Dprs0502 else Dct52A,
-            processedAt = clock.instant()
+            processedAt = clock.instant(),
+            isSent = true
           )
-
-          auditService.audit(auditEvent)
 
           (if (state.size <= sdesSubmissionThreshold) {
             submitDirect(submission, state, subscription)
           } else {
-            sdesService.enqueueSubmission(submission._id, state, subscription)
+            sdesService.enqueueSubmission(submission._id, state, subscription, auditEvent)
           }) andThen {
             case Success(_) =>
               fileRate.mark(1)
               byteRate.mark(state.size)
+              auditService.audit(auditEvent)
+            case _ =>
+              auditService.audit(auditEvent.copy(isSent = false))
           }
         }
       case _ =>

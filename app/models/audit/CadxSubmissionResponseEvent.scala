@@ -20,6 +20,7 @@ import enumeratum.{EnumEntry, PlayEnum}
 import models.audit.AddSubmissionEvent.DeliveryRoute
 import models.audit.AddSubmissionEvent.DeliveryRoute.findValues
 import models.audit.CadxSubmissionResponseEvent.FileStatus
+import models.submission.Submission
 import play.api.libs.functional.syntax.*
 import play.api.libs.json.{OWrites, __}
 
@@ -31,7 +32,8 @@ final case class CadxSubmissionResponseEvent(
                                               operatorId: String,
                                               operatorName: String,
                                               fileName: String,
-                                              fileStatus: FileStatus
+                                              fileStatus: FileStatus,
+                                              responseType: Submission.SubmissionType
                                             ) extends AuditEvent {
 
   override val auditType: String = "CadxSubmissionResponse"
@@ -55,6 +57,7 @@ object CadxSubmissionResponseEvent {
     (__ \ "platformOperatorId").write[String] and
     (__ \ "platformOperator").write[String] and
     (__ \ "fileName").write[String] and
-    (__ \ "fileStatus").write[FileStatus]
+    (__ \ "fileStatus").write[FileStatus] and
+    (__ \ "responseType").write[Submission.SubmissionType]
   )(o => Tuple.fromProductTyped(o))
 }
