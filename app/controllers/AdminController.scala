@@ -16,8 +16,10 @@
 
 package controllers
 
+import models.admin.UpdateSubmissionStateRequest
 import models.sdes.CadxResultWorkItem
-import play.api.libs.json.{Format, Json}
+import models.submission.Submission.State
+import play.api.libs.json.{Format, JsValue, Json}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.{CadxResultWorkItemRepository, SubmissionRepository}
 import uk.gov.hmrc.internalauth.client.*
@@ -52,9 +54,36 @@ class AdminController @Inject()(
     )
   }
 
-  def getBlockedSubmissions(): Action[AnyContent] = {
+  def getBlockedSubmissions: Action[AnyContent] = {
     authorise(routes.AdminController.getBlockedSubmissions().path()).async {
-      submissionRepository.getBlockedSubmissionIds().map(items => Ok(Json.toJson(items)))
+      submissionRepository.findBlockedSubmissionIds().map(items => Ok(Json.toJson(items)))
+    }
+  }
+
+  def getBlockedSubmissionById(submissionId: String): Action[AnyContent] = {
+    authorise(routes.AdminController.getBlockedSubmissionById(submissionId).path()).async {
+      submissionRepository.findBlockedSubmission(submissionId).map(items => Ok(Json.toJson(items)))
+    }
+  }
+
+  def updateBlockedSubmission(submissionId: String): Action[JsValue] = {
+    authorise(routes.AdminController.updateBlockedSubmission(submissionId).path()).async(parse.json) { implicit request =>
+      withJsonBody[UpdateSubmissionStateRequest] { updateRequest =>
+        submissionRepository.getById(submissionId).flatMap {
+          case Some(submission) => submission.state match {
+            case submitted: State.Submitted =>
+              val updatedState: State = updateRequest.state.toLowerCase() match {
+                case "approved" => State.Approved(fileName = submitted.fileName, reportingPeriod = submitted.reportingPeriod)
+                case "rejected" => State.Rejected(fileName = submitted.fileName, reportingPeriod = submitted.reportingPeriod)
+                case invalid => throw new Exception(s"Invalid state transition: $invalid")
+              }
+              val updatedSubmission = submission.copy(state = updatedState)
+              submissionRepository.save(updatedSubmission).map(_ => NoContent)
+            case other => Future.failed(new Exception(s"Submission $submissionId is not in Submitted state, found: $other"))
+          }
+          case None => Future.successful(NotFound)
+        }
+      }
     }
   }
 

@@ -16,13 +16,17 @@
 
 package controllers
 
+import models.admin.UpdateSubmissionStateRequest
 import models.sdes.CadxResultWorkItem
 import models.submission
 import models.submission.IdAndLastUpdated
+import models.submission.Submission.State
+import models.submission.Submission.State.Submitted
+import org.apache.pekko.Done
 import org.bson.types.ObjectId
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
-import org.mockito.Mockito.{reset, verify, when}
+import org.mockito.Mockito.{reset, times, verify, when}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -35,12 +39,13 @@ import play.api.libs.json.{Format, Json}
 import play.api.test.Helpers.*
 import play.api.test.{FakeRequest, Helpers}
 import repository.{CadxResultWorkItemRepository, SubmissionRepository}
+import support.builders.SubmissionBuilder.aSubmission
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.internalauth.client.test.{BackendAuthComponentsStub, StubBehaviour}
 import uk.gov.hmrc.internalauth.client.{BackendAuthComponents, Retrieval}
 import uk.gov.hmrc.mongo.workitem.{ProcessingStatus, WorkItem}
 
-import java.time.Instant
+import java.time.{Instant, Year}
 import scala.concurrent.{ExecutionContext, Future}
 
 class AdminControllerSpec
@@ -60,7 +65,7 @@ class AdminControllerSpec
 
   private val now: Instant = Instant.now()
 
-  override def beforeEach() = {
+  override def beforeEach(): Unit = {
     reset(mockSubmissionRepo)
     reset(mockStubBehaviour)
     reset(mockCadxResultWorkItemRepo)
@@ -78,7 +83,7 @@ class AdminControllerSpec
 
       running(app) {
         val request = FakeRequest(routes.AdminController.getBlockedSubmissions())
-                        .withHeaders("Authorization" -> "Token some-token")
+          .withHeaders("Authorization" -> "Token some-token")
         val result = route(app, request).value
 
         status(result) mustBe UNAUTHORIZED
@@ -105,20 +110,20 @@ class AdminControllerSpec
 
     "retrieves submissions that have been in submitted state for more than a threshold value" in {
       val app: Application = GuiceApplicationBuilder().overrides(
-          bind[SubmissionRepository].toInstance(mockSubmissionRepo),
-          bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
-          ).build()
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
 
       when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval))).thenReturn(Future.unit)
 
-      when(mockSubmissionRepo.getBlockedSubmissionIds()).thenReturn(Future.successful(List(
-        submission.IdAndLastUpdated("ID1",Instant.parse("2024-10-10T10:10:10.100Z")),
-        submission.IdAndLastUpdated("ID2",Instant.parse("2024-10-10T10:10:10.100Z"))
+      when(mockSubmissionRepo.findBlockedSubmissionIds()).thenReturn(Future.successful(List(
+        submission.IdAndLastUpdated("ID1", Instant.parse("2024-10-10T10:10:10.100Z")),
+        submission.IdAndLastUpdated("ID2", Instant.parse("2024-10-10T10:10:10.100Z"))
       )))
 
       running(app) {
         val request = FakeRequest(routes.AdminController.getBlockedSubmissions())
-                        .withHeaders("Authorization" -> "Token some-token")
+          .withHeaders("Authorization" -> "Token some-token")
         val result = route(app, request).value
 
         status(result) mustBe OK
@@ -129,6 +134,177 @@ class AdminControllerSpec
             |]
             |""".stripMargin)
       }
+    }
+  }
+
+  "getBlockedSubmissionById" - {
+    "rejects an invalid token from the requester" in {
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval)))
+        .thenReturn(Future.failed(UpstreamErrorResponse("Unauthorized", UNAUTHORIZED)))
+
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.getBlockedSubmissionById("some-id"))
+          .withHeaders("Authorization" -> "Token some-token")
+        val result = route(app, request).value
+
+        status(result) mustBe UNAUTHORIZED
+      }
+    }
+
+    "checks the user is authorized" in {
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval)))
+        .thenReturn(Future.failed(UpstreamErrorResponse("Forbidden", FORBIDDEN)))
+
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.getBlockedSubmissionById("any-submission-id"))
+          .withHeaders("Authorization" -> "Token some-token")
+        val result = route(app, request).value
+
+        status(result) mustBe FORBIDDEN
+      }
+    }
+
+    "retrieves а submission that have been in submitted state for more than a threshold value" in {
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval))).thenReturn(Future.unit)
+
+      when(mockSubmissionRepo.findBlockedSubmission("ID1")).thenReturn(Future.successful(Some(
+        submission.IdAndLastUpdated("ID1", Instant.parse("2024-10-10T10:10:10.100Z"))
+      )))
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.getBlockedSubmissionById("ID1"))
+          .withHeaders("Authorization" -> "Token some-token")
+        val result = route(app, request).value
+
+        status(result) mustBe OK
+        contentAsJson(result) mustBe Json.parse(
+          """
+            | {"id":"ID1", "lastUpdated":"2024-10-10T10:10:10.100Z"}
+            |""".stripMargin)
+      }
+    }
+  }
+
+  "updateBlockedSubmission" - {
+    "rejects an invalid token from the requester" in {
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval)))
+        .thenReturn(Future.failed(UpstreamErrorResponse("Unauthorized", UNAUTHORIZED)))
+
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.updateBlockedSubmission("any-submission-id"))
+          .withHeaders("Authorization" -> "Token some-token")
+          .withJsonBody(Json.toJson(UpdateSubmissionStateRequest("Approved")))
+        val result = route(app, request).value
+
+        status(result) mustBe UNAUTHORIZED
+      }
+    }
+
+    "checks the user is authorized" in {
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval)))
+        .thenReturn(Future.failed(UpstreamErrorResponse("Forbidden", FORBIDDEN)))
+
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.updateBlockedSubmission("any-submission-id"))
+          .withHeaders("Authorization" -> "Token some-token")
+          .withJsonBody(Json.toJson(UpdateSubmissionStateRequest("Approved")))
+        val result = route(app, request).value
+
+        status(result) mustBe FORBIDDEN
+      }
+    }
+
+    "must return not found when no submission with the id exists" in {
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval))).thenReturn(Future.unit)
+
+      when(mockSubmissionRepo.getById("some-submission-id")).thenReturn(Future.successful(None))
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.updateBlockedSubmission("some-submission-id"))
+          .withHeaders("Authorization" -> "Token some-token")
+          .withJsonBody(Json.toJson(UpdateSubmissionStateRequest("Approved")))
+        val result = route(app, request).value
+
+        status(result) mustBe NOT_FOUND
+      }
+    }
+
+    "must must state to rejected when state is Submitted and Approved request is sent" in {
+      val submittedState = Submitted("file-name", Year.parse("2024"), 1234)
+      val submission = aSubmission.copy(state = submittedState)
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval))).thenReturn(Future.unit)
+      when(mockSubmissionRepo.getById("some-submission-id")).thenReturn(Future.successful(Some(submission)))
+      when(mockSubmissionRepo.save(any)).thenReturn(Future.successful(Done))
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.updateBlockedSubmission("some-submission-id"))
+          .withHeaders("Authorization" -> "Token some-token")
+          .withJsonBody(Json.toJson(UpdateSubmissionStateRequest("Approved")))
+        val result = route(app, request).value
+
+        status(result) mustBe NO_CONTENT
+      }
+      val expectedSubmission = submission.copy(state = State.Approved(fileName = "file-name", reportingPeriod = Year.parse("2024")))
+      verify(mockSubmissionRepo, times(1)).save(expectedSubmission)
+    }
+
+    "must must state to rejected when state is Submitted and Rejected request is sent" in {
+      val submittedState = Submitted("file-name", Year.parse("2024"), 1234)
+      val submission = aSubmission.copy(state = submittedState)
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval))).thenReturn(Future.unit)
+      when(mockSubmissionRepo.getById("some-submission-id")).thenReturn(Future.successful(Some(submission)))
+      when(mockSubmissionRepo.save(any)).thenReturn(Future.successful(Done))
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.updateBlockedSubmission("some-submission-id"))
+          .withHeaders("Authorization" -> "Token some-token")
+          .withJsonBody(Json.toJson(UpdateSubmissionStateRequest("Rejected")))
+        val result = route(app, request).value
+
+        status(result) mustBe NO_CONTENT
+      }
+      val expectedSubmission = submission.copy(state = State.Rejected(fileName = "file-name", reportingPeriod = Year.parse("2024")))
+      verify(mockSubmissionRepo, times(1)).save(expectedSubmission)
     }
   }
 

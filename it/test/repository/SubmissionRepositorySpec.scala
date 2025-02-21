@@ -16,10 +16,10 @@
 
 package repository
 
-import models.submission.Submission
-import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, Validated}
+import models.submission.Submission.State.*
 import models.submission.Submission.SubmissionType
 import models.submission.Submission.SubmissionType.ManualAssumedReport
+import models.submission.{IdAndLastUpdated, Submission}
 import org.mongodb.scala.model.Indexes
 import org.scalactic.source.Position
 import org.scalatest.concurrent.IntegrationPatience
@@ -35,8 +35,8 @@ import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
-import java.time.{Duration, Instant, Year}
 import java.time.temporal.ChronoUnit
+import java.time.{Duration, Instant, Year}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -160,11 +160,11 @@ class SubmissionRepositorySpec
     mustPreserveMdc(repository.getById("id"))
   }
 
-  "getBlockedSubmissionIds" - {
+  "findBlockedSubmissionIds" - {
     "must retrieve submissions that haven't updated recently and are are in Submitted state" in {
       val oldInstant = Instant.now()
-                        .plus(Duration.ofMinutes(-2))
-                        .truncatedTo(ChronoUnit.MILLIS)
+        .plus(Duration.ofMinutes(-2))
+        .truncatedTo(ChronoUnit.MILLIS)
 
       val oldSubmissionNotSubmitted = submission.copy(
         _id = "getBlockedSubmissionIds-1",
@@ -192,19 +192,49 @@ class SubmissionRepositorySpec
       insert(oldSubmissionInSubmittedState).futureValue
       insert(recentSubmissionInSubmittedState).futureValue
 
-      val result = repository.getBlockedSubmissionIds().futureValue
+      val result = repository.findBlockedSubmissionIds().futureValue
       result.size mustBe 1
       result.head.id mustBe "getBlockedSubmissionIds-3"
-      result.head.lastUpdated mustEqual(oldInstant)
+      result.head.lastUpdated mustEqual (oldInstant)
     }
 
-    mustPreserveMdc(repository.getBlockedSubmissionIds())
+    mustPreserveMdc(repository.findBlockedSubmissionIds())
   }
 
+  "findBlockedSubmission" - {
+    "must return submission when exist" in {
+      val oldInstant = Instant.now()
+        .plus(Duration.ofMinutes(-2))
+        .truncatedTo(ChronoUnit.MILLIS)
+      val oldSubmittedSubmission = submission.copy(
+        _id = "some-submission-id",
+        state = Submitted("some-filename", Year.of(2024), 544645L),
+        updated = oldInstant
+      )
 
+      insert(oldSubmittedSubmission).futureValue
+
+      repository.findBlockedSubmission("some-submission-id").futureValue mustBe
+        Some(IdAndLastUpdated("some-submission-id", oldInstant))
+    }
+
+    "must return None when submission does not exist" in {
+      val oldInstant = Instant.now()
+        .plus(Duration.ofMinutes(-2))
+        .truncatedTo(ChronoUnit.MILLIS)
+      val oldSubmittedSubmission = submission.copy(
+        _id = "some-submission-id",
+        state = Submitted("some-filename", Year.of(2024), 544645L),
+        updated = oldInstant
+      )
+
+      insert(oldSubmittedSubmission).futureValue
+
+      repository.findBlockedSubmission("unknown-id").futureValue mustBe None
+    }
+  }
 
   "countSubmittedXmlSubmissions" - {
-
     "must count XML submissions for this user that are in a Submitted state" in {
       val submission1 = submission.copy(_id = "id1", state = Submitted("filename", Year.of(2024), 45446L))
       val submission2 = submission.copy(_id = "id2", state = Submitted("filename", Year.of(2024), 464645L), submissionType = ManualAssumedReport)
@@ -312,7 +342,7 @@ class SubmissionRepositorySpec
       insert(submission4).futureValue
       insert(submission5).futureValue
       repository.metrics.futureValue mustEqual Map(
-        "submissions.pending.files"     -> 3,
+        "submissions.pending.files" -> 3,
         "submissions.pending.kilobytes" -> 1
       )
     }

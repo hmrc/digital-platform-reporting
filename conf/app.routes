@@ -41,5 +41,8 @@ POST        /confirmed/reporting-notifications                  controllers.Conf
 GET         /confirmed/contact-details                          controllers.ConfirmedDetailsController.contactDetails()
 POST        /confirmed/contact-details                          controllers.ConfirmedDetailsController.saveContactDetails()
 
-GET         /admin/blocked-submissions      controllers.AdminController.getBlockedSubmissions()
-GET         /admin/cadx-result/work-items   controllers.AdminController.getCadxResultWorkItems(statuses: Set[ProcessingStatus] ?= Set.empty, limit: Int ?= 10, offset: Int ?= 0)
+GET         /admin/blocked-submissions                  controllers.AdminController.getBlockedSubmissions()
+GET         /admin/blocked-submissions/:submissionId    controllers.AdminController.getBlockedSubmissionById(submissionId: String)
+PATCH       /admin/blocked-submissions/:submissionId    controllers.AdminController.updateBlockedSubmission(submissionId: String)
+
+GET         /admin/cadx-result/work-items               controllers.AdminController.getCadxResultWorkItems(statuses: Set[ProcessingStatus] ?= Set.empty, limit: Int ?= 10, offset: Int ?= 0)

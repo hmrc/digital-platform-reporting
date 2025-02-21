@@ -16,9 +16,9 @@
 
 package repository
 
-import models.submission.Submission.SubmissionType
 import config.AppConfig
 import models.submission
+import models.submission.Submission.SubmissionType
 import models.submission.{IdAndLastUpdated, Submission}
 import org.apache.pekko.Done
 import org.mongodb.scala.model.*
@@ -38,12 +38,11 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SubmissionRepository @Inject() (
-                                       mongoComponent: MongoComponent,
-                                       configuration: Configuration,
-                                       clock: Clock,
-                                       appConfig: AppConfig
-                                     )(implicit val ec: ExecutionContext) extends PlayMongoRepository[Submission](
+class SubmissionRepository @Inject()(mongoComponent: MongoComponent,
+                                     configuration: Configuration,
+                                     clock: Clock,
+                                     appConfig: AppConfig)
+                                    (implicit val ec: ExecutionContext) extends PlayMongoRepository[Submission](
   collectionName = "submissions",
   mongoComponent = mongoComponent,
   domainFormat = Submission.mongoFormat,
@@ -73,7 +72,7 @@ class SubmissionRepository @Inject() (
     ).limit(1).headOption()
   }
 
-  def getBlockedSubmissionIds(): Future[Seq[IdAndLastUpdated]] = {
+  def findBlockedSubmissionIds(): Future[Seq[IdAndLastUpdated]] = {
     val cutoff = Instant.now(clock).minus(appConfig.blockedSubmissionThreshold)
     Mdc.preservingMdc {
       collection.find(
@@ -84,6 +83,22 @@ class SubmissionRepository @Inject() (
         ).limit(1000)
         .map(s => submission.IdAndLastUpdated(s._id, s.updated))
         .toFuture()
+    }
+  }
+
+  def findBlockedSubmission(submissionId: String): Future[Option[IdAndLastUpdated]] = {
+    val cutoff = Instant.now(clock).minus(appConfig.blockedSubmissionThreshold)
+    Mdc.preservingMdc {
+      collection.find(
+          filter = Filters.and(
+            Filters.eq("_id", submissionId),
+            Filters.eq("state.type", "Submitted"),
+            Filters.lt("updated", cutoff)
+          )
+        ).limit(1)
+        .map(s => submission.IdAndLastUpdated(s._id, s.updated))
+        .headOption()
+
     }
   }
 
@@ -126,7 +141,7 @@ class SubmissionRepository @Inject() (
   }
 
   override def metrics(implicit ec: ExecutionContext): Future[Map[String, Int]] = for {
-    submittedFileCount  <- getSubmittedFileCount
+    submittedFileCount <- getSubmittedFileCount
     submittedBytesCount <- getSubmittedBytesCount
   } yield Map(
     "submissions.pending.files" -> submittedFileCount.toInt,

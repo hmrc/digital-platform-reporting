@@ -17,6 +17,8 @@
 package worker
 
 import connectors.SdesConnector
+import models.audit.AddSubmissionEvent
+import models.audit.AddSubmissionEvent.DeliveryRoute
 import models.sdes.{FileNotifyRequest, SdesSubmissionWorkItem}
 import models.subscription.responses.SubscriptionInfo
 import models.subscription.{Individual, IndividualContact, Organisation, OrganisationContact}
@@ -38,6 +40,7 @@ import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.CleanMongoCollectionSupport
 
+import java.time.{Instant, Year}
 import scala.concurrent.Future
 
 class SubmissionWorkerSpec
@@ -88,6 +91,19 @@ class SubmissionWorkerSpec
       primaryContact = individualContact,
       secondaryContact = Some(organisationContact)
     )
+    val now = Instant.now()
+    val addSubmissionEvent = AddSubmissionEvent(
+      conversationId = "submissionId",
+      dprsId = "dprsId",
+      operatorId = "poId",
+      operatorName = "po",
+      reportingPeriod = Year.of(2024),
+      fileName = "test.xml",
+      fileSize = 1337,
+      deliveryRoute = DeliveryRoute.Dct52A,
+      processedAt = now,
+      isSent = true
+    )
 
     val workItem = SdesSubmissionWorkItem(
       submissionId = submissionId,
@@ -95,7 +111,8 @@ class SubmissionWorkerSpec
       fileName = "test.xml",
       checksum = "checksum",
       size = 1337L,
-      subscriptionInfo = subscription
+      subscriptionInfo = subscription,
+      auditEvent = addSubmissionEvent
     )
 
     when(mockSdesConnector.notify(any())(using any())).thenReturn(Future.successful(Done))
