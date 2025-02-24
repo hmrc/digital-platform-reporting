@@ -16,21 +16,17 @@
 
 package controllers
 
-import cats.data.{EitherT, OptionT}
-import connectors.{SdesConnector, SdesDownloadConnector}
+import cats.data.OptionT
 import logging.Logging
-import models.sdes.list.SdesFile
 import models.sdes.{NotificationCallback, NotificationType}
 import models.submission.CadxValidationError
 import models.submission.Submission.State.{Rejected, Submitted}
-import play.api.Configuration
 import play.api.mvc.{Action, ControllerComponents, Result}
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
-import services.{CadxResultService, CadxResultWorkItemService}
+import services.CadxResultWorkItemService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import java.net.URL
 import java.time.Clock
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}

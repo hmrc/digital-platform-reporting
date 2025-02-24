@@ -21,7 +21,7 @@ import support.builders.IndividualContactBuilder.aIndividualContact
 
 object SubscriptionInfoBuilder {
 
-  val aSubscriptionInfo:SubscriptionInfo = SubscriptionInfo(id = "deafult-id",
+  val aSubscriptionInfo: SubscriptionInfo = SubscriptionInfo(id = "deafult-id",
     gbUser = true,
     tradingName = None,
     primaryContact = aIndividualContact,

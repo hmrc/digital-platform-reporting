@@ -16,7 +16,7 @@
 
 package services
 
-import connectors.{DownloadConnector, PlatformOperatorConnector, SdesConnector, SubmissionConnector, SubscriptionConnector}
+import connectors.*
 import models.assumed.AssumingPlatformOperator
 import models.audit.AddSubmissionEvent
 import models.audit.AddSubmissionEvent.DeliveryRoute.{Dct52A, Dprs0502}
@@ -33,7 +33,7 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
-import org.mockito.Mockito.{never, times, verify, when}
+import org.mockito.Mockito.{never, verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
@@ -56,7 +56,7 @@ import javax.xml.parsers.SAXParserFactory
 import javax.xml.transform.stream.StreamSource
 import javax.xml.validation.SchemaFactory
 import scala.concurrent.Future
-import scala.xml.{Document, SAXParseException, Utility, XML}
+import scala.xml.{Document, SAXParseException, XML}
 
 class SubmissionServiceSpec
   extends AnyFreeSpec
@@ -68,6 +68,7 @@ class SubmissionServiceSpec
     with OptionValues
     with IntegrationPatience {
 
+  private lazy val submissionService: SubmissionService = app.injector.instanceOf[SubmissionService]
   private val now = Instant.now()
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
   private val mockSubmissionConnector: SubmissionConnector = mock[SubmissionConnector]
@@ -79,7 +80,6 @@ class SubmissionServiceSpec
   private val mockSubmissionRepository: SubmissionRepository = mock[SubmissionRepository]
   private val mockUuidService: UuidService = mock[UuidService]
   private val mockAuditService: AuditService = mock[AuditService]
-  private val mockSdesConnector: SdesConnector = mock[SdesConnector]
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
@@ -101,8 +101,6 @@ class SubmissionServiceSpec
       .build()
 
   given Materializer = app.injector.instanceOf[Materializer]
-
-  private lazy val submissionService: SubmissionService = app.injector.instanceOf[SubmissionService]
 
   override def beforeEach(): Unit = {
     super.beforeEach()

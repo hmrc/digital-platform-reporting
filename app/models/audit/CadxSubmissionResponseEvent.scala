@@ -17,14 +17,11 @@
 package models.audit
 
 import enumeratum.{EnumEntry, PlayEnum}
-import models.audit.AddSubmissionEvent.DeliveryRoute
 import models.audit.AddSubmissionEvent.DeliveryRoute.findValues
 import models.audit.CadxSubmissionResponseEvent.FileStatus
 import models.submission.Submission
 import play.api.libs.functional.syntax.*
 import play.api.libs.json.{OWrites, __}
-
-import java.time.Instant
 
 final case class CadxSubmissionResponseEvent(
                                               conversationId: String,
@@ -46,6 +43,7 @@ object CadxSubmissionResponseEvent {
   object FileStatus extends PlayEnum[FileStatus] {
 
     case object Passed extends FileStatus("passed")
+
     case object Failed extends FileStatus("failed")
 
     override val values: IndexedSeq[FileStatus] = findValues
@@ -53,11 +51,11 @@ object CadxSubmissionResponseEvent {
 
   given OWrites[CadxSubmissionResponseEvent] = (
     (__ \ "conversationId").write[String] and
-    (__ \ "digitalPlatformReportingId").write[String] and
-    (__ \ "platformOperatorId").write[String] and
-    (__ \ "platformOperator").write[String] and
-    (__ \ "fileName").write[String] and
-    (__ \ "fileStatus").write[FileStatus] and
-    (__ \ "responseType").write[Submission.SubmissionType]
-  )(o => Tuple.fromProductTyped(o))
+      (__ \ "digitalPlatformReportingId").write[String] and
+      (__ \ "platformOperatorId").write[String] and
+      (__ \ "platformOperator").write[String] and
+      (__ \ "fileName").write[String] and
+      (__ \ "fileStatus").write[FileStatus] and
+      (__ \ "responseType").write[Submission.SubmissionType]
+    )(o => Tuple.fromProductTyped(o))
 }

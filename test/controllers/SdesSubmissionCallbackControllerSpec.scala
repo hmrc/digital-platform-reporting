@@ -18,15 +18,11 @@ package controllers
 
 import models.sdes.{NotificationCallback, NotificationType}
 import models.submission.Submission.State.*
-import models.submission.{CadxValidationError, Submission}
-import models.submission.Submission.{SubmissionType, UploadFailureReason}
 import models.submission.Submission.UploadFailureReason.{NotXml, PlatformOperatorIdMissing, ReportingPeriodInvalid, SchemaValidationError}
-import org.apache.pekko.stream.Materializer
-import org.apache.pekko.{Done, NotUsed}
-import org.apache.pekko.stream.scaladsl.{Sink, Source}
-import org.apache.pekko.util.ByteString
-import org.mockito.ArgumentMatchers.{any, eq as eqTo}
-import org.mockito.{ArgumentCaptor, Mockito}
+import models.submission.Submission.{SubmissionType, UploadFailureReason}
+import models.submission.{CadxValidationError, Submission}
+import org.apache.pekko.Done
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify, when}
 import org.scalacheck.Gen

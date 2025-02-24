@@ -17,20 +17,16 @@
 package services
 
 import connectors.{SdesConnector, SdesDownloadConnector}
-import controllers.routes
 import models.sdes.*
 import models.sdes.list.SdesFile
-import models.submission.Submission.State.Validated
-import models.subscription.responses.SubscriptionInfo
-import models.subscription.{Individual, IndividualContact, Organisation, OrganisationContact}
-import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
+import org.apache.pekko.{Done, NotUsed}
 import org.bson.types.ObjectId
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
-import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito.{never, times, verify, when}
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -40,20 +36,15 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.Json
-import play.api.test.FakeRequest
-import play.api.test.Helpers.{route, status}
-import repository.{CadxResultWorkItemRepository, SdesSubmissionWorkItemRepository}
+import repository.CadxResultWorkItemRepository
 import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.mongo.lock.{Lock, MongoLockRepository}
 import uk.gov.hmrc.mongo.workitem.ProcessingStatus.ToDo
 import uk.gov.hmrc.mongo.workitem.{ProcessingStatus, WorkItem}
-import utils.DateTimeFormats.ISO8601Formatter
 
 import java.time.temporal.ChronoUnit
-import java.time.{Clock, Instant, Year, ZoneOffset}
+import java.time.{Clock, Instant, ZoneOffset}
 import scala.concurrent.Future
-import scala.concurrent.duration.given
 
 class CadxResultWorkItemServiceSpec
   extends AnyFreeSpec
@@ -64,6 +55,7 @@ class CadxResultWorkItemServiceSpec
     with MockitoSugar
     with OptionValues {
 
+  private lazy val cadxResultWorkItemService: CadxResultWorkItemService = app.injector.instanceOf[CadxResultWorkItemService]
   private val now = Instant.now()
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
   private val mockCadxResultWorkItemRepository: CadxResultWorkItemRepository = mock[CadxResultWorkItemRepository]
@@ -97,8 +89,6 @@ class CadxResultWorkItemServiceSpec
         bind[Clock].toInstance(clock)
       )
       .build()
-
-  private lazy val cadxResultWorkItemService: CadxResultWorkItemService = app.injector.instanceOf[CadxResultWorkItemService]
 
   "enqueueResult" - {
 

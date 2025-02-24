@@ -20,6 +20,6 @@ import uk.gov.hmrc.auth.core.retrieve.~
 
 object Retrievals {
   implicit class Ops[A](a: A) {
-    def ~[B](b: B): A ~ B = new ~(a, b)
+    def ~[B](b: B): A ~ B = new~(a, b)
   }
 }

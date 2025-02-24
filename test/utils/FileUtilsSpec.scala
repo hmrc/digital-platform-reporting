@@ -19,8 +19,6 @@ package utils
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 
-import java.time.{Instant, LocalDateTime}
-
 class FileUtilsSpec extends AnyFreeSpec with Matchers {
 
   "stripExtension" - {

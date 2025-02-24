@@ -17,16 +17,17 @@
 package services
 
 import connectors.EmailConnector
-import models.operator.{AddressDetails, ContactDetails}
+import models.email.requests.*
 import models.operator.responses.PlatformOperator
+import models.operator.{AddressDetails, ContactDetails}
 import models.submission.Submission.State
+import models.subscription.*
 import models.subscription.responses.SubscriptionInfo
-import models.subscription._
-import models.email.requests._
 import org.apache.pekko.Done
-import org.mockito.ArgumentMatchers.{any, eq => eqTo}
+import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{never, times, verify, when}
+import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.{BeforeAndAfterEach, TryValues}
@@ -35,8 +36,6 @@ import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import java.time.Year
-import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
-
 import scala.concurrent.Future
 
 class EmailServiceSpec extends AnyFreeSpec
@@ -50,13 +49,12 @@ class EmailServiceSpec extends AnyFreeSpec
   private implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
 
   private val mockEmailConnector = mock[EmailConnector]
+  private val underTest = new EmailService(mockEmailConnector)
 
   override def beforeEach(): Unit = {
     Mockito.reset(mockEmailConnector)
     super.beforeEach()
   }
-
-  private val underTest = new EmailService(mockEmailConnector)
 
   ".sendSuccessfulBusinessRulesChecksEmails(...)" - {
 

@@ -16,8 +16,7 @@
 
 package services
 
-import cats.data.NonEmptySeq
-import models.audit.{AddSubmissionEvent, AuditEvent}
+import models.audit.AuditEvent
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito.verify
 import org.scalatest.freespec.AnyFreeSpec
@@ -25,8 +24,8 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.inject.bind
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{Json, OFormat}
 import services.AuditServiceSpec.TestEvent
 import uk.gov.hmrc.http.HeaderCarrier
@@ -34,6 +33,7 @@ import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 
 class AuditServiceSpec extends AnyFreeSpec with Matchers with GuiceOneAppPerSuite with MockitoSugar {
 
+  private lazy val auditService: AuditService = app.injector.instanceOf[AuditService]
   private val mockAuditConnector: AuditConnector = mock[AuditConnector]
 
   override def fakeApplication(): Application =
@@ -43,13 +43,12 @@ class AuditServiceSpec extends AnyFreeSpec with Matchers with GuiceOneAppPerSuit
       )
       .build()
 
-  private lazy val auditService: AuditService = app.injector.instanceOf[AuditService]
-
   "audit" - {
 
     "must call the audit connector with the relevant data" in {
 
       val event = TestEvent("some-audit-type")
+
       given hc: HeaderCarrier = HeaderCarrier()
 
       auditService.audit(event)

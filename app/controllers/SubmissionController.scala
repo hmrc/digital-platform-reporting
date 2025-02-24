@@ -118,7 +118,6 @@ class SubmissionController @Inject() (
     }
   }
 
-  // TODO Should we add internal auth to this endpoint?
   def uploadSuccess(id: String): Action[UploadSuccessRequest] = Action.async(parse.json[UploadSuccessRequest]) { implicit request =>
     submissionRepository.get(request.body.dprsId, id).flatMap {
       _.map { submission =>
@@ -171,7 +170,6 @@ class SubmissionController @Inject() (
     }
   }
 
-  // TODO Should we add internal auth to this endpoint?
   def uploadFailed(id: String): Action[UploadFailedRequest] = Action.async(parse.json[UploadFailedRequest]) { implicit request =>
     submissionRepository.get(request.body.dprsId, id).flatMap {
       _.map { submission =>

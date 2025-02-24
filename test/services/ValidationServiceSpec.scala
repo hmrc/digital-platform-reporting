@@ -51,6 +51,7 @@ class ValidationServiceSpec
 
   private val mockDownloadConnector = mock[DownloadConnector]
   private val mockAssumedReportingService = mock[AssumedReportingService]
+  private val validationService = app.injector.instanceOf[ValidationService]
 
   override def fakeApplication(): Application =
     new GuiceApplicationBuilder()
@@ -68,8 +69,6 @@ class ValidationServiceSpec
     super.beforeEach()
     Mockito.reset(mockDownloadConnector, mockAssumedReportingService)
   }
-
-  private val validationService = app.injector.instanceOf[ValidationService]
 
   "validateXml" - {
 
