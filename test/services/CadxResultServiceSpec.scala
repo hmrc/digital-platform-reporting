@@ -20,13 +20,13 @@ import connectors.{EmailConnector, PlatformOperatorConnector, SubscriptionConnec
 import generated.{AEOI, Accepted, BREResponse_Type, ErrorDetail_Type, FileError_Type, Generated_BREResponse_TypeFormat, GenericStatusMessage_Type, RecordError_Type, Rejected, RequestCommon_Type, RequestDetail_Type, ValidationErrors_Type, ValidationResult_Type}
 import models.audit.CadxSubmissionResponseEvent
 import models.audit.CadxSubmissionResponseEvent.FileStatus.{Failed, Passed}
-import models.operator.{AddressDetails, ContactDetails}
 import models.operator.responses.PlatformOperator
+import models.operator.{AddressDetails, ContactDetails}
 import models.submission.Submission.SubmissionType.{ManualAssumedReport, Xml}
 import models.submission.Submission.{State, SubmissionType}
 import models.submission.{CadxValidationError, Submission}
-import models.subscription.{Individual, IndividualContact, Organisation, OrganisationContact}
 import models.subscription.responses.SubscriptionInfo
+import models.subscription.{Individual, IndividualContact, Organisation, OrganisationContact}
 import org.apache.pekko.Done
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
@@ -61,6 +61,17 @@ class CadxResultServiceSpec
     with BeforeAndAfterEach
     with IntegrationPatience {
 
+  private lazy val cadxResultService: CadxResultService = app.injector.instanceOf[CadxResultService]
+  private val mockSubmissionRepository: SubmissionRepository = mock[SubmissionRepository]
+  private val mockCadxValidationErrorRepository: CadxValidationErrorRepository = mock[CadxValidationErrorRepository]
+  private val mockAuditService: AuditService = mock[AuditService]
+  private val clock = Clock.fixed(Instant.now(), ZoneOffset.UTC)
+  private val mockSubscriptionConnector: SubscriptionConnector = mock[SubscriptionConnector]
+  private val mockPlatformOperatorConnector: PlatformOperatorConnector = mock[PlatformOperatorConnector]
+  private val mockEmailService: EmailService = mock[EmailService]
+  private val mockEmailConnector: EmailConnector = mock[EmailConnector]
+  private val now = clock.instant()
+
   override def beforeEach(): Unit = {
     super.beforeEach()
     Mockito.reset(
@@ -72,16 +83,6 @@ class CadxResultServiceSpec
       mockEmailService
     )
   }
-
-  private val mockSubmissionRepository: SubmissionRepository = mock[SubmissionRepository]
-  private val mockCadxValidationErrorRepository: CadxValidationErrorRepository = mock[CadxValidationErrorRepository]
-  private val mockAuditService: AuditService = mock[AuditService]
-  private val clock = Clock.fixed(Instant.now(), ZoneOffset.UTC)
-  private val mockSubscriptionConnector: SubscriptionConnector = mock[SubscriptionConnector]
-  private val mockPlatformOperatorConnector: PlatformOperatorConnector = mock[PlatformOperatorConnector]
-  private val mockEmailService: EmailService = mock[EmailService]
-  private val mockEmailConnector: EmailConnector = mock[EmailConnector]
-
 
   override def fakeApplication(): Application = GuiceApplicationBuilder()
     .overrides(
@@ -95,10 +96,6 @@ class CadxResultServiceSpec
       bind[EmailConnector].toInstance(mockEmailConnector)
     )
     .build()
-
-  private lazy val cadxResultService: CadxResultService = app.injector.instanceOf[CadxResultService]
-
-  private val now = clock.instant()
 
   "processResult" - {
 

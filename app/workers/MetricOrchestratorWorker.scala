@@ -20,22 +20,19 @@ import logging.Logging
 import org.apache.pekko.actor.ActorSystem
 import play.api.Configuration
 import play.api.inject.ApplicationLifecycle
-import services.{CadxResultWorkItemService, SdesService}
 import uk.gov.hmrc.mongo.metrix.MetricOrchestrator
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 @Singleton
-class MetricOrchestratorWorker @Inject()(
-                                  actorSystem: ActorSystem,
-                                  configuration: Configuration,
-                                  metricOrchestrator: MetricOrchestrator,
-                                  applicationLifecycle: ApplicationLifecycle
-                                )(using ExecutionContext) extends Logging {
+class MetricOrchestratorWorker @Inject()(actorSystem: ActorSystem,
+                                         configuration: Configuration,
+                                         metricOrchestrator: MetricOrchestrator,
+                                         applicationLifecycle: ApplicationLifecycle)
+                                        (using ExecutionContext) extends Logging {
 
   private val initialDelay = configuration.get[FiniteDuration]("workers.metric-orchestrator-worker.initial-delay")
   private val interval = configuration.get[FiniteDuration]("workers.metric-orchestrator-worker.interval")

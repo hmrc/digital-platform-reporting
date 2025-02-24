@@ -73,7 +73,6 @@ class ValidationService @Inject()(downloadConnector: DownloadConnector,
   def validateXml(fileName: String, dprsId: String, downloadUrl: URL, platformOperatorId: String): Future[Either[UploadFailureReason, Year]] = {
     if (fileName.toLowerCase.endsWith(".xml")) {
       val parser = parserFactory.newSAXParser()
-      // TODO use blocking execution context
       downloadConnector.download(downloadUrl).flatMap { source =>
         val inputStream = source.runWith(StreamConverters.asInputStream())
         val handler = new ValidatingSaxHandler(platformOperatorId, errorLimit)
@@ -94,7 +93,7 @@ class ValidationService @Inject()(downloadConnector: DownloadConnector,
             Future.successful(Left(SchemaValidationError(handler.schemaErrors.result, moreErrors = hasMoreErrors)))
           case _: SAXParseException =>
             Future.successful(Left(SchemaValidationError(handler.schemaErrors.result, moreErrors = true)))
-          case e: UnsupportedEncodingException => Future.successful(Left(SchemaValidationError(
+          case _: UnsupportedEncodingException => Future.successful(Left(SchemaValidationError(
             Seq(SchemaValidationError.Error(1, 1, "XML encoding must be UTF-8")), moreErrors = false
           )))
         }

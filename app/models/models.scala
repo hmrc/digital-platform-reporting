@@ -18,7 +18,6 @@ package models
 
 import play.api.libs.json.*
 import play.api.mvc.{PathBindable, QueryStringBindable}
-import play.api.routing.sird.QueryStringParameterExtractor
 import uk.gov.hmrc.mongo.workitem.ProcessingStatus
 
 import java.net.URL
@@ -48,12 +47,12 @@ given yearFormat: Format[Year] = {
           Try(Year.of(number.toInt))
             .map(JsSuccess(_))
             .getOrElse(JsError("error.invalid"))
-          
+
         case JsString(string) =>
           Try(Year.of(string.toInt))
             .map(JsSuccess(_))
             .getOrElse(JsError("error.invalid"))
-          
+
         case _ =>
           JsError("error.invalid")
       }
@@ -65,13 +64,13 @@ given yearFormat: Format[Year] = {
 }
 
 implicit def yearPathBindable(using intBinder: PathBindable[Int]): PathBindable[Year] = new PathBindable[Year] {
-  
+
   override def bind(key: String, value: String): Either[String, Year] =
     intBinder.bind(key, value) match {
       case Right(x) =>
         Try(Year.of(x)) match {
           case Success(year) => Right(year)
-          case _             => Left(s"Could not bind $x as a Year")
+          case _ => Left(s"Could not bind $x as a Year")
         }
       case _ => Left(s"Could not bind $value as a Year")
     }

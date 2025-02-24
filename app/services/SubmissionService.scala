@@ -43,24 +43,23 @@ import java.time.{Clock, Year}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
-import scala.xml.{Elem, NodeSeq, Utility}
+import scala.xml.{Elem, NodeSeq}
 
 @Singleton
-class SubmissionService @Inject() (
-                                    subscriptionConnector: SubscriptionConnector,
-                                    submissionConnector: SubmissionConnector,
-                                    downloadConnector: DownloadConnector,
-                                    clock: Clock,
-                                    configuration: Configuration,
-                                    sdesService: SdesService,
-                                    uuidService: UuidService,
-                                    platformOperatorConnector: PlatformOperatorConnector,
-                                    assumedReportingService: AssumedReportingService,
-                                    submissionRepository: SubmissionRepository,
-                                    auditService: AuditService,
-                                    escapingService: XmlEscapingService,
-                                    metrics: Metrics
-                                  )(using Materializer, ExecutionContext) {
+class SubmissionService @Inject()(subscriptionConnector: SubscriptionConnector,
+                                  submissionConnector: SubmissionConnector,
+                                  downloadConnector: DownloadConnector,
+                                  clock: Clock,
+                                  configuration: Configuration,
+                                  sdesService: SdesService,
+                                  uuidService: UuidService,
+                                  platformOperatorConnector: PlatformOperatorConnector,
+                                  assumedReportingService: AssumedReportingService,
+                                  submissionRepository: SubmissionRepository,
+                                  auditService: AuditService,
+                                  escapingService: XmlEscapingService,
+                                  metrics: Metrics)
+                                 (using Materializer, ExecutionContext) {
 
   private val sdesSubmissionThreshold: Long = configuration.get[Long]("sdes.size-threshold")
 

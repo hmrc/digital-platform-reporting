@@ -18,22 +18,14 @@ package controllers
 
 import cats.data.{EitherT, OptionT}
 import cats.implicits.given
-import generated.{BREResponse_Type, Generated_BREResponse_TypeFormat, ValidationErrors_Type}
 import logging.Logging
-import models.submission.Submission.State
-import models.submission.Submission.State.{Approved, Rejected, Submitted}
-import models.submission.{CadxValidationError, Submission}
-import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import play.api.Configuration
-import play.api.libs.streams.Accumulator
-import play.api.mvc.{Action, AnyContent, BodyParser, ControllerComponents, Request, Result}
-import repository.{CadxValidationErrorRepository, SubmissionRepository}
+import play.api.mvc.{Action, ControllerComponents, Request, Result}
 import services.CadxResultService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import java.time.{Clock, Instant}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.NodeSeq

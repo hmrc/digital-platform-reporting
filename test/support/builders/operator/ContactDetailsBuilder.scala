@@ -16,7 +16,7 @@
 
 package support.builders.operator
 
-import models.operator.{AddressDetails, ContactDetails, TinDetails}
+import models.operator.ContactDetails
 
 object ContactDetailsBuilder {
 

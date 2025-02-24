@@ -24,7 +24,7 @@ object IndividualContactBuilder {
   val aIndividualContact: IndividualContact = IndividualContact(
     individual = aIndividual,
     email = "default-email",
-    phone= None
+    phone = None
   )
 
 }

@@ -23,7 +23,7 @@ import org.apache.pekko.Done
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import play.api.http.HeaderNames
-import play.api.http.Status.{NOT_FOUND, NO_CONTENT, OK}
+import play.api.http.Status.{NO_CONTENT, OK}
 import play.api.libs.ws.{BodyWritable, SourceBody}
 import services.UuidService
 import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
@@ -37,12 +37,12 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.{Utility, XML}
 
 @Singleton
-class SubmissionConnector @Inject() (
-                                      httpClient: HttpClientV2,
-                                      clock: Clock,
-                                      appConfig: AppConfig,
-                                      uuidService: UuidService
-                                    )(using ExecutionContext) {
+class SubmissionConnector @Inject()(
+                                     httpClient: HttpClientV2,
+                                     clock: Clock,
+                                     appConfig: AppConfig,
+                                     uuidService: UuidService
+                                   )(using ExecutionContext) {
 
   private given BodyWritable[Source[ByteString, ?]] =
     BodyWritable(SourceBody.apply, "application/xml")

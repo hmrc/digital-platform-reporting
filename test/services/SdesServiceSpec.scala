@@ -56,6 +56,7 @@ class SdesServiceSpec
     with MockitoSugar
     with OptionValues {
 
+  private lazy val sdesService: SdesService = app.injector.instanceOf[SdesService]
   private val now = Instant.now()
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
   private val mockSdesSubmissionWorkItemRepository: SdesSubmissionWorkItemRepository = mock[SdesSubmissionWorkItemRepository]
@@ -85,8 +86,6 @@ class SdesServiceSpec
         bind[AuditService].toInstance(mockAuditService)
       )
       .build()
-
-  private lazy val sdesService: SdesService = app.injector.instanceOf[SdesService]
 
   "enqueueSubmission" - {
 

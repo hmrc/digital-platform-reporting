@@ -20,7 +20,7 @@ import logging.Logging
 import org.apache.pekko.actor.ActorSystem
 import play.api.Configuration
 import play.api.inject.ApplicationLifecycle
-import services.{CadxResultWorkItemService, SdesService}
+import services.CadxResultWorkItemService
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.duration.FiniteDuration
@@ -29,12 +29,11 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 @Singleton
-class CadxResultWorker @Inject()(
-                                  actorSystem: ActorSystem,
-                                  configuration: Configuration,
-                                  cadxResultWorkItemService: CadxResultWorkItemService,
-                                  applicationLifecycle: ApplicationLifecycle
-                                )(using ExecutionContext) extends Logging {
+class CadxResultWorker @Inject()(actorSystem: ActorSystem,
+                                 configuration: Configuration,
+                                 cadxResultWorkItemService: CadxResultWorkItemService,
+                                 applicationLifecycle: ApplicationLifecycle)
+                                (using ExecutionContext) extends Logging {
 
   private val initialDelay = configuration.get[FiniteDuration]("workers.cadx-result.initial-delay")
   private val interval = configuration.get[FiniteDuration]("workers.cadx-result.interval")

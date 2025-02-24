@@ -16,17 +16,14 @@
 
 package controllers
 
-import generated.{AEOI, Accepted, BREResponse_Type, ErrorDetail_Type, FileError_Type, Generated_BREResponse_TypeFormat, GenericStatusMessage_Type, RecordError_Type, Rejected, RequestCommon_Type, RequestDetail_Type, ValidationErrors_Type, ValidationResult_Type}
-import models.submission.Submission.{State, SubmissionType}
-import models.submission.Submission.State.{Approved, Ready, Submitted}
-import models.submission.{CadxValidationError, Submission}
+import generated.{AEOI, Accepted, BREResponse_Type, Generated_BREResponse_TypeFormat, GenericStatusMessage_Type, RequestCommon_Type, RequestDetail_Type, ValidationErrors_Type, ValidationResult_Type}
 import org.apache.pekko.Done
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
 import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentCaptor, Mockito}
 import org.mockito.Mockito.{never, verify, when}
+import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -36,15 +33,13 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import repository.{CadxValidationErrorRepository, SubmissionRepository}
 import services.CadxResultService
 import utils.DateTimeFormats
 
 import java.time.temporal.ChronoUnit
-import java.time.{Clock, Instant, Year, ZoneOffset}
+import java.time.{Clock, Instant, ZoneOffset}
 import scala.concurrent.Future
 
 class SubmissionResultCallbackControllerSpec
@@ -131,6 +126,7 @@ class SubmissionResultCallbackControllerSpec
             verify(mockCadxResultService).processResult(captor.capture())
 
             given Materializer = app.materializer
+
             val receivedBody = captor.getValue.runWith(Sink.fold(ByteString.empty)(_ ++ _)).futureValue.utf8String
 
             receivedBody mustEqual requestBody.toString

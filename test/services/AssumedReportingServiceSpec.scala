@@ -22,10 +22,10 @@ import models.assumed.AssumingPlatformOperator
 import models.operator.TinType.{Other, Utr, Vrn}
 import models.operator.responses.PlatformOperator
 import models.operator.{AddressDetails, ContactDetails, TinDetails}
+import models.submission.*
 import models.submission.DeliveredSubmissionSortBy.SubmissionDate
 import models.submission.SortOrder.Descending
 import models.submission.SubmissionStatus.{Pending, Success}
-import models.submission.*
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify, when}
@@ -61,11 +61,13 @@ class AssumedReportingServiceSpec
     with OptionValues
     with IntegrationPatience {
 
+  private lazy val assumedReportingService: AssumedReportingService = app.injector.instanceOf[AssumedReportingService]
   private val now = LocalDateTime.of(2024, 12, 1, 12, 30, 45).toInstant(ZoneOffset.UTC)
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
   private val mockUuidService = mock[UuidService]
   private val mockSubmissionConnector = mock[SubmissionConnector]
   private val mockDeliveredSubmissionConnector = mock[DeliveredSubmissionConnector]
+  private val dprsId = "dprsId"
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
@@ -82,10 +84,6 @@ class AssumedReportingServiceSpec
     Mockito.reset(mockUuidService, mockSubmissionConnector, mockDeliveredSubmissionConnector)
   }
 
-  private lazy val assumedReportingService: AssumedReportingService = app.injector.instanceOf[AssumedReportingService]
-
-  private val dprsId = "dprsId"
-    
   "createSubmission" - {
 
     "when there is no existing manual assumed report for that reporting period" - {
@@ -1315,7 +1313,7 @@ class AssumedReportingServiceSpec
   }
 
   "getSubmission" - {
-    
+
     "must return a submission with complete data" in {
 
       val submissions = DeliveredSubmissions(
@@ -1371,15 +1369,15 @@ class AssumedReportingServiceSpec
         registeredCountry = "US",
         address = "assumed line 1\nassumed line 2\nassumed line 3"
       )
-      
+
       val expectedAssumedReportingSubmission = AssumedReportingSubmission(
-        operatorId       = "operatorId",
-        operatorName     = "operatorName",
+        operatorId = "operatorId",
+        operatorName = "operatorName",
         assumingOperator = expectedAssumingOperator,
-        reportingPeriod  = Year.of(2024),
-        isDeleted        = false
+        reportingPeriod = Year.of(2024),
+        isDeleted = false
       )
-      
+
       val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
         subscriptionId = dprsId,
         assumedReporting = true,
@@ -1393,13 +1391,13 @@ class AssumedReportingServiceSpec
       )
 
       val result = assumedReportingService.getSubmission(dprsId, "operatorId", Year.of(2024))(using HeaderCarrier()).futureValue
-      
+
       result.value mustEqual expectedAssumedReportingSubmission
-      
+
       verify(mockDeliveredSubmissionConnector).get(eqTo(expectedViewSubmissionsRequest))(using any())
       verify(mockSubmissionConnector).getManualAssumedReportingSubmission(eqTo("submissionCaseId"))(using any())
     }
-    
+
     "must return a submission with minimal data" in {
 
       val submissions = DeliveredSubmissions(
@@ -1446,11 +1444,11 @@ class AssumedReportingServiceSpec
       )
 
       val expectedAssumedReportingSubmission = AssumedReportingSubmission(
-        operatorId       = "operatorId",
-        operatorName     = "operatorName",
+        operatorId = "operatorId",
+        operatorName = "operatorName",
         assumingOperator = expectedAssumingOperator,
-        reportingPeriod  = Year.of(2024),
-        isDeleted        = false
+        reportingPeriod = Year.of(2024),
+        isDeleted = false
       )
 
       val expectedViewSubmissionsRequest = ViewSubmissionsRequest(
@@ -1472,7 +1470,7 @@ class AssumedReportingServiceSpec
       verify(mockDeliveredSubmissionConnector).get(eqTo(expectedViewSubmissionsRequest))(using any())
       verify(mockSubmissionConnector).getManualAssumedReportingSubmission(eqTo("submissionCaseId"))(using any())
     }
-    
+
     "must return None when there are no previous submissions" in {
 
       val submissions = DeliveredSubmissions(
@@ -1483,7 +1481,7 @@ class AssumedReportingServiceSpec
       when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
 
       val result = assumedReportingService.getSubmission(dprsId, "operatorId", Year.of(2024))(using HeaderCarrier()).futureValue
-      
+
       result must not be defined
     }
   }
