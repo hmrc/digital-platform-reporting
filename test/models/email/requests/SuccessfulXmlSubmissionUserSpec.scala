@@ -17,6 +17,7 @@
 package models.email.requests
 
 import org.scalatest.freespec.AnyFreeSpec
+import play.api.libs.json.Json
 import support.SpecBase
 import support.builders.PlatformOperatorBuilder.aPlatformOperator
 import support.builders.StateBuilder.aStateApproved
@@ -43,4 +44,57 @@ class SuccessfulXmlSubmissionUserSpec extends SpecBase {
     }
   }
 
+  "format" - {
+    val parameters = Map(
+      "userPrimaryContactName" -> "User Contact",
+      "poBusinessName" -> "PO Business",
+      "poId" -> "po123",
+      "checksCompletedDateTime" -> "2024-10-15T12:00:00Z",
+      "reportingPeriod" -> "2024",
+      "fileName" -> "file.xml"
+    )
+
+    "must serialize to JSON" in {
+      val request = SuccessfulXmlSubmissionUser(
+        to = List("user@example.com"),
+        templateId = "any-template",
+        parameters = parameters
+      )
+
+      Json.toJson(request) mustBe Json.obj(
+        "to" -> Json.arr("user@example.com"),
+        "templateId" -> "any-template",
+        "parameters" -> Json.obj(
+          "userPrimaryContactName" -> "User Contact",
+          "poBusinessName" -> "PO Business",
+          "poId" -> "po123",
+          "checksCompletedDateTime" -> "2024-10-15T12:00:00Z",
+          "reportingPeriod" -> "2024",
+          "fileName" -> "file.xml"
+        )
+      )
+    }
+
+    "must deserialize from JSON" in {
+      val json = Json.obj(
+        "to" -> Json.arr("user@example.com"),
+        "templateId" -> "dprs_successful_xml_submission_user",
+        "parameters" -> Json.obj(
+          "userPrimaryContactName" -> "User Contact",
+          "poBusinessName" -> "PO Business",
+          "poId" -> "po123",
+          "checksCompletedDateTime" -> "2024-10-15T12:00:00Z",
+          "reportingPeriod" -> "2024",
+          "fileName" -> "file.xml"
+        )
+      )
+      val result = Json.fromJson[SuccessfulXmlSubmissionUser](json)
+      result.isSuccess mustBe true
+      result.get mustBe SuccessfulXmlSubmissionUser(
+        to = List("user@example.com"),
+        templateId = "dprs_successful_xml_submission_user",
+        parameters = parameters
+      )
+    }
+  }
 }

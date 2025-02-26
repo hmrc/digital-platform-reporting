@@ -78,8 +78,8 @@ object SuccessfulXmlSubmissionPlatformOperator {
 }
 
 final case class FailedXmlSubmissionUser(to: List[String],
-                                             templateId: String,
-                                             parameters: Map[String, String]) extends SendEmailRequest
+                                         templateId: String,
+                                         parameters: Map[String, String]) extends SendEmailRequest
 
 object FailedXmlSubmissionUser {
   implicit val format: OFormat[FailedXmlSubmissionUser] = Json.format[FailedXmlSubmissionUser]
@@ -101,8 +101,8 @@ object FailedXmlSubmissionUser {
 }
 
 final case class FailedXmlSubmissionPlatformOperator(to: List[String],
-                                                         templateId: String,
-                                                         parameters: Map[String, String]) extends SendEmailRequest
+                                                     templateId: String,
+                                                     parameters: Map[String, String]) extends SendEmailRequest
 
 object FailedXmlSubmissionPlatformOperator {
   implicit val format: OFormat[FailedXmlSubmissionPlatformOperator] = Json.format[FailedXmlSubmissionPlatformOperator]
@@ -118,6 +118,5 @@ object FailedXmlSubmissionPlatformOperator {
       "checksCompletedDateTime" -> checksCompletedDateTime
     )
   )
-
 }
 

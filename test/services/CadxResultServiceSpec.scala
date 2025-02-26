@@ -22,6 +22,7 @@ import models.audit.CadxSubmissionResponseEvent
 import models.audit.CadxSubmissionResponseEvent.FileStatus.{Failed, Passed}
 import models.operator.responses.PlatformOperator
 import models.operator.{AddressDetails, ContactDetails}
+import models.submission.Submission.State.Ready
 import models.submission.Submission.SubmissionType.{ManualAssumedReport, Xml}
 import models.submission.Submission.{State, SubmissionType}
 import models.submission.{CadxValidationError, Submission}
@@ -36,14 +37,16 @@ import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
+import play.api.http.Status.INTERNAL_SERVER_ERROR
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import repository.{CadxValidationErrorRepository, SubmissionRepository}
+import services.CadxResultService.{InvalidResultStatusException, InvalidSubmissionStateException, SubmissionNotFoundException}
 import services.SubmissionService.NoPlatformOperatorException
+import support.SpecBase
 import utils.DateTimeFormats
 import utils.DateTimeFormats.EmailDateTimeFormatter
 
@@ -52,14 +55,12 @@ import java.time.{Clock, Instant, Year, ZoneOffset}
 import scala.concurrent.Future
 import scala.xml.Utility
 
-class CadxResultServiceSpec
-  extends AnyFreeSpec
-    with Matchers
-    with GuiceOneAppPerSuite
-    with ScalaFutures
-    with MockitoSugar
-    with BeforeAndAfterEach
-    with IntegrationPatience {
+class CadxResultServiceSpec extends SpecBase
+  with GuiceOneAppPerSuite
+  with ScalaFutures
+  with MockitoSugar
+  with BeforeAndAfterEach
+  with IntegrationPatience {
 
   private lazy val cadxResultService: CadxResultService = app.injector.instanceOf[CadxResultService]
   private val mockSubmissionRepository: SubmissionRepository = mock[SubmissionRepository]
@@ -71,6 +72,8 @@ class CadxResultServiceSpec
   private val mockEmailService: EmailService = mock[EmailService]
   private val mockEmailConnector: EmailConnector = mock[EmailConnector]
   private val now = clock.instant()
+  private val status = INTERNAL_SERVER_ERROR.toString
+  private val submissionId = "some-submission-id"
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -84,18 +87,16 @@ class CadxResultServiceSpec
     )
   }
 
-  override def fakeApplication(): Application = GuiceApplicationBuilder()
-    .overrides(
-      bind[SubmissionRepository].toInstance(mockSubmissionRepository),
-      bind[CadxValidationErrorRepository].toInstance(mockCadxValidationErrorRepository),
-      bind[AuditService].toInstance(mockAuditService),
-      bind[Clock].toInstance(clock),
-      bind[SubscriptionConnector].toInstance(mockSubscriptionConnector),
-      bind[PlatformOperatorConnector].toInstance(mockPlatformOperatorConnector),
-      bind[EmailService].toInstance(mockEmailService),
-      bind[EmailConnector].toInstance(mockEmailConnector)
-    )
-    .build()
+  override def fakeApplication(): Application = GuiceApplicationBuilder().overrides(
+    bind[SubmissionRepository].toInstance(mockSubmissionRepository),
+    bind[CadxValidationErrorRepository].toInstance(mockCadxValidationErrorRepository),
+    bind[AuditService].toInstance(mockAuditService),
+    bind[Clock].toInstance(clock),
+    bind[SubscriptionConnector].toInstance(mockSubscriptionConnector),
+    bind[PlatformOperatorConnector].toInstance(mockPlatformOperatorConnector),
+    bind[EmailService].toInstance(mockEmailService),
+    bind[EmailConnector].toInstance(mockEmailConnector)
+  ).build()
 
   "processResult" - {
 
@@ -636,6 +637,28 @@ class CadxResultServiceSpec
         verify(mockSubmissionRepository, never()).save(any())
         verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
       }
+    }
+  }
+
+  "InvalidResultStatusException" - {
+    "must contain correct message" in {
+      val underTest = InvalidResultStatusException(status)
+      underTest.getMessage mustBe s"Expected `Accepted` or `Rejected` but got `$status`"
+    }
+  }
+
+  "InvalidSubmissionStateException" - {
+    "must contain correct message" in {
+      val state = Ready
+      val underTest = InvalidSubmissionStateException(submissionId, state)
+      underTest.getMessage mustBe s"Expected submission $submissionId to be `Submitted` but was in `${state.getClass.getSimpleName}`"
+    }
+  }
+
+  "SubmissionNotFoundException" - {
+    "must contain correct message" in {
+      val underTest = SubmissionNotFoundException(submissionId)
+      underTest.getMessage mustBe s"Unable to find submission with ID $submissionId"
     }
   }
 }

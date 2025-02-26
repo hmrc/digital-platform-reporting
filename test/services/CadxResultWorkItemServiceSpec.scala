@@ -37,6 +37,7 @@ import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import repository.CadxResultWorkItemRepository
+import services.CadxResultWorkItemService.ResultFileNotFound
 import uk.gov.hmrc.http.StringContextOps
 import uk.gov.hmrc.mongo.lock.{Lock, MongoLockRepository}
 import uk.gov.hmrc.mongo.workitem.ProcessingStatus.ToDo
@@ -419,6 +420,14 @@ class CadxResultWorkItemServiceSpec
 
         verify(mockCadxResultWorkItemRepository, never()).pullOutstanding(any(), any())
       }
+    }
+  }
+
+  "ResultFileNotFound" - {
+    "must contain correct message" in {
+      val fileName = "some-file-name"
+      val underTest = ResultFileNotFound(fileName)
+      underTest.getMessage mustBe s"File with name $fileName not found in result file list"
     }
   }
 }

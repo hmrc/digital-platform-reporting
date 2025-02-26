@@ -37,7 +37,6 @@ import org.mockito.Mockito.{never, verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
 import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -46,6 +45,8 @@ import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import repository.SubmissionRepository
+import services.SubmissionService.{InvalidSubmissionStateException, NoPlatformOperatorException}
+import support.SpecBase
 import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 import utils.DateTimeFormats
 
@@ -58,15 +59,13 @@ import javax.xml.validation.SchemaFactory
 import scala.concurrent.Future
 import scala.xml.{Document, SAXParseException, XML}
 
-class SubmissionServiceSpec
-  extends AnyFreeSpec
-    with Matchers
-    with GuiceOneAppPerSuite
-    with MockitoSugar
-    with BeforeAndAfterEach
-    with ScalaFutures
-    with OptionValues
-    with IntegrationPatience {
+class SubmissionServiceSpec extends SpecBase
+  with GuiceOneAppPerSuite
+  with MockitoSugar
+  with BeforeAndAfterEach
+  with ScalaFutures
+  with OptionValues
+  with IntegrationPatience {
 
   private lazy val submissionService: SubmissionService = app.injector.instanceOf[SubmissionService]
   private val now = Instant.now()
@@ -849,6 +848,24 @@ class SubmissionServiceSpec
       (document \ "requestAdditionalDetail" \ "secondaryContact" \ "organisationDetails" \ "organisationName").text mustEqual organisationContact.organisation.name
 
       (document \ "requestDetail" \ "_").last mustEqual expectedPayload
+    }
+  }
+
+  "InvalidSubmissionStateException" - {
+    "must contain correct message" in {
+      val submissionId = "any-submission-id"
+      val state: Submission.State = Ready
+      val underTest = InvalidSubmissionStateException(submissionId, state)
+      underTest.getMessage mustBe s"Submission state was invalid for submission: $submissionId, expected Validated was: ${state.getClass.getSimpleName}"
+    }
+  }
+
+  "NoPlatformOperatorException" - {
+    "must contain correct message" in {
+      val dprsId = "any-dprs-id"
+      val operatorId = "any-operator-id"
+      val underTest = NoPlatformOperatorException(dprsId, operatorId)
+      underTest.getMessage mustBe s"No operator found for operator id: $operatorId, on behalf of DPRS ID: $dprsId"
     }
   }
 

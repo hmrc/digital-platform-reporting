@@ -31,7 +31,6 @@ import org.mockito.Mockito
 import org.mockito.Mockito.{never, verify, when}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
 import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
@@ -39,7 +38,8 @@ import org.xml.sax.ErrorHandler
 import play.api.Application
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
-import services.AssumedReportingService.{NoPreviousSubmissionException, PreviousSubmissionPending, SubmissionAlreadyDeletedException}
+import services.AssumedReportingService.{NoPreviousSubmissionException, PreviousSubmissionPending, SubmissionAlreadyDeletedException, SubmissionIsNotAssumedReportException}
+import support.SpecBase
 import uk.gov.hmrc.http.HeaderCarrier
 
 import java.nio.file.Paths
@@ -51,15 +51,16 @@ import javax.xml.validation.SchemaFactory
 import scala.concurrent.Future
 import scala.xml.*
 
-class AssumedReportingServiceSpec
-  extends AnyFreeSpec
-    with Matchers
-    with GuiceOneAppPerSuite
-    with MockitoSugar
-    with BeforeAndAfterEach
-    with ScalaFutures
-    with OptionValues
-    with IntegrationPatience {
+class AssumedReportingServiceSpec extends SpecBase
+  with GuiceOneAppPerSuite
+  with MockitoSugar
+  with BeforeAndAfterEach
+  with ScalaFutures
+  with OptionValues
+  with IntegrationPatience {
+
+  private val operatorId: String = "some-operator-id"
+  private val reportingPeriod = Year.parse("2024")
 
   private lazy val assumedReportingService: AssumedReportingService = app.injector.instanceOf[AssumedReportingService]
   private val now = LocalDateTime.of(2024, 12, 1, 12, 30, 45).toInstant(ZoneOffset.UTC)
@@ -69,15 +70,12 @@ class AssumedReportingServiceSpec
   private val mockDeliveredSubmissionConnector = mock[DeliveredSubmissionConnector]
   private val dprsId = "dprsId"
 
-  override def fakeApplication(): Application =
-    GuiceApplicationBuilder()
-      .overrides(
-        bind[Clock].toInstance(clock),
-        bind[UuidService].toInstance(mockUuidService),
-        bind[SubmissionConnector].toInstance(mockSubmissionConnector),
-        bind[DeliveredSubmissionConnector].toInstance(mockDeliveredSubmissionConnector)
-      )
-      .build()
+  override def fakeApplication(): Application = GuiceApplicationBuilder().overrides(
+    bind[Clock].toInstance(clock),
+    bind[UuidService].toInstance(mockUuidService),
+    bind[SubmissionConnector].toInstance(mockSubmissionConnector),
+    bind[DeliveredSubmissionConnector].toInstance(mockDeliveredSubmissionConnector)
+  ).build()
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -85,17 +83,14 @@ class AssumedReportingServiceSpec
   }
 
   "createSubmission" - {
-
     "when there is no existing manual assumed report for that reporting period" - {
-
       "must create a valid submission from complete data" in {
-
         val submissions = DeliveredSubmissions(
           submissions = Seq.empty,
           resultsCount = 1
         )
-        when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
 
+        when(mockDeliveredSubmissionConnector.get(any())(using any())).thenReturn(Future.successful(Some(submissions)))
         when(mockUuidService.generate()).thenReturn(
           "86233cb7-4922-4e54-a5ff-75f5e62eec0d",
           "eb6bb8e9-6879-4f4e-bebf-7d2f6a6d95c9",
@@ -1541,6 +1536,34 @@ class AssumedReportingServiceSpec
 
     verify(mockDeliveredSubmissionConnector).get(eqTo(expectedViewSubmissionsRequest))(using any())
     verify(mockSubmissionConnector).getManualAssumedReportingSubmission(eqTo("submissionCaseId"))(using any())
+  }
+
+  "NoPreviousSubmissionException" - {
+    "must contain correct message" in {
+      val underTest = NoPreviousSubmissionException(dprsId, operatorId, reportingPeriod)
+      underTest.getMessage mustBe s"No previous submission for DPRS ID: $dprsId, POID: $operatorId, Reporting Period: $reportingPeriod"
+    }
+  }
+
+  "SubmissionAlreadyDeletedException" - {
+    "must contain correct message" in {
+      val underTest = SubmissionAlreadyDeletedException(dprsId, operatorId, reportingPeriod)
+      underTest.getMessage mustBe s"Submission already deleted for DPRS ID: $dprsId, POID: $operatorId, Reporting Period: $reportingPeriod"
+    }
+  }
+
+  "SubmissionIsNotAssumedReportException" - {
+    "must contain correct message" in {
+      val underTest = SubmissionIsNotAssumedReportException(dprsId, operatorId, reportingPeriod)
+      underTest.getMessage mustBe s"Previous submission is not a manual assumed report"
+    }
+  }
+
+  "PreviousSubmissionPending" - {
+    "must contain correct message" in {
+      val underTest = PreviousSubmissionPending(dprsId, operatorId, reportingPeriod)
+      underTest.getMessage mustBe s"Previous submission is still pending in CADX"
+    }
   }
 
   private def validate(content: NodeSeq): Document = {

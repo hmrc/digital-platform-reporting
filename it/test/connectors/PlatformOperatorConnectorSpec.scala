@@ -17,15 +17,16 @@
 package connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
-import models.operator.{AddressDetails, ContactDetails}
+import connectors.PlatformOperatorConnector.CreatePlatformOperatorFailure
 import models.operator.requests.*
 import models.operator.responses.*
+import models.operator.{AddressDetails, ContactDetails}
 import org.mockito.Mockito
 import org.mockito.Mockito.when
-import org.scalatest.{BeforeAndAfterEach, EitherValues, OptionValues}
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import org.scalatest.{BeforeAndAfterEach, EitherValues, OptionValues}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.Application
 import play.api.inject.bind
@@ -156,7 +157,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
             .willReturn(serverError())
         )
 
-        connector.create(request).failed.futureValue
+        connector.create(request).failed.futureValue mustBe CreatePlatformOperatorFailure(correlationId.toString, 500)
       }
     }
   }
@@ -188,7 +189,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
             "processingDate" -> "2000-01-02T03:04:56Z"
           )
         )
-        
+
         wireMockServer.stubFor(
           post(urlMatching(".*/dac6/dprs9301/v1"))
             .withHeader("Authorization", equalTo("Bearer updatePlatformOperatorToken"))
@@ -242,7 +243,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
       }
     }
   }
-  
+
   ".delete" - {
 
     "must post a request" - {
@@ -262,7 +263,7 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
             "processingDate" -> "2000-01-02T03:04:56Z"
           )
         )
-        
+
         wireMockServer.stubFor(
           post(urlMatching(".*/dac6/dprs9301/v1"))
             .withHeader("Authorization", equalTo("Bearer updatePlatformOperatorToken"))
@@ -376,9 +377,9 @@ class PlatformOperatorConnectorSpec extends AnyFreeSpec
       val result = connector.get("operatorId").futureValue
       result.value mustEqual expectedResponse
     }
-    
+
     "must return None when the server returns 422" in {
-      
+
       when(mockUuidService.generate())
         .thenReturn(correlationId.toString, conversationId.toString)
 

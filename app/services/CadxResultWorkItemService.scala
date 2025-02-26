@@ -33,8 +33,8 @@ import java.net.URL
 import java.time.{Clock, Duration}
 import java.util.UUID
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.given
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class CadxResultWorkItemService @Inject()(
@@ -45,7 +45,7 @@ class CadxResultWorkItemService @Inject()(
                                            configuration: Configuration,
                                            mongoLockRepository: MongoLockRepository,
                                            clock: Clock
-                                        )(using ExecutionContext) extends Logging {
+                                         )(using ExecutionContext) extends Logging {
 
   private val retryTimeout: Duration = configuration.get[Duration]("sdes.cadx-result.retry-after")
   private val cadxResultInformationType: String = configuration.get[String]("sdes.cadx-result.information-type")
@@ -62,26 +62,25 @@ class CadxResultWorkItemService @Inject()(
   def processNextResult(): Future[Boolean] = {
     val now = clock.instant()
     workItemRepository.pullOutstanding(now.minus(retryTimeout), now).flatMap {
-      _.map { workItem =>
-        {
-          for {
-            _ <- process(workItem)
-            _ <- workItemRepository.complete(workItem.id, ProcessingStatus.Succeeded)
-          } yield true
-        }.recoverWith { case _: SubmissionNotFoundException =>
-          workItemRepository.markAs(workItem.id, ProcessingStatus.PermanentlyFailed)
-            .map(_ => true)
-        }
+      _.map { workItem => {
+        for {
+          _ <- process(workItem)
+          _ <- workItemRepository.complete(workItem.id, ProcessingStatus.Succeeded)
+        } yield true
+      }.recoverWith { case _: SubmissionNotFoundException =>
+        workItemRepository.markAs(workItem.id, ProcessingStatus.PermanentlyFailed)
+          .map(_ => true)
+      }
       }.getOrElse(Future.successful(false))
     }
   }
 
   private def process(workItem: WorkItem[CadxResultWorkItem]): Future[Done] = {
     for {
-      files   <- sdesConnector.listFiles(cadxResultInformationType)
+      files <- sdesConnector.listFiles(cadxResultInformationType)
       fileUrl <- findUrl(files, workItem.item.fileName)
-      source  <- downloadConnector.download(fileUrl)
-      _       <- cadxResultService.processResult(source)
+      source <- downloadConnector.download(fileUrl)
+      _ <- cadxResultService.processResult(source)
     } yield Done
   }.recoverWith { case e if !e.isInstanceOf[SubmissionNotFoundException] =>
     workItemRepository.markAs(workItem.id, ProcessingStatus.Failed).flatMap { _ =>

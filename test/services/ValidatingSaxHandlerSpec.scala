@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-package models.admin
+package services
 
-import play.api.libs.json.{Json, OFormat}
+import org.xml.sax.SAXParseException
+import org.xml.sax.helpers.LocatorImpl
+import services.ValidatingSaxHandler.FatalSaxParsingException
+import support.SpecBase
 
-case class UpdateSubmissionStateRequest(state: String)
+class ValidatingSaxHandlerSpec extends SpecBase {
 
-object UpdateSubmissionStateRequest {
-  implicit val format: OFormat[UpdateSubmissionStateRequest] = Json.format[UpdateSubmissionStateRequest]
-
-  final case class UpdateSubmissionStateFailure(state: String) extends Throwable{
-    override def getMessage: String = s"Update submission state failed for state: $state"
+  "FatalSaxParsingException" - {
+    "must contain correct message" in {
+      val expectedError: SAXParseException = new SAXParseException("some-message", new LocatorImpl())
+      val underTest = FatalSaxParsingException(expectedError)
+      underTest.getCause mustBe expectedError
+    }
   }
 }

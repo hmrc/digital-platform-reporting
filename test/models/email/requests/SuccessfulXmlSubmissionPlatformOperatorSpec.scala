@@ -17,6 +17,7 @@
 package models.email.requests
 
 import org.scalatest.freespec.AnyFreeSpec
+import play.api.libs.json.Json
 import support.SpecBase
 import support.builders.PlatformOperatorBuilder.aPlatformOperator
 import support.builders.StateBuilder.aStateApproved
@@ -37,6 +38,62 @@ class SuccessfulXmlSubmissionPlatformOperatorSpec extends SpecBase {
           "reportingPeriod" -> aStateApproved.reportingPeriod.toString,
           "fileName" -> aStateApproved.fileName
         )
+      )
+    }
+  }
+
+  "format" - {
+    val parameters = Map(
+      "poPrimaryContactName" -> "PO Contact",
+      "poBusinessName" -> "PO Business",
+      "poId" -> "po123",
+      "checksCompletedDateTime" -> "2024-10-15T12:00:00Z",
+      "reportingPeriod" -> "2024",
+      "fileName" -> "file.xml"
+    )
+
+    "must serialize to JSON correctly" in {
+      val request = SuccessfulXmlSubmissionPlatformOperator(
+        to = List("po@example.com"),
+        templateId = "dprs_successful_xml_submission_platform_operator",
+        parameters = parameters
+      )
+
+      Json.toJson(request) mustBe Json.obj(
+        "to" -> Json.arr("po@example.com"),
+        "templateId" -> "dprs_successful_xml_submission_platform_operator",
+        "parameters" -> Json.obj(
+          "poPrimaryContactName" -> "PO Contact",
+          "poBusinessName" -> "PO Business",
+          "poId" -> "po123",
+          "checksCompletedDateTime" -> "2024-10-15T12:00:00Z",
+          "reportingPeriod" -> "2024",
+          "fileName" -> "file.xml"
+        )
+      )
+    }
+
+    "must deserialize from JSON correctly" in {
+      val json = Json.obj(
+        "to" -> Json.arr("po@example.com"),
+        "templateId" -> "dprs_successful_xml_submission_platform_operator",
+        "parameters" -> Json.obj(
+          "poPrimaryContactName" -> "PO Contact",
+          "poBusinessName" -> "PO Business",
+          "poId" -> "po123",
+          "checksCompletedDateTime" -> "2024-10-15T12:00:00Z",
+          "reportingPeriod" -> "2024",
+          "fileName" -> "file.xml"
+        )
+      )
+
+      val result = Json.fromJson[SuccessfulXmlSubmissionPlatformOperator](json)
+
+      result.isSuccess mustBe true
+      result.get mustBe SuccessfulXmlSubmissionPlatformOperator(
+        to = List("po@example.com"),
+        templateId = "dprs_successful_xml_submission_platform_operator",
+        parameters = parameters
       )
     }
   }
