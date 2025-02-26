@@ -20,15 +20,14 @@ import play.api.libs.json.*
 import play.api.mvc.{PathBindable, QueryStringBindable}
 import uk.gov.hmrc.mongo.workitem.ProcessingStatus
 
-import java.net.URL
+import java.net.{URI, URL}
 import java.time.Year
 import scala.language.implicitConversions
 import scala.util.{Success, Try}
 
 given urlFormat: Format[URL] = {
-
   val reads = Reads.of[String].flatMap { string =>
-    Try(URL(string))
+    Try(URI(string).toURL)
       .map(Reads.pure)
       .getOrElse(Reads.failed("error.expected.url"))
   }

@@ -17,14 +17,16 @@
 package models.email.requests
 
 import org.scalatest.freespec.AnyFreeSpec
+import play.api.libs.json.Json
 import support.SpecBase
 import support.builders.PlatformOperatorBuilder.aPlatformOperator
 
 class FailedXmlSubmissionPlatformOperatorSpec extends SpecBase {
 
+  private val anyString = "any-date-time-string"
+
   ".apply(...)" - {
     "must create FailedXmlSubmissionPlatformOperator object" in {
-      val anyString = "any-date-time-string"
       FailedXmlSubmissionPlatformOperator.apply(anyString, aPlatformOperator) mustBe FailedXmlSubmissionPlatformOperator(
         to = List(aPlatformOperator.primaryContactDetails.emailAddress),
         templateId = "dprs_failed_xml_submission_platform_operator",
@@ -37,4 +39,50 @@ class FailedXmlSubmissionPlatformOperatorSpec extends SpecBase {
     }
   }
 
+  "format" - {
+    val parameters = Map(
+      "poPrimaryContactName" -> aPlatformOperator.primaryContactDetails.contactName,
+      "poBusinessName" -> aPlatformOperator.operatorName,
+      "checksCompletedDateTime" -> anyString
+    )
+
+    "must serialize to JSON correctly" in {
+      val request = FailedXmlSubmissionPlatformOperator(
+        to = List("po@example.com"),
+        templateId = "dprs_failed_xml_submission_platform_operator",
+        parameters = parameters
+      )
+
+      Json.toJson(request) mustBe Json.obj(
+        "to" -> Json.arr("po@example.com"),
+        "templateId" -> "dprs_failed_xml_submission_platform_operator",
+        "parameters" -> Json.obj(
+          "poPrimaryContactName" -> aPlatformOperator.primaryContactDetails.contactName,
+          "poBusinessName" -> aPlatformOperator.operatorName,
+          "checksCompletedDateTime" -> anyString
+        )
+      )
+    }
+
+    "must deserialize from JSON correctly" in {
+      val json = Json.obj(
+        "to" -> Json.arr("po@example.com"),
+        "templateId" -> "dprs_failed_xml_submission_platform_operator",
+        "parameters" -> Json.obj(
+          "poPrimaryContactName" -> aPlatformOperator.primaryContactDetails.contactName,
+          "poBusinessName" -> aPlatformOperator.operatorName,
+          "checksCompletedDateTime" -> anyString
+        )
+      )
+
+      val result = Json.fromJson[FailedXmlSubmissionPlatformOperator](json)
+
+      result.isSuccess mustBe true
+      result.get mustBe FailedXmlSubmissionPlatformOperator(
+        to = List("po@example.com"),
+        templateId = "dprs_failed_xml_submission_platform_operator",
+        parameters = parameters
+      )
+    }
+  }
 }

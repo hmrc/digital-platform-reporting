@@ -21,12 +21,12 @@ import models.sdes.CadxResultWorkItem
 import models.submission
 import models.submission.IdAndLastUpdated
 import models.submission.Submission.State
-import models.submission.Submission.State.Submitted
+import models.submission.Submission.State.{Approved, Submitted}
 import org.apache.pekko.Done
 import org.bson.types.ObjectId
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
-import org.mockito.Mockito.{reset, times, verify, when}
+import org.mockito.Mockito.*
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
@@ -259,7 +259,30 @@ class AdminControllerSpec
       }
     }
 
-    "must must state to rejected when state is Submitted and Approved request is sent" in {
+    "must return not found when state is not Submitted and update request is sent" in {
+      val notSubmittedState = Approved("file-name", Year.parse("2024"))
+      val submission = aSubmission.copy(state = notSubmittedState)
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval))).thenReturn(Future.unit)
+      when(mockSubmissionRepo.getById("some-submission-id")).thenReturn(Future.successful(Some(submission)))
+      when(mockSubmissionRepo.save(any)).thenReturn(Future.successful(Done))
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.updateBlockedSubmission("some-submission-id"))
+          .withHeaders("Authorization" -> "Token some-token")
+          .withJsonBody(Json.toJson(UpdateSubmissionStateRequest("unknown")))
+        val result = route(app, request).value
+
+        status(result) mustBe NOT_FOUND
+      }
+      verify(mockSubmissionRepo, never).save(any)
+    }
+
+    "must set state to Approved when state is Submitted and Approved request is sent" in {
       val submittedState = Submitted("file-name", Year.parse("2024"), 1234)
       val submission = aSubmission.copy(state = submittedState)
       val app: Application = GuiceApplicationBuilder().overrides(
@@ -283,7 +306,7 @@ class AdminControllerSpec
       verify(mockSubmissionRepo, times(1)).save(expectedSubmission)
     }
 
-    "must must state to rejected when state is Submitted and Rejected request is sent" in {
+    "must set state to rejected when state is Submitted and Rejected request is sent" in {
       val submittedState = Submitted("file-name", Year.parse("2024"), 1234)
       val submission = aSubmission.copy(state = submittedState)
       val app: Application = GuiceApplicationBuilder().overrides(
@@ -305,6 +328,29 @@ class AdminControllerSpec
       }
       val expectedSubmission = submission.copy(state = State.Rejected(fileName = "file-name", reportingPeriod = Year.parse("2024")))
       verify(mockSubmissionRepo, times(1)).save(expectedSubmission)
+    }
+
+    "must return Bad Request when state is Submitted and unknown state request is sent" in {
+      val submittedState = Submitted("file-name", Year.parse("2024"), 1234)
+      val submission = aSubmission.copy(state = submittedState)
+      val app: Application = GuiceApplicationBuilder().overrides(
+        bind[SubmissionRepository].toInstance(mockSubmissionRepo),
+        bind[BackendAuthComponents].toInstance(backendAuthComponentsStub)
+      ).build()
+
+      when(mockStubBehaviour.stubAuth(any, eqTo(Retrieval.EmptyRetrieval))).thenReturn(Future.unit)
+      when(mockSubmissionRepo.getById("some-submission-id")).thenReturn(Future.successful(Some(submission)))
+      when(mockSubmissionRepo.save(any)).thenReturn(Future.successful(Done))
+
+      running(app) {
+        val request = FakeRequest(routes.AdminController.updateBlockedSubmission("some-submission-id"))
+          .withHeaders("Authorization" -> "Token some-token")
+          .withJsonBody(Json.toJson(UpdateSubmissionStateRequest("unknown")))
+        val result = route(app, request).value
+
+        status(result) mustBe BAD_REQUEST
+      }
+      verify(mockSubmissionRepo, never).save(any)
     }
   }
 

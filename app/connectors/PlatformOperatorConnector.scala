@@ -40,10 +40,9 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
                                           clock: Clock,
                                           appConfig: AppConfig)
                                          (implicit ec: ExecutionContext) {
-  
+
   def create(request: CreatePlatformOperatorRequest)
             (implicit hc: HeaderCarrier): Future[PlatformOperatorCreatedResponse] = {
-    
     val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
 
@@ -83,7 +82,7 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
       .execute[HttpResponse]
       .flatMap { response =>
         response.status match {
-          case OK     => Future.successful(Done)
+          case OK => Future.successful(Done)
           case status => Future.failed(UpdatePlatformOperatorFailure(correlationId, status))
         }
       }
@@ -107,17 +106,17 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
       .execute[HttpResponse]
       .flatMap { response =>
         response.status match {
-          case OK      => Future.successful(Done)
+          case OK => Future.successful(Done)
           case status => Future.failed(DeletePlatformOperatorFailure(correlationId, status))
         }
       }
   }
-  
+
   def get(subscriptionId: String)
          (implicit hc: HeaderCarrier): Future[Option[ViewPlatformOperatorsResponse]] = {
-    
+
     given Reads[ViewPlatformOperatorsResponse] = ViewPlatformOperatorsResponse.downstreamReads
-    
+
     val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
 
@@ -131,9 +130,9 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
       .execute[HttpResponse]
       .flatMap { response =>
         response.status match {
-          case OK                   => Future.successful(Some(response.json.as[ViewPlatformOperatorsResponse]))
+          case OK => Future.successful(Some(response.json.as[ViewPlatformOperatorsResponse]))
           case UNPROCESSABLE_ENTITY => Future.successful(None)
-          case status               => Future.failed(ViewPlatformOperatorsFailure(correlationId, status))
+          case status => Future.failed(ViewPlatformOperatorsFailure(correlationId, status))
         }
       }
   }
@@ -183,7 +182,7 @@ object PlatformOperatorConnector {
   final case class DeletePlatformOperatorFailure(correlationId: String, status: Int) extends Throwable {
     override def getMessage: String = s"Delete platform operator failed for correlation ID: $correlationId, got status: $status"
   }
-  
+
   final case class ViewPlatformOperatorsFailure(correlationId: String, status: Int) extends Throwable {
     override def getMessage: String = s"View platform operator failed for correlation ID: $correlationId, got status: $status"
   }

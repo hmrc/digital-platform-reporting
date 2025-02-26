@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-package models.admin
+package connectors
 
-import play.api.libs.json.{Json, OFormat}
+import connectors.DeliveredSubmissionConnector.GetDeliveredSubmissionsFailure
+import support.SpecBase
 
-case class UpdateSubmissionStateRequest(state: String)
+class DeliveredSubmissionConnectorSpec extends SpecBase {
 
-object UpdateSubmissionStateRequest {
-  implicit val format: OFormat[UpdateSubmissionStateRequest] = Json.format[UpdateSubmissionStateRequest]
+  private val correlationId = "any-correlation-id"
+  private val status = 500
 
-  final case class UpdateSubmissionStateFailure(state: String) extends Throwable{
-    override def getMessage: String = s"Update submission state failed for state: $state"
+  "GetDeliveredSubmissionsFailure" - {
+    "must contain correct message" in {
+      val underTest = GetDeliveredSubmissionsFailure(correlationId, status)
+      underTest.getMessage mustBe s"Get delivered submissions failed for correlation ID: $correlationId, got status: $status"
+    }
   }
 }

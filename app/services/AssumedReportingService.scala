@@ -36,12 +36,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.xml.{NodeSeq, Utility}
 
 @Singleton
-class AssumedReportingService @Inject()(
-                                         uuidService: UuidService,
-                                         clock: Clock,
-                                         deliveredSubmissionConnector: DeliveredSubmissionConnector,
-                                         submissionConnector: SubmissionConnector
-                                       )(using ExecutionContext) {
+class AssumedReportingService @Inject()(uuidService: UuidService,
+                                        clock: Clock,
+                                        deliveredSubmissionConnector: DeliveredSubmissionConnector,
+                                        submissionConnector: SubmissionConnector)
+                                       (using ExecutionContext) {
 
   def createSubmission(dprsId: String, operator: PlatformOperator, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year)(using HeaderCarrier): Future[AssumedReportingPayload] =
     getPreviousSubmission(dprsId, operator.operatorId, reportingPeriod).flatMap { previousSubmissionInfo =>
@@ -60,33 +59,33 @@ class AssumedReportingService @Inject()(
         createDeleteSubmissionPayload(dprsId, operatorId, reportingPeriod, previousSubmissionInfo.map(_.submission))
       }
     }
-    
+
   def getSubmission(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[AssumedReportingSubmission]] =
     getPreviousSubmission(dprsId, operatorId, reportingPeriod).map { maybeSubmissionInfo =>
       for {
-        submissionInfo     <- maybeSubmissionInfo
-        body               <- submissionInfo.submission.DPIBody.headOption
-        operatorName       <- body.PlatformOperator.Name.headOption.map(_.value)
-        otherOperators     <- body.OtherPlatformOperators
-        
+        submissionInfo <- maybeSubmissionInfo
+        body <- submissionInfo.submission.DPIBody.headOption
+        operatorName <- body.PlatformOperator.Name.headOption.map(_.value)
+        otherOperators <- body.OtherPlatformOperators
+
         if otherOperators.otherplatformoperators_typeoption.value.isInstanceOf[OtherPlatformOperators_TypeSequence1]
 
-        otherOperator    = otherOperators.otherplatformoperators_typeoption.as[OtherPlatformOperators_TypeSequence1]
+        otherOperator = otherOperators.otherplatformoperators_typeoption.as[OtherPlatformOperators_TypeSequence1]
         assumingOperator = otherOperator.AssumingPlatformOperator
-        residentCountry  <- assumingOperator.ResCountryCode.headOption
-        address          <- getAddress(assumingOperator.Address)
+        residentCountry <- assumingOperator.ResCountryCode.headOption
+        address <- getAddress(assumingOperator.Address)
       } yield AssumedReportingSubmission(
-        operatorId       = operatorId,
-        operatorName     = operatorName,
+        operatorId = operatorId,
+        operatorName = operatorName,
         assumingOperator = AssumingPlatformOperator(
-          name              = assumingOperator.Name.value,
-          residentCountry   = residentCountry.toString,
-          tinDetails        = getTinDetails(assumingOperator.TIN),
+          name = assumingOperator.Name.value,
+          residentCountry = residentCountry.toString,
+          tinDetails = getTinDetails(assumingOperator.TIN),
           registeredCountry = assumingOperator.Address.CountryCode.toString,
-          address           = address
+          address = address
         ),
         reportingPeriod = reportingPeriod,
-        isDeleted       = isDeletion(submissionInfo.submission)
+        isDeleted = isDeletion(submissionInfo.submission)
       )
     }
 
@@ -95,7 +94,7 @@ class AssumedReportingService @Inject()(
       if (tin.unknown.contains(true)) None
       else tin.issuedBy.map(country => TinDetails(tin.value, TinType.Other, country.toString))
     }
-    
+
   private def getAddress(address: Address_Type): Option[String] =
     address.address_typeoption match {
       case x: DataRecord[Any] if x.value.isInstanceOf[String] =>
@@ -103,10 +102,10 @@ class AssumedReportingService @Inject()(
       case _ =>
         None
     }
-  
+
   private def getPreviousSubmission(dprsId: String, operatorId: String, reportingPeriod: Year)(using HeaderCarrier): Future[Option[PreviousSubmissionInfo]] = {
     for {
-      caseInfo   <- OptionT(getPreviousCaseId(dprsId, operatorId, reportingPeriod))
+      caseInfo <- OptionT(getPreviousCaseId(dprsId, operatorId, reportingPeriod))
       submission <- OptionT.liftF(submissionConnector.getManualAssumedReportingSubmission(caseInfo.caseId))
     } yield PreviousSubmissionInfo(submission, caseInfo.status)
   }.value
@@ -123,10 +122,10 @@ class AssumedReportingService @Inject()(
       fileName = None,
       statuses = Seq(SubmissionStatus.Pending, SubmissionStatus.Success)
     )).map { deliveredSubmissions =>
-        for {
-          submissions <- deliveredSubmissions
-          submission  <- submissions.submissions.headOption
-        } yield PreviousCaseInfo(submission.submissionCaseId, submission.submissionStatus)
+      for {
+        submissions <- deliveredSubmissions
+        submission <- submissions.submissions.headOption
+      } yield PreviousCaseInfo(submission.submissionCaseId, submission.submissionStatus)
     }
 
   private def createSubmissionPayload(operator: PlatformOperator, assumingOperator: AssumingPlatformOperator, reportingPeriod: Year, previousSubmission: Option[DPI_OECD]): AssumedReportingPayload = {
@@ -162,7 +161,7 @@ class AssumedReportingService @Inject()(
     val previousDocRefId = for {
       submission <- previousSubmission
       if !isDeletion(submission)
-      body       <- submission.DPIBody.headOption
+      body <- submission.DPIBody.headOption
     } yield body.PlatformOperator.DocSpec.DocRefId
 
     CorrectablePlatformOperator_Type(
@@ -187,14 +186,14 @@ class AssumedReportingService @Inject()(
   private def createAssumingPlatformOperator(assumingOperator: AssumingPlatformOperator, messageRef: String, previousSubmission: Option[DPI_OECD]): OtherPlatformOperators_Type = {
 
     val previousDocRefId = for {
-      submission      <- previousSubmission
+      submission <- previousSubmission
       if !isDeletion(submission)
-      body            <- submission.DPIBody.headOption
-      otherOperators  <- body.OtherPlatformOperators
+      body <- submission.DPIBody.headOption
+      otherOperators <- body.OtherPlatformOperators
 
       if otherOperators.otherplatformoperators_typeoption.value.isInstanceOf[OtherPlatformOperators_TypeSequence1]
 
-      otherOperator    = otherOperators.otherplatformoperators_typeoption.as[OtherPlatformOperators_TypeSequence1]
+      otherOperator = otherOperators.otherplatformoperators_typeoption.as[OtherPlatformOperators_TypeSequence1]
       assumingOperator = otherOperator.AssumingPlatformOperator
     } yield assumingOperator.DocSpec.DocRefId
 
@@ -327,12 +326,12 @@ class AssumedReportingService @Inject()(
     }
 
     for {
-      submission           <- getPreviousSubmission
-      _                    <- requireExistingRecord(submission)
-      messageRef           =  createMessageRefId(reportingPeriod, operatorId)
-      updatedOperator      =  createPlatformOperatorDeletion(messageRef, submission.DPIBody.head.PlatformOperator)
-      otherOperator        <- getOtherPlatformOperator(submission)
-      updatedOtherOperator =  createOtherPlatformOperatorDeletion(messageRef, otherOperator)
+      submission <- getPreviousSubmission
+      _ <- requireExistingRecord(submission)
+      messageRef = createMessageRefId(reportingPeriod, operatorId)
+      updatedOperator = createPlatformOperatorDeletion(messageRef, submission.DPIBody.head.PlatformOperator)
+      otherOperator <- getOtherPlatformOperator(submission)
+      updatedOtherOperator = createOtherPlatformOperatorDeletion(messageRef, otherOperator)
     } yield {
 
       val updatedSubmission = DPI_OECD(

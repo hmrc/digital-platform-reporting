@@ -17,6 +17,7 @@
 package controllers
 
 import models.admin.UpdateSubmissionStateRequest
+import models.admin.UpdateSubmissionStateRequest.UpdateSubmissionStateFailure
 import models.sdes.CadxResultWorkItem
 import models.submission.Submission.State
 import play.api.libs.json.{Format, JsValue, Json}
@@ -75,13 +76,15 @@ class AdminController @Inject()(
               val updatedState: State = updateRequest.state.toLowerCase() match {
                 case "approved" => State.Approved(fileName = submitted.fileName, reportingPeriod = submitted.reportingPeriod)
                 case "rejected" => State.Rejected(fileName = submitted.fileName, reportingPeriod = submitted.reportingPeriod)
-                case invalid => throw new Exception(s"Invalid state transition: $invalid")
+                case invalidState => throw UpdateSubmissionStateFailure(invalidState)
               }
               val updatedSubmission = submission.copy(state = updatedState)
               submissionRepository.save(updatedSubmission).map(_ => NoContent)
-            case other => Future.failed(new Exception(s"Submission $submissionId is not in Submitted state, found: $other"))
+            case _ => Future.successful(NotFound)
           }
           case None => Future.successful(NotFound)
+        }.recover {
+          case _: UpdateSubmissionStateFailure => BadRequest
         }
       }
     }
