@@ -67,9 +67,9 @@ class CadxResultWorkItemService @Inject()(
           _ <- process(workItem)
           _ <- workItemRepository.complete(workItem.id, ProcessingStatus.Succeeded)
         } yield true
-      }.recoverWith { case _: SubmissionNotFoundException =>
-        workItemRepository.markAs(workItem.id, ProcessingStatus.PermanentlyFailed)
-          .map(_ => true)
+      }.recoverWith {
+        case _: SubmissionNotFoundException => workItemRepository.markAs(workItem.id, ProcessingStatus.PermanentlyFailed).map(_ => true)
+        case _: ResultFileNotFound => Future.successful(true)
       }
       }.getOrElse(Future.successful(false))
     }
@@ -82,10 +82,11 @@ class CadxResultWorkItemService @Inject()(
       source <- downloadConnector.download(fileUrl)
       _ <- cadxResultService.processResult(source)
     } yield Done
-  }.recoverWith { case e if !e.isInstanceOf[SubmissionNotFoundException] =>
-    workItemRepository.markAs(workItem.id, ProcessingStatus.Failed).flatMap { _ =>
-      Future.failed(e)
-    }
+  }.recoverWith {
+    case e: ResultFileNotFound =>
+      workItemRepository.markAs(workItem.id, ProcessingStatus.PermanentlyFailed).flatMap(_ => Future.failed(e))
+    case e if !e.isInstanceOf[SubmissionNotFoundException] =>
+      workItemRepository.markAs(workItem.id, ProcessingStatus.Failed).flatMap(_ => Future.failed(e))
   }
 
   private def findUrl(files: Seq[SdesFile], fileName: String): Future[URL] =
