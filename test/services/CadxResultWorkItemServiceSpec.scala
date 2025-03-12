@@ -47,14 +47,13 @@ import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneOffset}
 import scala.concurrent.Future
 
-class CadxResultWorkItemServiceSpec
-  extends AnyFreeSpec
-    with Matchers
-    with ScalaFutures
-    with GuiceOneAppPerSuite
-    with BeforeAndAfterEach
-    with MockitoSugar
-    with OptionValues {
+class CadxResultWorkItemServiceSpec extends AnyFreeSpec
+  with Matchers
+  with ScalaFutures
+  with GuiceOneAppPerSuite
+  with BeforeAndAfterEach
+  with MockitoSugar
+  with OptionValues {
 
   private lazy val cadxResultWorkItemService: CadxResultWorkItemService = app.injector.instanceOf[CadxResultWorkItemService]
   private val now = Instant.now()
@@ -78,9 +77,7 @@ class CadxResultWorkItemServiceSpec
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
-      .configure(
-        "sdes.cadx-result.retry-after" -> "30m"
-      )
+      .configure("sdes.cadx-result.retry-after" -> "30m")
       .overrides(
         bind[CadxResultWorkItemRepository].toInstance(mockCadxResultWorkItemRepository),
         bind[CadxResultService].toInstance(mockCadxResultService),
@@ -88,8 +85,7 @@ class CadxResultWorkItemServiceSpec
         bind[SdesDownloadConnector].toInstance(mockDownloadConnector),
         bind[MongoLockRepository].toInstance(mockLockRepository),
         bind[Clock].toInstance(clock)
-      )
-      .build()
+      ).build()
 
   "enqueueResult" - {
 
@@ -115,7 +111,6 @@ class CadxResultWorkItemServiceSpec
   }
 
   "processNextResult" - {
-
     "when there is a file in the work item queue" - {
 
       val fileName = "test.xml"
@@ -172,8 +167,7 @@ class CadxResultWorkItemServiceSpec
         receivedFile mustEqual requestedFileContents
       }
 
-      "must mark the work item as failed and fail when the file is not in the list of files from SDES" in {
-
+      "must mark the work item as permanently failed and return true when the file is not in the list of files from SDES" in {
         val files = Seq(
           SdesFile(
             fileName = "test2.xml",
@@ -186,13 +180,16 @@ class CadxResultWorkItemServiceSpec
         when(mockSdesConnector.listFiles(any())(using any())).thenReturn(Future.successful(files))
         when(mockCadxResultWorkItemRepository.pullOutstanding(any(), any())).thenReturn(Future.successful(Some(workItem)))
         when(mockCadxResultWorkItemRepository.markAs(any(), any(), any())).thenReturn(Future.successful(true))
+        when(mockCadxResultWorkItemRepository.markAs(any(), any(), any())).thenReturn(Future.successful(true))
 
-        cadxResultWorkItemService.processNextResult().failed.futureValue
+        cadxResultWorkItemService.processNextResult().futureValue mustBe true
 
+        verify(mockCadxResultWorkItemRepository).pullOutstanding(now.minus(30, ChronoUnit.MINUTES), now)
         verify(mockSdesConnector).listFiles(eqTo("cadx-result"))(using any())
-        verify(mockCadxResultWorkItemRepository).markAs(workItem.id, ProcessingStatus.Failed)
         verify(mockDownloadConnector, never()).download(any())
         verify(mockCadxResultService, never()).processResult(any())
+        verify(mockCadxResultWorkItemRepository, never()).complete(any(), any())
+        verify(mockCadxResultWorkItemRepository).markAs(eqTo(workItem.id), eqTo(ProcessingStatus.PermanentlyFailed), any())
       }
 
       "must mark the work item as failed and fail when the file cannot be retrieved from SDES" in {
