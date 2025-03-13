@@ -6,11 +6,9 @@ ThisBuild / scalaVersion := "3.5.1"
 
 lazy val microservice = Project("digital-platform-reporting", file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin, ScalaxbPlugin)
-  .disablePlugins(JUnitXmlReportPlugin) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
+  .disablePlugins(JUnitXmlReportPlugin)
   .settings(
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
-    // https://www.scala-lang.org/2021/01/12/configuring-and-suppressing-warnings.html
-    // suppress warnings in generated routes files
     scalacOptions += "-Wconf:src=routes/.*:s,src=src_managed/.*:s,msg=Flag.*repeatedly:s",
     scalaxbGenerateDispatchClient := false
   )
