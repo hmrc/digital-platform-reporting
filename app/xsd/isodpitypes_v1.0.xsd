@@ -1270,41 +1270,6 @@ The following disclaimer refers to all uses of the ISO country code list in the 
 					<xsd:documentation>OTHER COUNTRY</xsd:documentation>
 				</xsd:annotation>
 			</xsd:enumeration>
-			<xsd:enumeration value="QM">
-				<xsd:annotation>
-					<xsd:documentation>QM Test Country</xsd:documentation>
-				</xsd:annotation>
-			</xsd:enumeration>
-			<xsd:enumeration value="QN">
-				<xsd:annotation>
-					<xsd:documentation>QN Test Country</xsd:documentation>
-				</xsd:annotation>
-			</xsd:enumeration>
-			<xsd:enumeration value="QO">
-				<xsd:annotation>
-					<xsd:documentation>QO Test Country</xsd:documentation>
-				</xsd:annotation>
-			</xsd:enumeration>
-			<xsd:enumeration value="QP">
-				<xsd:annotation>
-					<xsd:documentation>QP Test Country</xsd:documentation>
-				</xsd:annotation>
-			</xsd:enumeration>
-			<xsd:enumeration value="QQ">
-				<xsd:annotation>
-					<xsd:documentation>QQ Test Country</xsd:documentation>
-				</xsd:annotation>
-			</xsd:enumeration>
-			<xsd:enumeration value="QR">
-				<xsd:annotation>
-					<xsd:documentation>QR Test Country</xsd:documentation>
-				</xsd:annotation>
-			</xsd:enumeration>
-			<xsd:enumeration value="QS">
-				<xsd:annotation>
-					<xsd:documentation>QS Test Country</xsd:documentation>
-				</xsd:annotation>
-			</xsd:enumeration>
 		</xsd:restriction>
 	</xsd:simpleType>
 	<!--   -->
