@@ -21,7 +21,7 @@ You can use the [GOV.UK Docker environment](https://github.com/alphagov/govuk-do
 ### Running the test suite
 
 ```bash
-scala test it/test
+sbt test it/test
 ```
 
 ### Further documentation
