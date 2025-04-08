@@ -79,6 +79,7 @@ object Submission {
     case object InvalidArgument extends UploadFailureReason
     case object UnknownFailure extends UploadFailureReason
     case object InvalidFileNameExtension extends UploadFailureReason
+    case object FileNameTooLong extends UploadFailureReason
 
     object SchemaValidationError {
 
@@ -110,6 +111,7 @@ object Submission {
     private given OFormat[InvalidArgument.type] = singletonOFormat(InvalidArgument)
     private given OFormat[UnknownFailure.type] = singletonOFormat(UnknownFailure)
     private given OFormat[InvalidFileNameExtension.type] = singletonOFormat(InvalidFileNameExtension)
+    private given OFormat[FileNameTooLong.type] = singletonOFormat(FileNameTooLong)
 
     private given JsonConfiguration = JsonConfiguration(
       discriminator = "type",

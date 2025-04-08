@@ -74,6 +74,7 @@ class ValidationServiceSpec
 
     val validFileName = "test.xml"
     val invalidFileName = "test.xls"
+    val longFileName = "LongFileName1235678901234567890123456789012345678901234567890123456789012234567890LongFile1235678901234567890123456789012345678901234567890123456789012234567890LongFile12356789.xml"
     val downloadUrl = url"http://example.com/test.xml"
     val poid = "1"
     val dprsId = "dprsId"
@@ -91,6 +92,21 @@ class ValidationServiceSpec
 
         val result = validationService.validateXml(invalidFileName, dprsId, downloadUrl, poid).futureValue
         result.left.value mustEqual InvalidFileNameExtension
+
+        verify(mockDownloadConnector, never()).download(downloadUrl)
+      }
+
+      "must return an error when the uploaded file name is too long" in {
+
+        val source = StreamConverters.fromInputStream(() => getClass.getResourceAsStream("/SubmissionSampleAssumed.xml"))
+
+        when(mockDownloadConnector.download(any()))
+          .thenReturn(Future.successful(source))
+        when(mockAssumedReportingService.getSubmission(any(), any(), any())(using any()))
+          .thenReturn(Future.successful(None))
+
+        val result = validationService.validateXml(longFileName, dprsId, downloadUrl, poid).futureValue
+        result.left.value mustEqual FileNameTooLong
 
         verify(mockDownloadConnector, never()).download(downloadUrl)
       }
