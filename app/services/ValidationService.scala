@@ -28,6 +28,7 @@ import org.xml.sax.helpers.DefaultHandler
 import play.api.{Configuration, Environment}
 import services.ValidatingSaxHandler.{FatalSaxParsingException, platformOperatorPath, reportingPeriodPath}
 import uk.gov.hmrc.http.HeaderCarrier
+import utils.FileUtils.stripExtension
 
 import java.io.UnsupportedEncodingException
 import java.net.URL
@@ -54,6 +55,7 @@ class ValidationService @Inject()(downloadConnector: DownloadConnector,
 
   private val schemaPath = configuration.get[String]("validation.schema-path")
   private val errorLimit = configuration.get[Int]("validation.error-limit")
+  private val maxFileNameSize = configuration.get[Int]("max-filename-size") 
   private val resource = environment.resource(schemaPath).map(url => Paths.get(url.toURI).toFile)
     .getOrElse(throw new RuntimeException(s"No XSD found at $schemaPath"))
 
@@ -71,7 +73,9 @@ class ValidationService @Inject()(downloadConnector: DownloadConnector,
   parserFactory.setSchema(schema)
 
   def validateXml(fileName: String, dprsId: String, downloadUrl: URL, platformOperatorId: String): Future[Either[UploadFailureReason, Year]] = {
-    if (fileName.toLowerCase.endsWith(".xml")) {
+    if(stripExtension(fileName).length > maxFileNameSize){
+      Future.successful(Left(FileNameTooLong))
+    } else if (fileName.toLowerCase.endsWith(".xml")) {
       val parser = parserFactory.newSAXParser()
       downloadConnector.download(downloadUrl).flatMap { source =>
         val inputStream = source.runWith(StreamConverters.asInputStream())
