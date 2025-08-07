@@ -18,7 +18,6 @@ package repository
 
 import models.sdes.CadxResultWorkItem
 import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions, Indexes, Sorts}
-import org.mongodb.scala.ObservableFuture
 import play.api.Configuration
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.Codecs

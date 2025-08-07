@@ -20,7 +20,6 @@ import com.mongodb.client.model.IndexModel
 import config.AppConfig
 import models.confirmed.ConfirmedContactDetails
 import org.apache.pekko.Done
-import org.mongodb.scala.SingleObservableFuture
 import org.mongodb.scala.model.*
 import org.mongodb.scala.model.Filters.equal
 import uk.gov.hmrc.mongo.MongoComponent

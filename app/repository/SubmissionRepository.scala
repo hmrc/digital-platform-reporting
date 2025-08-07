@@ -22,14 +22,13 @@ import models.submission.Submission.SubmissionType
 import models.submission.{IdAndLastUpdated, Submission}
 import org.apache.pekko.Done
 import org.mongodb.scala.model.*
-import org.mongodb.scala.{ObservableFuture, SingleObservableFuture}
 import play.api.Configuration
 import play.api.libs.json.{Format, Json, OFormat}
 import repository.SubmissionRepository.AggregationResult
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.metrix.MetricSource
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
-import uk.gov.hmrc.play.http.logging.Mdc
+import uk.gov.hmrc.mdc.Mdc
 
 import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit

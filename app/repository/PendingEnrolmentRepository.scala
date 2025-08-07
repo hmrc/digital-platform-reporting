@@ -19,7 +19,6 @@ package repository
 import config.AppConfig
 import models.enrolment.PendingEnrolment
 import org.apache.pekko.Done
-import org.mongodb.scala.SingleObservableFuture
 import org.mongodb.scala.bson.conversions.Bson
 import org.mongodb.scala.model.*
 import org.mongodb.scala.model.Indexes.{ascending, compoundIndex}

@@ -19,7 +19,6 @@ package repository
 import models.submission.CadxValidationError
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.{Done, NotUsed}
-import org.mongodb.scala.SingleObservableFuture
 import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions, Indexes}
 import play.api.Configuration
 import uk.gov.hmrc.mongo.MongoComponent
