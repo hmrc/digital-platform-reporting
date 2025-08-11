@@ -12,7 +12,6 @@ lazy val microservice = Project("digital-platform-reporting", file("."))
     scalacOptions += "-Wconf:src=routes/.*:s,src=src_managed/.*:s,msg=Flag.*repeatedly:s",
     scalaxbGenerateDispatchClient := false
   )
-  .settings(resolvers += Resolver.jcenterRepo)
   .settings(CodeCoverageSettings.settings *)
   .settings(PlayKeys.playDefaultPort := 20004)
   .settings(RoutesKeys.routesImport ++= Seq(
