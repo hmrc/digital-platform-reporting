@@ -43,13 +43,13 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
     } yield {
 
       val submissions = deliveredSubmissions.map(_.submissions).getOrElse(Nil)
+      logger.info("Available local submission ids {}", localSubmissionIds)
+
       val deliveredSubmissionSummaries = submissions.map(s => {
         val localSubmissionExists = localSubmissionIds.contains(s.conversationId)
 
-        if (!localSubmissionExists) {
-          logger.info("Missing local submission for submission conversationId - '{}'", s.conversationId)
-          logger.info("Available local submission ids {}", localSubmissionIds)
-        }
+        logger.info("Local submission for submission conversationId '{}' exists {}", s.conversationId, localSubmissionExists)
+        logger.info("Submission file : {}", s.fileName)
 
         SubmissionSummary(s, false, localSubmissionExists)
       })
