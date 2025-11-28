@@ -18,6 +18,7 @@ package services
 
 import cats.implicits.*
 import connectors.DeliveredSubmissionConnector
+import logging.Logging
 import models.submission.*
 import models.submission.DeliveredSubmissionSortBy.SubmissionDate
 import models.submission.SortOrder.Descending
@@ -31,7 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
                                        repository: SubmissionRepository,
                                        assumedReportingService: AssumedReportingService)
-                                      (implicit ec: ExecutionContext) {
+                                      (implicit ec: ExecutionContext) extends Logging {
 
   def getDeliveredSubmissions(request: ViewSubmissionsRequest)(implicit hc: HeaderCarrier): Future[SubmissionsSummary] =
     for {
@@ -42,12 +43,20 @@ class ViewSubmissionsService @Inject()(connector: DeliveredSubmissionConnector,
     } yield {
 
       val submissions = deliveredSubmissions.map(_.submissions).getOrElse(Nil)
-      val deliveredSubmissionSummaries = submissions.map(s => SubmissionSummary(s, false, localSubmissionIds.contains(s.conversationId)))
-      val deliveredSubmissionsCount = deliveredSubmissions.map(_.resultsCount).getOrElse(0)
+      val deliveredSubmissionSummaries = submissions.map(s => {
+        val localSubmissionExists = localSubmissionIds.contains(s.conversationId)
+
+        if (!localSubmissionExists) {
+          logger.info("Missing local submission for submission conversationId - '{}'", s.conversationId)
+          logger.info("Available local submission ids {}", localSubmissionIds)
+        }
+
+        SubmissionSummary(s, false, localSubmissionExists)
+      })
 
       SubmissionsSummary(
         deliveredSubmissions = deliveredSubmissionSummaries,
-        deliveredSubmissionRecordCount = deliveredSubmissionsCount,
+        deliveredSubmissionRecordCount = deliveredSubmissions.map(_.resultsCount).getOrElse(0),
         deliveredSubmissionsExist = deliveredSubmissions.nonEmpty,
         undeliveredSubmissionCount = repositorySubmissionCount
       )
