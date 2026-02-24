@@ -23,8 +23,8 @@ import generated.{Accepted, FileAcceptanceStatus_EnumType, Rejected}
 import models.audit.CadxSubmissionResponseEvent
 import models.audit.CadxSubmissionResponseEvent.FileStatus.{Failed, Passed}
 import models.submission.CadxValidationError.{FileError, RowError}
-import models.submission.Submission.State
-import models.submission.Submission.State.{Approved, Submitted}
+import models.submission.Submission.{ManuallyProcessed, PendingSubmission, State}
+import models.submission.Submission.State.*
 import models.submission.Submission.SubmissionType.Xml
 import models.submission.{CadxValidationError, Submission}
 import org.apache.pekko.stream.connectors.xml.{ParseEvent, StartElement}
@@ -98,11 +98,16 @@ class CadxResultService @Inject()(
       .map(_.getTextContent)
       .flatMapConcat { conversationId =>
         Source.futureSource {
-          submissionRepository.getById(conversationId).flatMap { maybeSubmission =>
+          submissionRepository.getById(conversationId).flatMap {
+            maybeSubmission =>
             maybeSubmission.map { submission =>
               submission.state match {
-                case state: Submitted =>
-                  Future.successful(Source.single((submission, state)))
+                case s: State.Submitted =>
+                  logger.info("Starting to process pending submissions" )
+                  Future.successful(Source.single(PendingSubmission(submission, s)))
+                case s: (State.Approved | State.Rejected)=>
+                  logger.info("Starting to process manually processed submissions" )
+                  Future.successful(Source.single(ManuallyProcessed(submission, s)))
                 case _ =>
                   Future.failed(InvalidSubmissionStateException(submission._id, submission.state))
               }
@@ -226,39 +231,51 @@ class CadxResultService @Inject()(
   private def resultSink: Sink[ByteString, Future[Done]] = Sink.fromGraph(GraphDSL.createGraph(Sink.head[Done]) { implicit b => sink =>
     import GraphDSL.Implicits.*
 
-    val (futureSubmission, submissionSink) = getSubmissionSink.preMaterialize()
-    val submission = b.add(submissionSink)
+          val (futureSubmission, submissionSink) = getSubmissionSink.preMaterialize()
+          val submission = b.add(submissionSink)
 
-    val (futureStatus, statusSink) = getStatusSink.preMaterialize()
-    val status = b.add(statusSink)
+          val (futureStatus, statusSink) = getStatusSink.preMaterialize()
+          val status = b.add(statusSink)
 
-    val errors = b.add {
-      Flow[ParseEvent]
-        // This buffer is required to allow the flow to prevent backpressuring
-        // the initial XML parse to retrieve the submission which is required
-        // for this flow to initiate
-        .buffer(100, OverflowStrategy.backpressure)
-        .via {
-          Flow.futureFlow {
-            futureSubmission.map { case (submission, _) =>
-              getErrorsFlow(submission)
-            }
+          val errors = b.add {
+            Flow[ParseEvent]
+              // This buffer is required to allow the flow to prevent backpressuring
+              // the initial XML parse to retrieve the submission which is required
+              // for this flow to initiate
+              .buffer(100, OverflowStrategy.backpressure)
+              .via {
+                Flow.futureFlow {
+                  futureSubmission.map {
+                    case PendingSubmission(submission,_) =>
+                      getErrorsFlow(submission)
+                    case ManuallyProcessed(_,_) =>
+                      Flow[ParseEvent].mapConcat(_ => Nil)
+                  }
+                }
+              }
           }
-        }
-    }
 
-    val completion = b.add(Flow.futureFlow {
-      for {
-        (submission, state) <- futureSubmission
-        status              <- futureStatus
-        _  = fileRate.mark(1)
-        _  = byteRate.mark(state.size)
-      } yield if (status == Accepted) {
-        acceptedFlow(submission, state)
-      } else {
-        rejectedFlow(submission, state)
-      }
-    })
+          val completion = b.add(
+            Flow.futureFlow {
+              futureSubmission.flatMap {
+                    case ManuallyProcessed(submission,state) =>
+                      Future.successful(
+                        Flow.fromSinkAndSource(Sink.cancelled[CadxValidationError],Source.single[Done](Done))
+                      )
+                    case PendingSubmission(submission,state)  =>
+                      futureStatus.map {
+                        status =>
+                          fileRate.mark(1)
+                          byteRate.mark(state.size)
+                          if (status == Accepted) {
+                            acceptedFlow(submission, state)
+                          } else {
+                            rejectedFlow(submission, state)
+                          }
+                      }
+                  }
+            }
+          )
 
     val parser = b.add(XmlParsing.parser())
     val broadcast = b.add(Broadcast[ParseEvent](3))
@@ -279,7 +296,7 @@ object CadxResultService {
   }
 
   final case class InvalidSubmissionStateException(submissionId: String, state: Submission.State) extends Throwable {
-    override def getMessage: String = s"Expected submission $submissionId to be `Submitted` but was in `${state.getClass.getSimpleName}`"
+    override def getMessage: String = s"Submission $submissionId is in `${state.getClass.getSimpleName}` state. Valid states are: Approved, Rejected and Submitted."
   }
 
   final case class SubmissionNotFoundException(submissionId: String) extends Throwable {
