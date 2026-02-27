@@ -16,7 +16,8 @@
 
 package models.submission
 
-import models.{urlFormat, yearFormat, singletonOFormat}
+import models.submission.Submission.State.Submitted
+import models.{singletonOFormat, urlFormat, yearFormat}
 import play.api.libs.json.*
 import play.api.libs.functional.syntax.*
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
@@ -62,7 +63,10 @@ object Submission {
       Format(reads, writes)
     }
   }
-  
+ 
+  final case class PendingSubmission(submission: Submission, state:Submitted )
+  final case class ManuallyProcessed(submission: Submission, state: State) // state - Approved/Rejected
+
   sealed trait UploadFailureReason
   
   object UploadFailureReason {

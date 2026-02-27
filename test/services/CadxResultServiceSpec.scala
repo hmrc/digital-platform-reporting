@@ -529,6 +529,81 @@ class CadxResultServiceSpec extends SpecBase
         }
       }
 
+      "when the submission is in a manually processed approved/rejected state" - {
+          "when manually processed and then do nothing" - {
+            val approvedSubmission = Submission(
+              _id = "submissionId",
+              submissionType = SubmissionType.Xml,
+              dprsId = "dprsId",
+              operatorId = "operatorId",
+              operatorName = "operatorName",
+              assumingOperatorName = None,
+              state = State.Approved(
+                fileName = "test.xml",
+                reportingPeriod = Year.of(2024)
+              ),
+              created = now.minus(1, ChronoUnit.DAYS),
+              updated = now.minus(1, ChronoUnit.DAYS)
+            )
+            val rejectedSubmission = Submission(
+              _id = "submissionId",
+              submissionType = SubmissionType.Xml,
+              dprsId = "dprsId",
+              operatorId = "operatorId",
+              operatorName = "operatorName",
+              assumingOperatorName = None,
+              state = State.Rejected(
+                fileName = "test2.xml",
+                reportingPeriod = Year.of(2024)
+              ),
+              created = now.minus(1, ChronoUnit.DAYS),
+              updated = now.minus(1, ChronoUnit.DAYS)
+            )
+            "must update the submission" - {
+              val approvedResponse = BREResponse_Type(
+                requestCommon = RequestCommon_Type(
+                  receiptDate = scalaxb.Helper.toCalendar(DateTimeFormats.ISO8601Formatter.format(now.minus(1, ChronoUnit.HOURS))),
+                  regime = AEOI,
+                  conversationID = approvedSubmission._id,
+                  schemaVersion = "1.0.0"
+                ),
+                requestDetail = RequestDetail_Type(
+                  GenericStatusMessage = GenericStatusMessage_Type(
+                    ValidationErrors = ValidationErrors_Type(
+                      FileError = Seq.empty,
+                      RecordError = Seq.empty
+                    ),
+                    ValidationResult = ValidationResult_Type(
+                      Status = Accepted
+                    )
+                  )
+                )
+              )
+              val source = Source.single {
+                ByteString.fromString(Utility.trim(scalaxb.toXML(approvedResponse, "BREResponse", generated.defaultScope).head).toString)
+              }
+             
+              "when the file is manually approved" in {
+                when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(approvedSubmission)))
+                cadxResultService.processResult(source).futureValue
+                verify(mockSubmissionRepository).getById(approvedSubmission._id)
+                verify(mockSubmissionRepository, never()).save(any())
+                verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
+                verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())
+                }
+
+              "when the file is manually rejected " - {
+                  when(mockSubmissionRepository.getById(any())).thenReturn(Future.successful(Some(rejectedSubmission)))
+                  cadxResultService.processResult(source).futureValue
+                  verify(mockSubmissionRepository).getById(rejectedSubmission._id)
+                  verify(mockSubmissionRepository, never()).save(any())
+                  verify(mockCadxValidationErrorRepository, never()).saveBatch(any())
+                  verify(mockEmailService, never()).sendSuccessfulBusinessRulesChecksEmails(any(), any(), any(), any())(any())
+              }
+            }
+          }
+        }
+
       "when the submission is not in a submitted state" - {
 
         "must fail" in {
@@ -651,7 +726,7 @@ class CadxResultServiceSpec extends SpecBase
     "must contain correct message" in {
       val state = Ready
       val underTest = InvalidSubmissionStateException(submissionId, state)
-      underTest.getMessage mustBe s"Expected submission $submissionId to be `Submitted` but was in `${state.getClass.getSimpleName}`"
+      underTest.getMessage mustBe s"Submission $submissionId is in `${state.getClass.getSimpleName}` state. Valid states are: Approved, Rejected and Submitted."
     }
   }
 
