@@ -24,7 +24,7 @@ import models.submission.*
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import repository.SubmissionRepository
-import services.{AuditService, SubmissionService, UuidService, ValidationService, ViewSubmissionsService}
+import services.{AuditService, SubmissionService, UuidService, ViewSubmissionsService, UploadSuccessService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.Clock
@@ -38,9 +38,9 @@ class SubmissionController @Inject() (
                                        clock: Clock,
                                        submissionRepository: SubmissionRepository,
                                        auth: AuthAction,
-                                       validationService: ValidationService,
                                        submissionService: SubmissionService,
                                        viewSubmissionsService: ViewSubmissionsService,
+                                       uploadSuccessService : UploadSuccessService,
                                        auditService: AuditService
                                      )(implicit ec: ExecutionContext) extends BackendController(cc) {
 
@@ -118,57 +118,26 @@ class SubmissionController @Inject() (
     }
   }
 
-  def uploadSuccess(id: String): Action[UploadSuccessRequest] = Action.async(parse.json[UploadSuccessRequest]) { implicit request =>
-    submissionRepository.get(request.body.dprsId, id).flatMap {
-      _.map { submission =>
-        if (submission.state.isInstanceOf[Ready.type] || submission.state.isInstanceOf[Uploading.type] || submission.state.isInstanceOf[UploadFailed]) {
 
-          validationService.validateXml(request.body.fileName, request.body.dprsId, request.body.downloadUrl, submission.operatorId).flatMap { maybeReportingPeriod =>
+  def uploadSuccess(id: String): Action[UploadSuccessRequest] =
+    Action.async(parse.json[UploadSuccessRequest]) { implicit request =>
+      submissionRepository.get(request.body.dprsId, id).flatMap {
+        case Some(submission)
+          if submission.state.isInstanceOf[Ready.type] ||
+            submission.state.isInstanceOf[Uploading.type] ||
+            submission.state.isInstanceOf[UploadFailed] =>
 
-            val auditEvent = FileUploadedEvent(
-              conversationId = submission._id,
-              dprsId = submission.dprsId,
-              operatorId = submission.operatorId,
-              operatorName = submission.operatorName,
-              fileName = Some(request.body.fileName),
-              outcome = maybeReportingPeriod
-                .map(_ => FileUploadOutcome.Accepted)
-                .left.map(e => FileUploadOutcome.Rejected(e))
-                .merge
-            )
-
-            val updatedSubmission = maybeReportingPeriod.left.map { failureReason =>
-              submission.copy(
-                state = UploadFailed(failureReason, Some(request.body.fileName)),
-                updated = clock.instant()
-              )
-            }.map { reportingPeriod =>
-              submission.copy(
-                state = Validated(
-                  downloadUrl = request.body.downloadUrl,
-                  reportingPeriod = reportingPeriod,
-                  fileName = request.body.fileName,
-                  checksum = request.body.checksum,
-                  size = request.body.size
-                ),
-                updated = clock.instant()
-              )
-            }.merge
-
-            auditService.audit(auditEvent)
-
-            submissionRepository.save(updatedSubmission).map { _ =>
-              Ok(Json.toJson(updatedSubmission))
-            }
+          uploadSuccessService.enqueueUploadSuccess(id, request.body).map { _ =>
+            Ok
           }
-        } else {
+
+        case Some(_) =>
           Future.successful(Conflict)
-        }
-      }.getOrElse {
-        Future.successful(NotFound)
+
+        case None =>
+          Future.successful(NotFound)
       }
     }
-  }
 
   def uploadFailed(id: String): Action[UploadFailedRequest] = Action.async(parse.json[UploadFailedRequest]) { implicit request =>
     submissionRepository.get(request.body.dprsId, id).flatMap {
