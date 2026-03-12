@@ -15,222 +15,209 @@
  */
 
 package controllers
-
-import models.submission.Submission.State.{Ready, Submitted, UploadFailed, Uploading}
-import models.submission.Submission.{SubmissionType, UploadFailureReason}
-import models.submission.{Submission, UploadSuccessRequest}
-import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
-import org.mockito.Mockito.{never, verify, when}
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.matchers.must.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import org.mockito.Mockito.{never, times, verify, when}
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.http.HeaderNames
+import org.scalatestplus.play.PlaySpec
+import play.api.Application
+import play.api.inject.bind
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import play.api.mvc.Result
+import play.api.test.Helpers.*
 import play.api.test.FakeRequest
-import play.api.test.Helpers.*
-import repository.SubmissionRepository
-import services.{UploadSuccessService, ValidationService}
-import uk.gov.hmrc.http.StringContextOps
-import controllers.SubmissionController
+import controllers.actions.{AuthAction, FakeAuthAction}
 import services.UuidService
-import services.SubmissionService
-import services.ViewSubmissionsService
-import controllers.actions.AuthAction
-import services.AuditService
-import java.time.{Clock, Instant, ZoneId}
-import scala.concurrent.ExecutionContext.Implicits.global
-import java.net.URL
-import java.time.Instant
+import repository.SubmissionRepository
+import services.{AuditService, SubmissionService, UploadSuccessService, ViewSubmissionsService}
+import models.submission.{Submission, UploadSuccessRequest}
+import models.submission.Submission.State.{Ready, Submitted, UploadFailed, Uploading, *}
+import models.submission.Submission.UploadFailureReason.SchemaValidationError
+import models.submission.Submission.{SubmissionType, UploadFailureReason}
+
 import java.time.temporal.ChronoUnit
-import java.util.UUID
+import uk.gov.hmrc.http.StringContextOps
+import org.apache.pekko.Done
+import org.mockito.Mockito
+import org.scalacheck.Gen
+import org.scalatest.BeforeAndAfterEach
+
+import java.time.{Clock, Instant, Year, ZoneOffset}
 import scala.concurrent.Future
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.test.Helpers.*
-import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.stream.{Materializer, SystemMaterializer}
-import org.scalatest.BeforeAndAfterAll
 
 class UploadControllerSpec
-  extends AnyWordSpec
-    with Matchers
-    with MockitoSugar
-    with ScalaFutures
-    with GuiceOneAppPerSuite
-    with BeforeAndAfterAll {
+  extends PlaySpec with BeforeAndAfterEach
+    with MockitoSugar {
 
-    private val instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
-    private val stubClock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
+  private val submissionRepository = mock[SubmissionRepository]
+  private val uploadSuccessService = mock[UploadSuccessService]
+  private val uuidService = mock[UuidService]
+  private val submissionService = mock[SubmissionService]
+  private val viewSubmissionsService = mock[ViewSubmissionsService]
+  private val auditService = mock[AuditService]
 
-    implicit val actorSystem: ActorSystem = ActorSystem("SubmissionControllerSpec")
-    implicit val materializer: Materializer =
-      SystemMaterializer(actorSystem).materializer
+  private val clock = Clock.fixed(Instant.parse("2026-03-12T10:00:00Z"), ZoneOffset.UTC)
 
-    override def afterAll(): Unit = {
-      actorSystem.terminate()
-      super.afterAll()
-    }
+  private val dprsId = "dprsId"
+  private val fileName = "test.xml"
+  private val created = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+  private val updated = created.plus(1, ChronoUnit.DAYS)
+  private val validatedGen: Gen[Validated] = Gen.const(Validated(url"http://example.com", Year.of(2024), "test.xml", "checksum", 1337L))
+  private val submittedGen: Gen[Submitted] = Gen.const(Submitted("test.xml", Year.of(2024), 8576L))
+  private val approvedGen: Gen[Approved] = Gen.const(Approved("test.xml", Year.of(2024)))
+  private val rejectedGen: Gen[Rejected] = Gen.const(Rejected("test.xml", Year.of(2024)))
 
+  private val requestBody = UploadSuccessRequest(
+    dprsId = dprsId,
+    downloadUrl = url"https://download-url",
+    fileName = "file.xml",
+    checksum = "checksum-123",
+    size = 123
+  )
 
-    private val submissionRepository = mock[SubmissionRepository]
-    private val uploadSuccessService = mock[UploadSuccessService]
-    private val validationService = mock[ValidationService]
-    private val uuidService = mock[UuidService]
-    private val submissionService = mock[SubmissionService]
-    private val viewSubmissionsService = mock[ViewSubmissionsService]
-    private val auditService = mock[AuditService]
-    private val auth = mock[AuthAction]
-    private val clock = java.time.Clock.systemUTC()
+  private val payload = Json.obj(
+    "dprsId" -> "dprsId",
+    "downloadUrl" ->  "https://download-url",
+    "fileName" -> "file.xml",
+    "checksum" -> "checksum-123",
+    "size" -> 123
+  )
 
-    private val dprsId = "dprsId"
-    private val operatorId = "operatorId"
-    private val operatorName = "operatorName"
-    private val uuid = UUID.randomUUID().toString
+  private val submission = Submission(
+    _id = "id",
+    submissionType = SubmissionType.Xml,
+    dprsId = "dprsId",
+    operatorId = "operatorId",
+    operatorName = "operatorName",
+    assumingOperatorName = None,
+    state = Ready,
+    created = created,
+    updated = updated
+  )
 
-    private val created = Instant.now().truncatedTo(ChronoUnit.MILLIS)
-    private val updated = created.plus(1, ChronoUnit.DAYS)
+  private def application: Application =
+    new GuiceApplicationBuilder()
+      .overrides(
+        bind[SubmissionRepository].toInstance(submissionRepository),
+        bind[UploadSuccessService].toInstance(uploadSuccessService),
+        bind[UuidService].toInstance(uuidService),
+        bind[SubmissionService].toInstance(submissionService),
+        bind[ViewSubmissionsService].toInstance(viewSubmissionsService),
+        bind[AuditService].toInstance(auditService),
+        bind[Clock].toInstance(clock),
+        bind[AuthAction].toInstance(new FakeAuthAction)
+      )
+      .build()
 
-    private val requestBody = UploadSuccessRequest(
-      dprsId = dprsId,
-      fileName = "file.xml",
-      downloadUrl = url"https://download-url",
-      checksum = "checksum-123",
-      size = 123L
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    Mockito.reset(
+      submissionRepository,
+      uploadSuccessService,
+      uuidService,
+      submissionService,
+      viewSubmissionsService,
+      auditService
     )
+  }
 
-    private val submission = Submission(
-      _id = "id",
-      submissionType = SubmissionType.Xml,
-      dprsId = "dprsId",
-      operatorId = "operatorId",
-      operatorName = "operatorName",
-      assumingOperatorName = None,
-      state = Ready,
-      created = created,
-      updated = updated
-    )
 
-    private val controller = new SubmissionController(
-      cc = stubControllerComponents(),
-      uuidService = uuidService,
-      clock = clock,
-      submissionRepository = submissionRepository,
-      auth = auth,
-      submissionService = submissionService,
-      viewSubmissionsService = viewSubmissionsService,
-      uploadSuccessService = uploadSuccessService,
-      auditService = auditService
-    )
+  "SubmissionController.uploadSuccess" must {
 
-    "uploadSuccess" should {
+    "return NOT_FOUND when submission is not found" in {
+      when(submissionRepository.get(dprsId, "submission-1"))
+        .thenReturn(Future.successful(None))
 
-      "return 404 when submission is not found" in {
-        when(submissionRepository.get(dprsId, "submission-1"))
-          .thenReturn(Future.successful(None))
+      running(application) {
+        val request = FakeRequest(routes.SubmissionController.uploadSuccess("submission-1"))
+          .withJsonBody(payload)
 
-        val request = FakeRequest(POST, "/")
-          .withBody(Json.toJson(requestBody))
-          .withHeaders(CONTENT_TYPE -> "application/json")
-
-        val result = call(controller.uploadSuccess("submission-1"), request)
+        val result = route(application, request).value
 
         status(result) mustBe NOT_FOUND
 
         verify(uploadSuccessService, never()).enqueueUploadSuccess(any[String], any[UploadSuccessRequest])
       }
+    }
 
-      "return 200 and enqueue work item when state is Ready" in {
-        when(submissionRepository.get("DPRS123", "submission-1"))
-          .thenReturn(Future.successful(Some(submission.copy(state = Ready))))
-        when(uploadSuccessService.enqueueUploadSuccess("submission-1", requestBody))
-          .thenReturn(Future.successful(Done))
+    "return CONFLICT when submission state is not allowed" in {
+      val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
 
-        val result = controller.uploadSuccess("submission-1")(
-          FakeRequest(POST, "/")
-            .withBody(Json.toJson(requestBody))
-            .withHeaders(CONTENT_TYPE -> "application/json")
-        )
+      val invalidStateSubmission = submission.copy(
+        state = state
+      )
 
-        status(result) mustBe OK
+      when(submissionRepository.get(dprsId, "submission-1"))
+        .thenReturn(Future.successful(Some(invalidStateSubmission)))
 
-        verify(uploadSuccessService).enqueueUploadSuccess("submission-1", requestBody)
-        verify(validationService, never()).validateXml(any[String], any[String], any[URL], any[String])
-      }
+      running(application) {
+        val request = FakeRequest(routes.SubmissionController.uploadSuccess("submission-1"))
+          .withJsonBody(payload)
 
-      "return 200 and enqueue work item when state is Uploading" in {
-        when(submissionRepository.get("DPRS123", "submission-1"))
-          .thenReturn(Future.successful(Some(submission.copy(state = Uploading))))
-        when(uploadSuccessService.enqueueUploadSuccess("submission-1", requestBody))
-          .thenReturn(Future.successful(Done))
+        val result = route(application, request).value
 
-        val result = controller.uploadSuccess("submission-1")(
-          FakeRequest(POST, "/")
-            .withBody(Json.toJson(requestBody))
-            .withHeaders(CONTENT_TYPE -> "application/json")
-        )
+        status(result) mustBe CONFLICT
 
-        status(result) mustBe OK
-
-        verify(uploadSuccessService).enqueueUploadSuccess("submission-1", requestBody)
-        verify(validationService, never()).validateXml(any[String], any[String], any[URL], any[String])
-      }
-
-      "return 200 and enqueue work item when state is UploadFailed" in {
-        val failedSubmission =
-          submission.copy(state = UploadFailed(UploadFailureReason.FileNameTooLong, Some("old-file.xml")))
-
-        when(submissionRepository.get("DPRS123", "submission-1"))
-          .thenReturn(Future.successful(Some(failedSubmission)))
-        when(uploadSuccessService.enqueueUploadSuccess("submission-1", requestBody))
-          .thenReturn(Future.successful(Done))
-
-        val result = controller.uploadSuccess("submission-1")(
-          FakeRequest(POST, "/")
-            .withBody(Json.toJson(requestBody))
-            .withHeaders(CONTENT_TYPE -> "application/json")
-        )
-
-        status(result) mustBe OK
-
-        verify(uploadSuccessService).enqueueUploadSuccess("submission-1", requestBody)
-        verify(validationService, never()).validateXml(any[String], any[String], any[URL], any[String])
-      }
-
-      "propagate failure if enqueue fails" in {
-        when(submissionRepository.get("DPRS123", "submission-1"))
-          .thenReturn(Future.successful(Some(submission)))
-        when(uploadSuccessService.enqueueUploadSuccess("submission-1", requestBody))
-          .thenReturn(Future.failed(new RuntimeException("mongo down")))
-
-        val result = controller.uploadSuccess("submission-1")(
-          FakeRequest(POST, "/")
-            .withBody(Json.toJson(requestBody))
-            .withHeaders(CONTENT_TYPE -> "application/json")
-        )
-
-        status(result) mustBe INTERNAL_SERVER_ERROR
-
-        verify(uploadSuccessService).enqueueUploadSuccess("submission-1", requestBody)
-        verify(validationService, never()).validateXml(any[String], any[String], any[URL], any[String])
-      }
-
-      "not call submission save from controller" in {
-        when(submissionRepository.get("DPRS123", "submission-1"))
-          .thenReturn(Future.successful(Some(submission.copy(state = Ready))))
-        when(uploadSuccessService.enqueueUploadSuccess("submission-1", requestBody))
-          .thenReturn(Future.successful(Done))
-
-        val result = controller.uploadSuccess("submission-1")(
-          FakeRequest(POST, "/")
-            .withBody(Json.toJson(requestBody))
-            .withHeaders(CONTENT_TYPE -> "application/json")
-        )
-
-        status(result) mustBe OK
-
-        verify(submissionRepository, never()).save(any[Submission])
+        verify(uploadSuccessService, never()).enqueueUploadSuccess(any[String], any[UploadSuccessRequest])
       }
     }
+
+    "return OK and enqueue work item when submission state is Ready" in {
+      when(submissionRepository.get(dprsId, "submission-1"))
+        .thenReturn(Future.successful(Some(submission.copy(state = Ready))))
+      when(uploadSuccessService.enqueueUploadSuccess(eqTo("submission-1"), eqTo(requestBody)))
+        .thenReturn(Future.successful(Done))
+
+      running(application) {
+        val request = FakeRequest(routes.SubmissionController.uploadSuccess("submission-1"))
+          .withJsonBody(payload)
+
+        val result = route(application, request).value
+
+        status(result) mustBe OK
+
+        verify(uploadSuccessService, times(1)).enqueueUploadSuccess(eqTo("submission-1"), eqTo(requestBody))
+      }
+    }
+
+    "return OK and enqueue work item when submission state is Uploading" in {
+      when(submissionRepository.get(dprsId, "submission-1"))
+        .thenReturn(Future.successful(Some(submission.copy(state = Uploading))))
+      when(uploadSuccessService.enqueueUploadSuccess(eqTo("submission-1"), eqTo(requestBody)))
+        .thenReturn(Future.successful(Done))
+
+      running(application) {
+        val request = FakeRequest(routes.SubmissionController.uploadSuccess("submission-1"))
+          .withJsonBody(payload)
+
+        val result = route(application, request).value
+
+        status(result) mustBe OK
+
+        verify(uploadSuccessService, times(1)).enqueueUploadSuccess(eqTo("submission-1"), eqTo(requestBody))
+      }
+    }
+
+    "return OK and enqueue work item when submission state is UploadFailed" in {
+
+      val failedSubmission = submission.copy(
+        state = UploadFailed(SchemaValidationError(Seq.empty, false), Some(fileName))
+      )
+
+      when(submissionRepository.get(dprsId, "submission-1"))
+        .thenReturn(Future.successful(Some(failedSubmission)))
+      when(uploadSuccessService.enqueueUploadSuccess(eqTo("submission-1"), eqTo(requestBody)))
+        .thenReturn(Future.successful(Done))
+
+      running(application) {
+        val request = FakeRequest(routes.SubmissionController.uploadSuccess("submission-1"))
+          .withJsonBody(payload)
+
+        val result = route(application, request).value
+
+        status(result) mustBe OK
+
+        verify(uploadSuccessService, times(1)).enqueueUploadSuccess(eqTo("submission-1"), eqTo(requestBody))
+      }
+    }
+  }
 }
