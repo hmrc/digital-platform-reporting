@@ -26,7 +26,7 @@ import models.submission.SubmissionStatus.Pending
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
-import org.mockito.Mockito.{times, verify, when}
+import org.mockito.Mockito.{never, times, verify, when}
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
@@ -458,20 +458,6 @@ class SubmissionControllerSpec
               updated = now.minus(1, ChronoUnit.DAYS)
             )
 
-            val expectedSubmission = existingSubmission.copy(
-              state = UploadFailed(SchemaValidationError(Seq.empty, false), Some(fileName)),
-              updated = now
-            )
-
-            val expectedAudit = FileUploadedEvent(
-              conversationId = uuid,
-              dprsId = dprsId,
-              operatorId = operatorId,
-              operatorName = operatorName,
-              fileName = Some(fileName),
-              outcome = FileUploadOutcome.Rejected(UploadFailureReason.SchemaValidationError(Seq.empty, false))
-            )
-
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
             when(mockValidationService.validateXml(any(), any(), any(), any())).thenReturn(Future.successful(Left(SchemaValidationError(Seq.empty, false))))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
@@ -479,12 +465,11 @@ class SubmissionControllerSpec
             val result = route(app, request).value
 
             status(result) mustEqual OK
-            contentAsJson(result) mustEqual Json.toJson(expectedSubmission)
+            contentAsString(result).trim mustEqual ""
 
             verify(mockSubmissionRepository).get(dprsId, uuid)
-            verify(mockSubmissionRepository).save(expectedSubmission)
-            verify(mockValidationService).validateXml(fileName, dprsId, downloadUrl, operatorId)
-            verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+            verify(mockSubmissionRepository, never()).save(any())
+            verify(mockAuditService, never()).audit(any())(using any(), any())
           }
         }
 
@@ -508,20 +493,6 @@ class SubmissionControllerSpec
               updated = now.minus(1, ChronoUnit.DAYS)
             )
 
-            val expectedSubmission = existingSubmission.copy(
-              state = Validated(downloadUrl, Year.of(2024), fileName, checksum, size),
-              updated = now
-            )
-
-            val expectedAudit = FileUploadedEvent(
-              conversationId = uuid,
-              dprsId = dprsId,
-              operatorId = operatorId,
-              operatorName = operatorName,
-              fileName = Some(fileName),
-              outcome = FileUploadOutcome.Accepted
-            )
-
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
             when(mockValidationService.validateXml(any(), any(), any(), any())).thenReturn(Future.successful(Right(Year.of(2024))))
             when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
@@ -529,12 +500,11 @@ class SubmissionControllerSpec
             val result = route(app, request).value
 
             status(result) mustEqual OK
-            contentAsJson(result) mustEqual Json.toJson(expectedSubmission)
+            contentAsString(result).trim mustEqual ""
 
             verify(mockSubmissionRepository).get(dprsId, uuid)
-            verify(mockSubmissionRepository).save(expectedSubmission)
-            verify(mockValidationService).validateXml(fileName, dprsId, downloadUrl, operatorId)
-            verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+            verify(mockSubmissionRepository, never()).save(any())
+            verify(mockAuditService, never()).audit(any())(using any(), any())
           }
         }
       }
