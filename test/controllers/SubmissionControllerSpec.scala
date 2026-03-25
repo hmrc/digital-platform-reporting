@@ -26,7 +26,7 @@ import models.submission.SubmissionStatus.Pending
 import org.apache.pekko.Done
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import org.mockito.Mockito
-import org.mockito.Mockito.{times, verify, when}
+import org.mockito.Mockito.{never, times, verify, when}
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.freespec.AnyFreeSpec
@@ -68,6 +68,7 @@ class SubmissionControllerSpec
   private val mockValidationService = mock[ValidationService]
   private val mockSubmissionService = mock[SubmissionService]
   private val mockViewSubmissionsService = mock[ViewSubmissionsService]
+  private val mockUploadSuccessService = mock[UploadSuccessService]
   private val mockAuditService = mock[AuditService]
   private val clock = Clock.fixed(now, ZoneOffset.UTC)
 
@@ -80,7 +81,9 @@ class SubmissionControllerSpec
       bind[ValidationService].toInstance(mockValidationService),
       bind[SubmissionService].toInstance(mockSubmissionService),
       bind[ViewSubmissionsService].toInstance(mockViewSubmissionsService),
-      bind[AuditService].toInstance(mockAuditService)
+      bind[AuditService].toInstance(mockAuditService),
+      bind[UploadSuccessService].toInstance(mockUploadSuccessService)
+
     )
     .build()
 
@@ -338,7 +341,7 @@ class SubmissionControllerSpec
 
       "when the matching submission is in a Ready or UploadFailed state" - {
 
-        "must set the state of the submission to Uploading and return OK" in {
+        "must return OK" in {
 
           val request = FakeRequest(routes.SubmissionController.startUpload(uuid))
 
@@ -439,58 +442,7 @@ class SubmissionControllerSpec
 
       "when the matching submission is in an Uploading, Ready, or UploadFailed state" - {
 
-        "when the submission fails validation" - {
-
-          "must set the state of the submission to UpdateFailed and return OK" in {
-            val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)))
-
-            val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
-            val existingSubmission = Submission(
-              _id = uuid,
-              submissionType = SubmissionType.Xml,
-              dprsId = dprsId,
-              operatorId = operatorId,
-              operatorName = operatorName,
-              assumingOperatorName = None,
-              state = state,
-              created = now.minus(1, ChronoUnit.DAYS),
-              updated = now.minus(1, ChronoUnit.DAYS)
-            )
-
-            val expectedSubmission = existingSubmission.copy(
-              state = UploadFailed(SchemaValidationError(Seq.empty, false), Some(fileName)),
-              updated = now
-            )
-
-            val expectedAudit = FileUploadedEvent(
-              conversationId = uuid,
-              dprsId = dprsId,
-              operatorId = operatorId,
-              operatorName = operatorName,
-              fileName = Some(fileName),
-              outcome = FileUploadOutcome.Rejected(UploadFailureReason.SchemaValidationError(Seq.empty, false))
-            )
-
-            when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockValidationService.validateXml(any(), any(), any(), any())).thenReturn(Future.successful(Left(SchemaValidationError(Seq.empty, false))))
-            when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
-
-            val result = route(app, request).value
-
-            status(result) mustEqual OK
-            contentAsJson(result) mustEqual Json.toJson(expectedSubmission)
-
-            verify(mockSubmissionRepository).get(dprsId, uuid)
-            verify(mockSubmissionRepository).save(expectedSubmission)
-            verify(mockValidationService).validateXml(fileName, dprsId, downloadUrl, operatorId)
-            verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
-          }
-        }
-
-        "when the submission passes validation" - {
-
-          "must set the state of the submission to Validated and return OK" in {
+          "must return OK" in {
 
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
               .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)))
@@ -508,35 +460,19 @@ class SubmissionControllerSpec
               updated = now.minus(1, ChronoUnit.DAYS)
             )
 
-            val expectedSubmission = existingSubmission.copy(
-              state = Validated(downloadUrl, Year.of(2024), fileName, checksum, size),
-              updated = now
-            )
-
-            val expectedAudit = FileUploadedEvent(
-              conversationId = uuid,
-              dprsId = dprsId,
-              operatorId = operatorId,
-              operatorName = operatorName,
-              fileName = Some(fileName),
-              outcome = FileUploadOutcome.Accepted
-            )
-
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockValidationService.validateXml(any(), any(), any(), any())).thenReturn(Future.successful(Right(Year.of(2024))))
-            when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+            when(mockUploadSuccessService.enqueueUploadSuccess(any(), any())(using any()))
+              .thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
 
             status(result) mustEqual OK
-            contentAsJson(result) mustEqual Json.toJson(expectedSubmission)
+            contentAsString(result).trim mustEqual ""
 
             verify(mockSubmissionRepository).get(dprsId, uuid)
-            verify(mockSubmissionRepository).save(expectedSubmission)
-            verify(mockValidationService).validateXml(fileName, dprsId, downloadUrl, operatorId)
-            verify(mockAuditService).audit(eqTo(expectedAudit))(using any(), any())
+            verify(mockSubmissionRepository, never()).save(any())
+            verify(mockAuditService, never()).audit(any())(using any(), any())
           }
-        }
       }
 
       "when the matching submission is in any other state" - {
@@ -598,7 +534,7 @@ class SubmissionControllerSpec
 
       "when the matching submission is in a Ready, Uploading, or UploadFailed state" - {
 
-        "must set the state of the submission to UploadFailed and return OK" in {
+        "must return OK" in {
 
           val request = FakeRequest(routes.SubmissionController.uploadFailed(uuid))
             .withBody(Json.toJson(UploadFailedRequest(
@@ -712,7 +648,7 @@ class SubmissionControllerSpec
 
       "when the matching submission is in a Validated state" - {
 
-        "must submit then set the state of the submission to Submitted and return OK" in {
+        "must submit then return OK" in {
 
           val request = FakeRequest(routes.SubmissionController.submit(uuid))
 
