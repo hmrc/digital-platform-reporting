@@ -28,7 +28,7 @@ import play.api.libs.ws.{BodyWritable, SourceBody}
 import services.UuidService
 import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, RequestId, StringContextOps}
 import utils.DateTimeFormats.RFC7231Formatter
 
 import java.time.Clock
@@ -47,9 +47,9 @@ class SubmissionConnector @Inject()(
   private given BodyWritable[Source[ByteString, ?]] =
     BodyWritable(SourceBody.apply, "application/xml")
 
-  def submit(submissionId: String, requestBody: Source[ByteString, ?])(using HeaderCarrier): Future[Done] = {
+  def submit(submissionId: String, requestBody: Source[ByteString, ?])(using hc: HeaderCarrier): Future[Done] = {
 
-    val correlationId = uuidService.generate()
+    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
 
     httpClient.post(url"${appConfig.SubmissionBaseUrl}/dac6/dprs0502/v1")
       .withBody(requestBody)
@@ -71,9 +71,9 @@ class SubmissionConnector @Inject()(
       }
   }
 
-  def getManualAssumedReportingSubmission(submissionCaseId: String)(using HeaderCarrier): Future[DPI_OECD] = {
+  def getManualAssumedReportingSubmission(submissionCaseId: String)(using hc:  HeaderCarrier): Future[DPI_OECD] = {
 
-    val correlationId = uuidService.generate()
+    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
     val conversationId = uuidService.generate()
 
     httpClient.get(url"${appConfig.GetManualAssumedReportingSubmissionUrl}/dac6/dprs0504/v1/$submissionCaseId")
