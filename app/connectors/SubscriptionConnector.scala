@@ -29,7 +29,7 @@ import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.UuidService
 import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, RequestId, StringContextOps}
 import utils.DateTimeFormats.RFC7231Formatter
 
 import java.time.Clock
@@ -44,7 +44,7 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
 
   def subscribe(request: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[SubscriptionResponse] = {
     
-    val correlationId = uuidService.generate()
+    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
     val conversationId = uuidService.generate()
     
     httpClient.post(url"${appConfig.SubscribeBaseUrl}/dac6/dprs0201/v1")
@@ -71,7 +71,7 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
   }
 
   def updateSubscription(request: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[Done] = {
-    val correlationId = uuidService.generate()
+    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
     val conversationId = uuidService.generate()
 
     httpClient.put(url"${appConfig.SubscribeBaseUrl}/dac6/dprs0203/v1")
@@ -92,16 +92,18 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
       }
   }
 
-  def get(dprsId: String)(implicit hc: HeaderCarrier): Future[SubscriptionInfo] =
+  def get(dprsId: String)(implicit hc: HeaderCarrier): Future[SubscriptionInfo] = {
+    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
     httpClient.get(url"${appConfig.SubscribeBaseUrl}/dac6/dprs0202/v1/$dprsId")
       .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.ReadContactsBearerToken}")
-      .setHeader("X-Correlation-ID" -> uuidService.generate())
+      .setHeader("X-Correlation-ID" -> correlationId)
       .setHeader("X-Conversation-ID" -> uuidService.generate())
       .setHeader("X-Forwarded-Host" -> appConfig.AppName)
       .setHeader(HeaderNames.CONTENT_TYPE -> "application/json")
       .setHeader(HeaderNames.ACCEPT -> "application/json")
       .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
       .execute[SubscriptionInfo]
+  }
 }
 
 object SubscriptionConnector {
