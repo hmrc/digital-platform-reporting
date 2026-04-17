@@ -28,7 +28,7 @@ import play.api.libs.ws.{BodyWritable, SourceBody}
 import services.UuidService
 import uk.gov.hmrc.http.HttpReads.Implicits.readRaw
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, RequestId, StringContextOps}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
 import utils.DateTimeFormats.RFC7231Formatter
 
 import java.time.Clock
@@ -49,7 +49,7 @@ class SubmissionConnector @Inject()(
 
   def submit(submissionId: String, requestBody: Source[ByteString, ?])(using hc: HeaderCarrier): Future[Done] = {
 
-    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
+    val correlationId = uuidService.generate()
 
     httpClient.post(url"${appConfig.SubmissionBaseUrl}/dac6/dprs0502/v1")
       .withBody(requestBody)
@@ -66,14 +66,14 @@ class SubmissionConnector @Inject()(
           case NO_CONTENT =>
             Future.successful(Done)
           case _ =>
-            Future.failed(SubmissionFailed(submissionId))
+            Future.failed(SubmissionFailed(submissionId, correlationId))
         }
       }
   }
 
   def getManualAssumedReportingSubmission(submissionCaseId: String)(using hc:  HeaderCarrier): Future[DPI_OECD] = {
 
-    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
+    val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
 
     httpClient.get(url"${appConfig.GetManualAssumedReportingSubmissionUrl}/dac6/dprs0504/v1/$submissionCaseId")
@@ -90,7 +90,7 @@ class SubmissionConnector @Inject()(
           case OK =>
             Future.successful(scalaxb.fromXML[DPI_OECD](Utility.trim(XML.loadString(response.body))))
           case _ =>
-            Future.failed(GetManualAssumedReportingSubmissionFailure(submissionCaseId, response.status))
+            Future.failed(GetManualAssumedReportingSubmissionFailure(submissionCaseId, response.status, correlationId))
         }
       }
   }
@@ -98,7 +98,11 @@ class SubmissionConnector @Inject()(
 
 object SubmissionConnector {
 
-  final case class SubmissionFailed(submissionId: String) extends Throwable
+  final case class SubmissionFailed(submissionId: String, correlationId: String) extends Throwable {
+    override def getMessage: String = s"Submision faided for submissionId : $submissionId and correlationId : $correlationId"
+  }
 
-  final case class GetManualAssumedReportingSubmissionFailure(submissionCaseId: String, status: Int) extends Throwable
+  final case class GetManualAssumedReportingSubmissionFailure(submissionCaseId: String, status: Int, correlationId: String) extends Throwable {
+    override def getMessage: String = s"Error getting manual assumed reporting submission for submissionId : $submissionCaseId and correlationId : $correlationId"
+  }
 }

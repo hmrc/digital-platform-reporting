@@ -44,7 +44,7 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
 
   def subscribe(request: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[SubscriptionResponse] = {
     
-    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
+    val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
     
     httpClient.post(url"${appConfig.SubscribeBaseUrl}/dac6/dprs0201/v1")
@@ -71,7 +71,7 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
   }
 
   def updateSubscription(request: SubscriptionRequest)(implicit hc: HeaderCarrier): Future[Done] = {
-    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
+    val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
 
     httpClient.put(url"${appConfig.SubscribeBaseUrl}/dac6/dprs0203/v1")
@@ -93,7 +93,7 @@ class SubscriptionConnector @Inject()(httpClient: HttpClientV2,
   }
 
   def get(dprsId: String)(implicit hc: HeaderCarrier): Future[SubscriptionInfo] = {
-    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
+    val correlationId = uuidService.generate()
     httpClient.get(url"${appConfig.SubscribeBaseUrl}/dac6/dprs0202/v1/$dprsId")
       .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.ReadContactsBearerToken}")
       .setHeader("X-Correlation-ID" -> correlationId)
