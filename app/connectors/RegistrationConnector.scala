@@ -26,7 +26,7 @@ import play.api.libs.json.*
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.UuidService
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HeaderCarrier, RequestId, StringContextOps}
+import uk.gov.hmrc.http.{HeaderCarrier, StringContextOps}
 import utils.DateTimeFormats.RFC7231Formatter
 
 import java.time.Clock
@@ -39,11 +39,10 @@ class RegistrationConnector @Inject()(httpClient: HttpClientV2,
                                       appConfig: AppConfig)
                                      (implicit ec: ExecutionContext) {
 
-  def registerWithId(request: RequestWithId)(implicit hc: HeaderCarrier): Future[ResponseWithId] = {
-    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
+  def registerWithId(request: RequestWithId)(implicit hc: HeaderCarrier): Future[ResponseWithId] = 
     httpClient.post(url"${appConfig.RegisterWithIdBaseUrl}/dac6/dprs0102/v1")
       .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.RegisterWithIdBearerToken}")
-      .setHeader("X-Correlation-ID" -> correlationId)
+      .setHeader("X-Correlation-ID" -> uuidService.generate())
       .setHeader("X-Conversation-ID" -> uuidService.generate())
       .setHeader("X-Forwarded-Host" -> appConfig.AppName)
       .setHeader(HeaderNames.CONTENT_TYPE -> "application/json")
@@ -51,13 +50,11 @@ class RegistrationConnector @Inject()(httpClient: HttpClientV2,
       .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
       .withBody(Json.toJson(request))
       .execute[ResponseWithId]
-  }
 
-  def registerWithoutId(request: RequestWithoutId)(implicit hc: HeaderCarrier): Future[ResponseWithoutId] = {
-    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
+  def registerWithoutId(request: RequestWithoutId)(implicit hc: HeaderCarrier): Future[ResponseWithoutId] = 
     httpClient.post(url"${appConfig.RegisterWithoutIdBaseUrl}/dac6/dprs0101/v1")
       .setHeader(HeaderNames.AUTHORIZATION -> s"Bearer ${appConfig.RegisterWithoutIdBearerToken}")
-      .setHeader("X-Correlation-ID" -> correlationId)
+      .setHeader("X-Correlation-ID" -> uuidService.generate())
       .setHeader("X-Conversation-ID" -> uuidService.generate())
       .setHeader("X-Forwarded-Host" -> appConfig.AppName)
       .setHeader(HeaderNames.CONTENT_TYPE -> "application/json")
@@ -65,5 +62,4 @@ class RegistrationConnector @Inject()(httpClient: HttpClientV2,
       .setHeader(HeaderNames.DATE -> RFC7231Formatter.format(clock.instant()))
       .withBody(Json.toJson(request))
       .execute[ResponseWithoutId]
-  }
 }

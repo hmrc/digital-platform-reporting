@@ -28,7 +28,7 @@ import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.UuidService
 import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, RequestId, StringContextOps}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
 import utils.DateTimeFormats.RFC7231Formatter
 
 import java.time.Clock
@@ -43,7 +43,7 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
 
   def create(request: CreatePlatformOperatorRequest)
             (implicit hc: HeaderCarrier): Future[PlatformOperatorCreatedResponse] = {
-    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
+    val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
 
     httpClient.post(url"${appConfig.UpdatePlatformOperatorBaseUrl}/dac6/dprs9301/v1")
@@ -67,7 +67,7 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
   def update(request: UpdatePlatformOperatorRequest)
             (implicit hc: HeaderCarrier): Future[Done] = {
 
-    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
+    val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
 
     httpClient.post(url"${appConfig.UpdatePlatformOperatorBaseUrl}/dac6/dprs9301/v1")
@@ -91,7 +91,7 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
   def delete(request: DeletePlatformOperatorRequest)
             (implicit hc: HeaderCarrier): Future[Done] = {
 
-    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
+    val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
 
     httpClient.post(url"${appConfig.UpdatePlatformOperatorBaseUrl}/dac6/dprs9301/v1")
@@ -117,7 +117,7 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
 
     given Reads[ViewPlatformOperatorsResponse] = ViewPlatformOperatorsResponse.downstreamReads
 
-    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
+    val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
 
     httpClient.get(url"${appConfig.ViewPlatformOperatorsBaseUrl}/dac6/dprs9302/v1/$subscriptionId")
@@ -140,7 +140,7 @@ class PlatformOperatorConnector @Inject()(httpClient: HttpClientV2,
   def get(subscriptionId: String, operatorId: String)
          (implicit hc: HeaderCarrier): Future[Option[PlatformOperator]] = {
 
-    val correlationId = hc.requestId.getOrElse(RequestId(uuidService.generate())).value
+    val correlationId = uuidService.generate()
     val conversationId = uuidService.generate()
 
     httpClient.get(url"${appConfig.ViewPlatformOperatorsBaseUrl}/dac6/dprs9302/v1/$subscriptionId/$operatorId")
