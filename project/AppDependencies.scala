@@ -10,7 +10,7 @@ object AppDependencies {
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-work-item-repo-play-30"  % hmrcMongoVersion,
     "com.beachape"            %% "enumeratum-play"                    % "1.9.1",
     "org.typelevel"           %% "cats-core"                          % "2.13.0",
-    "uk.gov.hmrc"             %% "internal-auth-client-play-30"       % "4.3.0",
+    "uk.gov.hmrc"             %% "internal-auth-client-play-30"       % "4.4.0",
     "javax.xml.bind"          %  "jaxb-api"                           % "2.3.1",
     "org.apache.pekko"        %% "pekko-connectors-xml"               % "1.0.0"
   )

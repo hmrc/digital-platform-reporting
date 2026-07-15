@@ -89,7 +89,7 @@ class SubmissionControllerSpec
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    Mockito.reset(mockSubmissionRepository, mockAuthConnector, mockValidationService, mockSubmissionService, mockViewSubmissionsService, mockAuditService)
+    Mockito.reset(mockSubmissionRepository, mockAuthConnector, mockValidationService, mockSubmissionService, mockViewSubmissionsService, mockUploadSuccessService, mockAuditService)
   }
 
   private val readyGen: Gen[Ready.type] = Gen.const(Ready)
@@ -444,8 +444,9 @@ class SubmissionControllerSpec
 
           "must return OK" in {
 
+            val callback = UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)
             val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-              .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)))
+              .withBody(Json.toJson(callback))
 
             val state = Gen.oneOf(readyGen, uploadingGen, uploadFailedGen).sample.value
             val existingSubmission = Submission(
@@ -461,7 +462,8 @@ class SubmissionControllerSpec
             )
 
             when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-            when(mockUploadSuccessService.enqueueUploadSuccess(any(), any())(using any()))
+            when(mockUploadSuccessService.canProcessUploadSuccess(state)).thenReturn(true)
+            when(mockUploadSuccessService.enqueueUploadSuccess(eqTo(uuid), eqTo(callback))(using any()))
               .thenReturn(Future.successful(Done))
 
             val result = route(app, request).value
@@ -470,19 +472,22 @@ class SubmissionControllerSpec
             contentAsString(result).trim mustEqual ""
 
             verify(mockSubmissionRepository).get(dprsId, uuid)
+            verify(mockUploadSuccessService).canProcessUploadSuccess(state)
+            verify(mockUploadSuccessService).enqueueUploadSuccess(eqTo(uuid), eqTo(callback))(using any())
             verify(mockSubmissionRepository, never()).save(any())
             verify(mockAuditService, never()).audit(any())(using any(), any())
           }
       }
 
-      "when the matching submission is in any other state" - {
+      "when the callback has already been handled" - {
 
-        "must return CONFLICT" in {
+        "must return OK without enqueueing another work item" in {
 
+          val callback = UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)
           val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
-            .withBody(Json.toJson(UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)))
+            .withBody(Json.toJson(callback))
 
-          val state = Gen.oneOf(validatedGen, submittedGen, approvedGen, rejectedGen).sample.value
+          val state = Validated(downloadUrl, Year.of(2024), fileName, checksum, size)
           val existingSubmission = Submission(
             _id = uuid,
             submissionType = SubmissionType.Xml,
@@ -496,14 +501,52 @@ class SubmissionControllerSpec
           )
 
           when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
-          when(mockSubmissionRepository.save(any())).thenReturn(Future.successful(Done))
+          when(mockUploadSuccessService.hasAlreadyHandledUploadSuccess(eqTo(state), eqTo(callback))).thenReturn(true)
+
+          val result = route(app, request).value
+
+          status(result) mustEqual OK
+          contentAsString(result).trim mustEqual ""
+
+          verify(mockSubmissionRepository).get(dprsId, uuid)
+          verify(mockUploadSuccessService).hasAlreadyHandledUploadSuccess(eqTo(state), eqTo(callback))
+          verify(mockUploadSuccessService, never()).enqueueUploadSuccess(any(), any())(using any())
+          verify(mockSubmissionRepository, never()).save(any())
+        }
+      }
+
+      "when the callback is for a different upload after processing has finished" - {
+
+        "must return CONFLICT" in {
+
+          val callback = UploadSuccessRequest(dprsId, downloadUrl, fileName, checksum, size)
+          val request = FakeRequest(routes.SubmissionController.uploadSuccess(uuid))
+            .withBody(Json.toJson(callback))
+
+          val state = Validated(downloadUrl, Year.of(2024), fileName, "other-checksum", size)
+          val existingSubmission = Submission(
+            _id = uuid,
+            submissionType = SubmissionType.Xml,
+            dprsId = dprsId,
+            operatorId = operatorId,
+            operatorName = operatorName,
+            assumingOperatorName = None,
+            state = state,
+            created = now,
+            updated = now
+          )
+
+          when(mockSubmissionRepository.get(any(), any())).thenReturn(Future.successful(Some(existingSubmission)))
+          when(mockUploadSuccessService.hasAlreadyHandledUploadSuccess(eqTo(state), eqTo(callback))).thenReturn(false)
 
           val result = route(app, request).value
 
           status(result) mustEqual CONFLICT
 
           verify(mockSubmissionRepository).get(dprsId, uuid)
-          verify(mockSubmissionRepository, times(0)).save(any())
+          verify(mockUploadSuccessService).hasAlreadyHandledUploadSuccess(eqTo(state), eqTo(callback))
+          verify(mockUploadSuccessService, never()).enqueueUploadSuccess(any(), any())(using any())
+          verify(mockSubmissionRepository, never()).save(any())
         }
       }
     }
