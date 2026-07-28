@@ -29,7 +29,7 @@ import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import services.UuidService
 import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, RequestId, StringContextOps}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps}
 import utils.DateTimeFormats.RFC7231Formatter
 
 import java.time.Clock

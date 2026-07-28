@@ -33,7 +33,7 @@ import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{any, eq as eqTo}
 import uk.gov.hmrc.mongo.workitem.{ProcessingStatus, WorkItem}
 import models.submission.*
-import models.submission.Submission.State.{UploadFailed, Uploading, Validated}
+import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
 import models.submission.Submission.UploadFailureReason.SchemaValidationError
 import org.bson.types.ObjectId
 import org.scalatest.BeforeAndAfterEach
@@ -178,6 +178,88 @@ class UploadSuccessServiceSpec
     }
   }
 
+  "UploadSuccessService.canProcessUploadSuccess" should {
+
+    "allow callbacks before validation has finished" in {
+      val statesBeforeValidation = Seq[Submission.State](
+        Ready,
+        Uploading,
+        UploadFailed(SchemaValidationError(Seq.empty, false), None)
+      )
+
+      statesBeforeValidation.foreach { state =>
+        uploadSuccessService.canProcessUploadSuccess(state) mustBe true
+      }
+    }
+
+    "stop callbacks from being processed again once the submission has moved on" in {
+      val statesAfterUpload = Seq[Submission.State](
+        Validated(request.downloadUrl, Year.of(2025), request.fileName, request.checksum, request.size),
+        Submitted(request.fileName, Year.of(2025), request.size),
+        Approved(request.fileName, Year.of(2025)),
+        Rejected(request.fileName, Year.of(2025))
+      )
+
+      statesAfterUpload.foreach { state =>
+        uploadSuccessService.canProcessUploadSuccess(state) mustBe false
+      }
+    }
+  }
+
+  "UploadSuccessService.hasAlreadyHandledUploadSuccess" should {
+
+    "recognise retries after upload processing has finished" in {
+      uploadSuccessService.hasAlreadyHandledUploadSuccess(
+        Validated(request.downloadUrl, Year.of(2025), request.fileName, request.checksum, request.size),
+        request
+      ) mustBe true
+
+      uploadSuccessService.hasAlreadyHandledUploadSuccess(
+        Submitted(request.fileName, Year.of(2025), request.size),
+        request
+      ) mustBe true
+
+      uploadSuccessService.hasAlreadyHandledUploadSuccess(
+        Approved(request.fileName, Year.of(2025)),
+        request
+      ) mustBe true
+
+      uploadSuccessService.hasAlreadyHandledUploadSuccess(
+        Rejected(request.fileName, Year.of(2025)),
+        request
+      ) mustBe true
+    }
+
+    "reject callbacks that do not match the upload already on the submission" in {
+      uploadSuccessService.hasAlreadyHandledUploadSuccess(Ready, request) mustBe false
+      uploadSuccessService.hasAlreadyHandledUploadSuccess(Uploading, request) mustBe false
+      uploadSuccessService.hasAlreadyHandledUploadSuccess(
+        UploadFailed(SchemaValidationError(Seq.empty, false), Some(request.fileName)),
+        request
+      ) mustBe false
+
+      uploadSuccessService.hasAlreadyHandledUploadSuccess(
+        Validated(request.downloadUrl, Year.of(2025), request.fileName, "other-checksum", request.size),
+        request
+      ) mustBe false
+
+      uploadSuccessService.hasAlreadyHandledUploadSuccess(
+        Submitted(request.fileName, Year.of(2025), request.size + 1),
+        request
+      ) mustBe false
+
+      uploadSuccessService.hasAlreadyHandledUploadSuccess(
+        Approved("other-file.xml", Year.of(2025)),
+        request
+      ) mustBe false
+
+      uploadSuccessService.hasAlreadyHandledUploadSuccess(
+        Rejected("other-file.xml", Year.of(2025)),
+        request
+      ) mustBe false
+    }
+  }
+
   "processNextUploadSuccess" should {
 
     "return false when no outstanding work item exists" in {
@@ -252,6 +334,104 @@ class UploadSuccessServiceSpec
       verify(workItemRepository).complete(eqTo(workItem.id), eqTo(ProcessingStatus.Succeeded))
       verify(workItemRepository, never()).markAs(any[ObjectId], any[ProcessingStatus], any[Option[Instant]])
       verify(auditService).audit(
+        any[FileUploadedEvent]
+      )(using any[OWrites[FileUploadedEvent]], any[HeaderCarrier])
+    }
+
+    "not validate a duplicate callback once the file has already been validated" in {
+      val workItem = workItemOf(queuedItem)
+      val submissionAlreadyValidated = baseSubmission.copy(
+        state = Validated(
+          downloadUrl = queuedItem.downloadUrl,
+          reportingPeriod = Year.of(2025),
+          fileName = queuedItem.fileName,
+          checksum = queuedItem.checksum,
+          size = queuedItem.size
+        )
+      )
+
+      when(workItemRepository.pullOutstanding(any[Instant], any[Instant]))
+        .thenReturn(Future.successful(Some(workItem)))
+      when(submissionRepository.get("DPRS123", "submission-1"))
+        .thenReturn(Future.successful(Some(submissionAlreadyValidated)))
+      when(workItemRepository.complete(eqTo(workItem.id), eqTo(ProcessingStatus.Succeeded)))
+        .thenReturn(Future.successful(true))
+
+      uploadSuccessService.processNextUploadSuccess().futureValue mustBe true
+
+      verify(validationService, never()).validateXml(any[String], any[String], any(), any[String])
+      verify(submissionRepository, never()).save(any[Submission])
+      verify(workItemRepository).complete(eqTo(workItem.id), eqTo(ProcessingStatus.Succeeded))
+      verify(workItemRepository, never()).markAs(any[ObjectId], any[ProcessingStatus], any[Option[Instant]])
+      verify(auditService, never()).audit(
+        any[FileUploadedEvent]
+      )(using any[OWrites[FileUploadedEvent]], any[HeaderCarrier])
+    }
+
+    "not validate a duplicate callback once the file has already been submitted" in {
+      val workItem = workItemOf(queuedItem)
+      val submissionAlreadySubmitted = baseSubmission.copy(
+        state = Submitted(
+          fileName = queuedItem.fileName,
+          reportingPeriod = Year.of(2025),
+          size = queuedItem.size
+        )
+      )
+
+      when(workItemRepository.pullOutstanding(any[Instant], any[Instant]))
+        .thenReturn(Future.successful(Some(workItem)))
+      when(submissionRepository.get("DPRS123", "submission-1"))
+        .thenReturn(Future.successful(Some(submissionAlreadySubmitted)))
+      when(workItemRepository.complete(eqTo(workItem.id), eqTo(ProcessingStatus.Succeeded)))
+        .thenReturn(Future.successful(true))
+
+      uploadSuccessService.processNextUploadSuccess().futureValue mustBe true
+
+      verify(validationService, never()).validateXml(any[String], any[String], any(), any[String])
+      verify(submissionRepository, never()).save(any[Submission])
+      verify(workItemRepository).complete(eqTo(workItem.id), eqTo(ProcessingStatus.Succeeded))
+      verify(workItemRepository, never()).markAs(any[ObjectId], any[ProcessingStatus], any[Option[Instant]])
+      verify(auditService, never()).audit(
+        any[FileUploadedEvent]
+      )(using any[OWrites[FileUploadedEvent]], any[HeaderCarrier])
+    }
+
+    "fail the work item when the validated submission belongs to another upload" in {
+      val workItem = workItemOf(queuedItem)
+      val submissionWithDifferentUpload = baseSubmission.copy(
+        state = Validated(
+          downloadUrl = queuedItem.downloadUrl,
+          reportingPeriod = Year.of(2025),
+          fileName = queuedItem.fileName,
+          checksum = "other-checksum",
+          size = queuedItem.size
+        )
+      )
+
+      when(workItemRepository.pullOutstanding(any[Instant], any[Instant]))
+        .thenReturn(Future.successful(Some(workItem)))
+      when(submissionRepository.get("DPRS123", "submission-1"))
+        .thenReturn(Future.successful(Some(submissionWithDifferentUpload)))
+      when(
+        workItemRepository.markAs(
+          eqTo(workItem.id),
+          eqTo(ProcessingStatus.Failed),
+          any[Option[Instant]]
+        )
+      ).thenReturn(Future.successful(true))
+
+      val result = uploadSuccessService.processNextUploadSuccess().failed.futureValue
+      result.getMessage must include("unexpected state")
+
+      verify(validationService, never()).validateXml(any[String], any[String], any(), any[String])
+      verify(submissionRepository, never()).save(any[Submission])
+      verify(workItemRepository).markAs(
+        eqTo(workItem.id),
+        eqTo(ProcessingStatus.Failed),
+        any[Option[Instant]]
+      )
+      verify(workItemRepository, never()).complete(any[ObjectId], any[ResultStatus])
+      verify(auditService, never()).audit(
         any[FileUploadedEvent]
       )(using any[OWrites[FileUploadedEvent]], any[HeaderCarrier])
     }

@@ -123,13 +123,14 @@ class SubmissionController @Inject() (
     Action.async(parse.json[UploadSuccessRequest]) { implicit request =>
       submissionRepository.get(request.body.dprsId, id).flatMap {
         case Some(submission)
-          if submission.state.isInstanceOf[Ready.type] ||
-            submission.state.isInstanceOf[Uploading.type] ||
-            submission.state.isInstanceOf[UploadFailed] =>
+          if uploadSuccessService.canProcessUploadSuccess(submission.state) =>
 
           uploadSuccessService.enqueueUploadSuccess(id, request.body).map { _ =>
             Ok
           }
+
+        case Some(submission) if uploadSuccessService.hasAlreadyHandledUploadSuccess(submission.state, request.body) =>
+          Future.successful(Ok)
 
         case Some(_) =>
           Future.successful(Conflict)

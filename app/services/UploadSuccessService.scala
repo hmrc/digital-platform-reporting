@@ -22,7 +22,7 @@ import uk.gov.hmrc.mongo.workitem.{ProcessingStatus, WorkItem}
 import repository.{SubmissionRepository, UploadSuccessWorkItemRepository}
 import models.audit.FileUploadedEvent
 import models.audit.FileUploadedEvent.FileUploadOutcome
-import models.submission.Submission.State.{Ready, UploadFailed, Uploading, Validated}
+import models.submission.Submission.State.{Approved, Ready, Rejected, Submitted, UploadFailed, Uploading, Validated}
 import models.submission.{Submission, UploadSuccessRequest, UploadSuccessWorkItem}
 import org.apache.pekko.Done
 
@@ -85,11 +85,35 @@ class UploadSuccessService @Inject()(
       case false => Future.successful(Done)
     }
 
-  private def isProcessable(state: Submission.State): Boolean =
-      state.isInstanceOf[Ready.type] || state.isInstanceOf[Uploading.type] || state.isInstanceOf[UploadFailed]
+  def canProcessUploadSuccess(state: Submission.State): Boolean =
+    state.isInstanceOf[Ready.type] || state.isInstanceOf[Uploading.type] || state.isInstanceOf[UploadFailed]
+
+  def hasAlreadyHandledUploadSuccess(state: Submission.State, request: UploadSuccessRequest): Boolean =
+    state match {
+      case Validated(downloadUrl, _, fileName, checksum, size) =>
+        downloadUrl == request.downloadUrl &&
+          fileName == request.fileName &&
+          checksum == request.checksum &&
+          size == request.size
+      case Submitted(fileName, _, size) =>
+        fileName == request.fileName && size == request.size
+      case Approved(fileName, _) =>
+        fileName == request.fileName
+      case Rejected(fileName, _) =>
+        fileName == request.fileName
+      case _ =>
+        false
+    }
 
   private def processWorkItem(workItem: WorkItem[UploadSuccessWorkItem]): Future[Unit] = {
     val item = workItem.item
+    val callback = UploadSuccessRequest(
+      dprsId = item.dprsId,
+      downloadUrl = item.downloadUrl,
+      fileName = item.fileName,
+      checksum = item.checksum,
+      size = item.size
+    )
     
     given HeaderCarrier = HeaderCarrier(
       requestId = item.requestId.map(RequestId.apply)
@@ -99,7 +123,10 @@ class UploadSuccessService @Inject()(
       case None =>
         Future.failed(new RuntimeException(s"Submission not found for dprsId=${item.dprsId}, submissionId=${item.submissionId}"))
 
-      case Some(submission) if !isProcessable(submission.state) =>
+      case Some(submission) if hasAlreadyHandledUploadSuccess(submission.state, callback) =>
+        Future.successful(())
+
+      case Some(submission) if !canProcessUploadSuccess(submission.state) =>
         Future.failed(new RuntimeException(
           s"Submission ${item.submissionId} is in unexpected state ${submission.state}"
       ))
