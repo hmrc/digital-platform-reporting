@@ -22,6 +22,7 @@ import play.api.libs.json.*
 
 final case class SubscriptionRequest(id: String,
                                      gbUser: Boolean,
+                                     registeredBusinessName:Option[String],
                                      tradingName: Option[String],
                                      primaryContact: Contact,
                                      secondaryContact: Option[Contact])
@@ -35,18 +36,20 @@ object SubscriptionRequest {
       (__ \ "idType").write[String] and
       (__ \ "idNumber").write[String] and
       (__ \ "gbUser").write[Boolean] and
+      (__ \ "registeredBusinessName").writeNullable[String] and
       (__ \ "tradingName").writeNullable[String] and
       (__ \ "primaryContact").write[Contact] and
       (__ \ "secondaryContact").writeNullable[Contact]
-    )(sr => ("SAFE", sr.id, sr.gbUser, sr.tradingName, sr.primaryContact, sr.secondaryContact))
+    )(sr => ("SAFE", sr.id, sr.gbUser, sr.registeredBusinessName, sr.tradingName, sr.primaryContact, sr.secondaryContact))
 
   lazy val updateWrites: OWrites[SubscriptionRequest] =
     (
       (__ \ "idType").write[String] and
       (__ \ "idNumber").write[String] and
       (__ \ "gbUser").write[Boolean] and
+      (__ \ "registeredBusinessName").writeNullable[String] and
       (__ \ "tradingName").writeNullable[String] and
       (__ \ "primaryContact").write[Contact] and
       (__ \ "secondaryContact").writeNullable[Contact]
-    )(sr => ("DPRS", sr.id, sr.gbUser, sr.tradingName, sr.primaryContact, sr.secondaryContact))
+    )(sr => ("DPRS", sr.id, sr.gbUser,sr.registeredBusinessName, sr.tradingName, sr.primaryContact, sr.secondaryContact))
 }

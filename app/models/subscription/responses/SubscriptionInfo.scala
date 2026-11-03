@@ -26,7 +26,7 @@ import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 final case class SubscriptionInfo(id: String,
                                   gbUser: Boolean,
-                                  businessName: Option[String],
+                                  registeredBusinessName: Option[String],
                                   tradingName: Option[String],
                                   primaryContact: Contact,
                                   secondaryContact: Option[Contact]) {
@@ -50,7 +50,7 @@ object SubscriptionInfo {
     (
       (__ \ "success" \ "customer" \ "id").read[String] and
       (__ \ "success" \ "customer" \ "gbUser").read[Boolean] and
-      (__ \ "success" \ "customer" \ "businessName").readNullable[String] and
+      (__ \ "success" \ "customer" \ "registeredBusinessName").readNullable[String] and
       (__ \ "success" \ "customer" \ "tradingName").readNullable[String] and
       (__ \ "success" \ "customer" \ "primaryContact").read[Contact] and
       (__ \ "success" \ "customer" \ "secondaryContact").readNullable[Contact]

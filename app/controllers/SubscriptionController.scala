@@ -45,6 +45,7 @@ class SubscriptionController @Inject()(cc: ControllerComponents,
         }
   }
 
+
   def updateSubscription(): Action[SubscriptionRequest] = authenticate(parse.json[SubscriptionRequest]).async {
     implicit request: AuthenticatedRequest[SubscriptionRequest] =>
       connector
